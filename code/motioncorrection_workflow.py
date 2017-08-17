@@ -10,12 +10,96 @@ import nipype.pipeline.engine as pe          # pypeline engine
 import nipype.algorithms.modelgen as model   # model generation
 import nipype.algorithms.rapidart as ra      # artifact detection
 import nipype.interfaces.fsl as fsl          # fsl
+import nipype.interfaces.afni as afni        # afni
 from nipype.interfaces.utility import IdentityInterface
 
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
 from nipype import config
 config.enable_debug_mode()
+
+
+def create_workflow_fsl():
+    workflow = Workflow(
+        name='motion_correction')
+
+    inputs = Node(IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+        'stages',
+        'smooth',
+        'dof',
+
+        'manualweights',
+        'manualweights_func_ref',
+
+        'functionals',
+        'functionals_masks',
+    ]), name="in")
+
+    # workflow.connect([(infosource, inputfiles,
+    #                   [('subject_id', 'subject_id'),
+    #                    ('session_id', 'session_id'),
+    #                    ('use_contours', 'use_contours'),
+    #                    ('mcflirt_stages', 'stages'),
+    #                    ('smooth', 'smooth'),
+    #                    ('dof', 'dof'),
+    #                    ])])
+
+    mc = MapNode(
+        fsl.MCFLIRT(
+            save_plots=True,
+            save_mats=True,
+            save_rms=True,
+            interpolation='spline',  # interpolation method for final stage
+            # mean_vol=True,
+            ref_vol=50,
+        ),
+        iterfield=['in_file'],
+        name='mc')
+
+    workflow.connect(inputs, 'functionals',
+                     mc, 'in_file')
+    # workflow.connect(mcflirt, 'out_file',
+    #                  outputfiles, 'motioncorrected')
+    return workflow
+
+
+def create_workflow_afni():
+    workflow = Workflow(
+        name='motion_correction')
+    inputs = Node(IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+
+        # 3dvolreg allows weights to be passed
+        #   ... but this isn't included in NiPype.
+        'manualweights',
+        'manualweights_func_ref',
+
+        'funcs',
+        'funcs_masks',
+
+        'mc_method',
+    ]), name='in')
+    inputs.iterables = [
+        ('mc_method', ['afni:3dvolreg'])
+    ]
+
+    mc = MapNode(
+        afni.Volreg(
+            outputtype='NIFTI_GZ',
+            zpad=4,
+        ),
+        iterfield=['in_file'],
+        name='mc')
+    workflow.connect(inputs, 'funcs',
+                     mc, 'in_file')
+    workflow.connect(inputs, 'manualweights',
+                     mc, 'in_weight_file')
+    workflow.connect(inputs, 'manualweights_func_ref',
+                     mc, 'basefile')
+    return workflow
 
 
 def run_workflow():
@@ -42,20 +126,29 @@ def run_workflow():
     infosource.iterables = [
         ('session_id', session_list),
         ('subject_id', subject_list),
-        ('use_contours', [False]),
         ('smooth', [1.0]),
-        ('dof', [6, 12]),
-        ('mcflirt_stages', [3, 4]),
+        # ('dof', [6]),
+        # ('mcflirt_stages', [3]),
     ]
     # SelectFiles
     templates = {
-        'func':
-        'skull-stripped-pre-mc/sub-{subject_id}/ses-{session_id}/func/'
+        'funcs':
+        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_'
-            'task-*run-01_bold_res-1x1x1_brain.nii.gz',
-        # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+            'task-*run-01*_bold_res-1x1x1_preproc.nii.gz',
+
+        'manualweights':
+        'manual-masks/sub-eddy/ses-20170511/func/'
+            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_'
+            'res-1x1x1_manualweights.nii.gz',
+
+        # 'manualweights_func_ref':
+        # 'manual-masks/sub-eddy/ses-20170511/func/'
+        #     'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_'
+        #     'res-1x1x1_reference.nii.gz',
+        # 'skull-stripped-pre-mc/sub-{subject_id}/ses-{session_id}/func/'
         #     'sub-{subject_id}_ses-{session_id}_'
-        #     'task-*_bold_res-1x1x1_preproc.nii.gz',
+        #     'task-*run-01_bold_res-1x1x1_brain.nii.gz',
     }
     inputfiles = Node(
         nio.SelectFiles(templates,
@@ -101,21 +194,15 @@ def run_workflow():
                        ('dof', 'dof'),
                        ])])
 
-    mcflirt = MapNode(
-        fsl.MCFLIRT(
-            save_plots=True,
-            save_mats=True,
-            save_rms=True,
-            interpolation='spline',  # interpolation method for final stage
-            # mean_vol=True,
-            ref_vol=50,
-        ),
-        iterfield=['in_file'],
-        name='mcflirt')
+    mc = create_workflow_afni()
 
-    workflow.connect(inputfiles, 'func',
-                     mcflirt, 'in_file')
-    workflow.connect(mcflirt, 'out_file',
+    workflow.connect(inputfiles, 'funcs',
+                     mc, 'in.funcs')
+    workflow.connect(inputfiles, 'manualweights',
+                     mc, 'in.manualweights')
+    workflow.connect(inputfiles, 'manualweights_func_ref',
+                     mc, 'in.manualweights_func_ref')
+    workflow.connect(mc, 'mc.out_file',
                      outputfiles, 'motioncorrected')
 
     workflow.stop_on_first_crash = True

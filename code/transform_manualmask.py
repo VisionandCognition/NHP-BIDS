@@ -33,15 +33,60 @@ class ApplyXFMRefName(fsl.FLIRT):
     """
     input_spec = ApplyXFMInputSpecRefName
 
+ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+
+def create_workflow():
+    workflow = Workflow(
+        name='transform_manual_mask')
+
+    inputs = Node(IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+        'manualmask',
+        'manualmask_func_ref',
+        'funcs',
+    ]), name='in')
+
+    # Find the transformation matrix func_ref -> func
+    # First find transform from func to manualmask's ref func
+    findtrans = MapNode(fsl.FLIRT(),
+                        iterfield=['in_file'],
+                        name='findtrans'
+                        )
+
+    # Invert the matrix transform
+    invert = MapNode(fsl.ConvertXFM(invert_xfm=True),
+                     name='invert',
+                     iterfield=['in_file'],
+                     )
+    workflow.connect(findtrans, 'out_matrix_file',
+                     invert, 'in_file')
+
+    # Transform the manualmask to be aligned with func
+    funcreg = MapNode(ApplyXFMRefName(),
+                      name='funcreg',
+                      iterfield=['in_matrix_file', 'reference'],
+                      )
+
+    workflow.connect(inputs, 'funcs',
+                     findtrans, 'in_file')
+    workflow.connect(inputs, 'manualmask_func_ref',
+                     findtrans, 'reference')
+
+    workflow.connect(invert, 'out_file',
+                     funcreg, 'in_matrix_file')
+
+    workflow.connect(inputs, 'manualmask',
+                     funcreg, 'in_file')
+    workflow.connect(inputs, 'funcs',
+                     funcreg, 'reference')
+
+    return workflow
+
 
 def run_workflow():
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-    data_dir = ds_root
-    output_dir = 'transformed-manual-func-mask'
-    working_dir = 'workingdirs/transform_manual_func_mask'
-
     subject_list = ['eddy']
     session_list = ['20170511']
 
@@ -67,11 +112,15 @@ def run_workflow():
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_reference.nii.gz',
 
-        'functionals':
+        'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
             '.nii.gz',
     }
+
+    data_dir = ds_root
+    output_dir = 'transformed-manual-func-mask'
+
     inputfiles = Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir), name="input_files")
@@ -105,62 +154,33 @@ def run_workflow():
         (r'_maskthresh[0-9]*/', r'func/'),
     ]
 
-    # -------------------------------------------- Create Pipeline
-    workflow = Workflow(
+    # -------------------------------------------- Wrapper workflow
+    working_dir = 'workingdirs/transform_manual_func_mask'
+
+    wrapper = Workflow(
         name='transform_manual_func_mask',
         base_dir=os.path.join(ds_root, working_dir))
 
-    workflow.connect([(infosource, inputfiles,
+    # -------------------------------------------- Create Pipeline
+    workflow = create_workflow()
+
+    wrapper.connect([(infosource, inputfiles,
                       [('subject_id', 'subject_id'),
                        ('session_id', 'session_id'),
                        ])])
 
-    # Find the transformation matrix func_ref -> func
-    # First find transform from func to manualmask's ref func
-    findtrans = MapNode(fsl.FLIRT(),
-                        iterfield=['in_file'],
-                        name='findtrans'
-                        )
-    workflow.connect(inputfiles, 'functionals',
-                     findtrans, 'in_file')
-    workflow.connect(inputfiles, 'manualmask_func_ref',
-                     findtrans, 'reference')
+    wrapper.connect(inputfiles, 'manualmask',
+                    workflow, 'in.manualmask')
+    wrapper.connect(inputfiles, 'funcs',
+                    workflow, 'in.funcs')
+    wrapper.connect(inputfiles, 'manualmask_func_ref',
+                    workflow, 'in.manualmask_func_ref')
 
-    # Invert the matrix transform
-    invert = MapNode(fsl.ConvertXFM(invert_xfm=True),
-                     name='invert',
-                     iterfield=['in_file'],
-                     )
-    workflow.connect(findtrans, 'out_matrix_file',
-                     invert, 'in_file')
-
-    # Transform the manualmask to be aligned with func
-    funcreg = MapNode(ApplyXFMRefName(),
-                      name='funcreg',
-                      iterfield=['in_matrix_file', 'reference'],
-                      )
-
-    workflow.connect(invert, 'out_file',
-                     funcreg, 'in_matrix_file')
-    workflow.connect(inputfiles, 'manualmask',
-                     funcreg, 'in_file')
-    workflow.connect(inputfiles, 'functionals',
-                     funcreg, 'reference')
-
-    # Threshold the image
-    #  maskthresh = MapNode(fsl.maths.Threshold(thresh=0.3),
-    #                       name='maskthresh',
-    #                       iterfield=['in_file'])
-    #  workflow.connect(funcreg, 'out_file',
-    #                   maskthresh, 'in_file')
-    #  workflow.connect(maskthresh, 'out_file',
-    #                   outputfiles, 'mask')
-
-    workflow.stop_on_first_crash = True
-    workflow.keep_inputs = True
-    workflow.remove_unnecessary_outputs = False
-    workflow.write_graph()
-    workflow.run()
+    wrapper.stop_on_first_crash = True
+    wrapper.keep_inputs = True
+    wrapper.remove_unnecessary_outputs = False
+    wrapper.write_graph()
+    wrapper.run()
 
 if __name__ == '__main__':
     run_workflow()
