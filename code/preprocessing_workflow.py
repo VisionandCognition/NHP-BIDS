@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+""" The following should be ran before this file:
+
+1. bids_minimal_processing.py
+2. resample_isotropic_workflow.py (to-do: should be included in this workflow)
+
+After this, modelfit_workflow.py should be ran (may be renamed).
+
+"""
+
 from builtins import range
 
 import nipype.interfaces.io as nio           # Data i/o
@@ -7,6 +16,8 @@ import nipype.pipeline.engine as pe          # pypeline engine
 import nipype.algorithms.modelgen as model   # model specification
 from nipype.interfaces.base import Bunch
 import os                                    # system functions
+
+import nipype.interfaces.fsl as fsl          # fsl
 
 import transform_manualmask
 import motioncorrection_workflow
@@ -64,7 +75,7 @@ templates = {
 
     'funcs':
     'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-        #'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+        # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
         'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
         '.nii.gz',
 
@@ -219,6 +230,29 @@ preprocess.connect(
      (b0_unwarp, outputfiles,
       [('out.funcs', 'func_unwarp.funcs'),
        ('out.funcmasks', 'func_unwarp.funcmasks'),
+       ]),
+     ])
+
+
+#   /\  _  _ |     _ _  _  _|  _
+#  /~~\|_)|_)|\/  | | |(_|_\|<_\
+#      |  |   /
+# Apply brain masks to functionals
+# --------------------------------------------------------
+
+epimask = pe.MapNode(
+    fsl.BinaryMaths(operation='mul'),
+    iterfield=('in_file', 'operand_file'),
+    name='epimask'
+)
+
+preprocess.connect(
+    [(b0_unwarp, epimask,
+      [('out.funcs', 'in_file'),
+       ('out.funcmasks', 'operand_file'),
+       ]),
+     (epimask, outputfiles,
+      [('out_file', 'brain'),
        ]),
      ])
 
