@@ -13,6 +13,8 @@ from nipype.interfaces.utility import IdentityInterface
 
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
+import bids_templates as bt
+
 from nipype import config
 config.enable_debug_mode()
 
@@ -31,8 +33,8 @@ data_dir = ds_root
 output_dir = 'resampled-isotropic-1mm'
 working_dir = 'workingdirs/resample-isotropic-1mm'
 
-subject_list = ['eddy']
-session_list = ['20170511']
+subject_list = bt.subject_list  # ['eddy']
+session_list = bt.session_list  # ['20170511']
 
 # ------------------ Input Files
 # Infosource - a function free node to iterate over the list of subject names
@@ -123,7 +125,7 @@ elif method == 'fsl':
 
 
 if __name__ == '__main__':
-    isotropic_flow.stop_on_first_crash = True
+    isotropic_flow.stop_on_first_crash = False  # True
     isotropic_flow.keep_inputs = True
     isotropic_flow.remove_unnecessary_outputs = False
     isotropic_flow.write_graph()

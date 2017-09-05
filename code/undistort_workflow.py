@@ -63,7 +63,11 @@ def create_workflow(unwarp_direction='y'):
     #         -o $FUNCDIR/"$SUB"_fmri_B0_phase_rescaled_unwrapped
     #         -m $FUNCDIR/"$SUB"_B0_magnitude_brain_mask
     #  magnitude_file, phase_file [, mask_file] --> unwrapped_phase_file
-    unwrap = Node(PRELUDE(), name='unwrap')
+    unwrap = MapNode(
+        PRELUDE(),
+        name='unwrap',
+        iterfield=['mask_file'],
+    )
 
     workflow.connect([
         (inputs, unwrap, [('fmap_magnitude', 'magnitude_file')]),
@@ -74,21 +78,25 @@ def create_workflow(unwarp_direction='y'):
     # --- --- --- --- --- --- --- Convert to Radians / Sec --- --- --- --- ---
     # fslmaths $FUNCDIR/"$SUB"_B0_phase_rescaled_unwrapped
     #          -mul 200 $FUNCDIR/"$SUB"_B0_phase_rescaled_unwrapped
-    rescale = Node(fsl.ImageMaths(
-        op_string='-mul 200',
-    ), name='rescale')
+    rescale = MapNode(
+        fsl.ImageMaths(op_string='-mul 200'),
+        name='rescale',
+        iterfield=['in_file'],
+    )
 
     workflow.connect(unwrap, 'unwrapped_phase_file',
                      rescale, 'in_file')
 
     # --- --- --- --- --- --- --- Unmask fieldmap --- --- --- --- ---
 
-    unmask_phase = Node(
+    unmask_phase = MapNode(
         FUGUE(
             save_unmasked_fmap=True,
             unwarp_direction=unwarp_direction,
         ),
-        name='unmask_phase')
+        name='unmask_phase',
+        iterfield=['mask_file', 'fmap_in_file'],
+    )
 
     workflow.connect(rescale, 'out_file', unmask_phase, 'fmap_in_file')
     workflow.connect(inputs, 'fmap_mask', unmask_phase, 'mask_file')
@@ -110,7 +118,8 @@ def create_workflow(unwarp_direction='y'):
             unwarp_direction=unwarp_direction,
         ),
         name='undistort',
-        iterfield=['in_file'])
+        iterfield=['in_file', 'mask_file', 'fmap_in_file'],
+    )
 
     workflow.connect(unmask_phase, 'fmap_out_file',
                      undistort, 'fmap_in_file')

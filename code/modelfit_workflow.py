@@ -15,7 +15,8 @@ import motioncorrection_workflow
 import undistort_workflow
 import nipype.interfaces.utility as niu
 
-# Using example: http://nipy.org/nipype/0.10.0/users/examples/fmri_fsl.html#set-up-model-fitting-workflow
+# Using example:
+# http://nipy.org/nipype/0.10.0/users/examples/fmri_fsl.html#set-up-model-fitting-workflow
 modelfit = pe.Workflow(name="modelfit")
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -48,7 +49,7 @@ modelfit.connect([
     (modelgen, conestimate, [('con_file', 'tcon_file')]),
     (modelestimate, conestimate, [('param_estimates', 'param_estimates'),
                                   ('sigmasquareds', 'sigmasquareds'),
-                                  ('corrections', 'corrections'),
+                                  # ('corrections', 'corrections'),
                                   ('dof_file', 'dof_file')]),
 ])
 
@@ -126,4 +127,3 @@ firstlevel.connect([(preproc, modelfit, [('highpass.out_file', 'modelspec.functi
                                           (('conestimate.copes', num_copes), 'l2model.num_copes'),
                                           ])
                     ])
-

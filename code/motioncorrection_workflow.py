@@ -18,6 +18,8 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 from nipype import config
 config.enable_debug_mode()
 
+from mc.afni_allin_slices import AFNIAllinSlices
+
 
 def create_workflow_fsl():
     workflow = Workflow(
@@ -100,6 +102,44 @@ def create_workflow_afni():
     workflow.connect(inputs, 'manualweights_func_ref',
                      mc, 'basefile')
     return workflow
+
+
+def create_workflow_allin_slices():
+    workflow = Workflow(
+        name='motion_correction')
+    inputs = Node(IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+
+        'transweights',
+        # 'manualweights_func_ref',
+
+        'funcs',
+        'funcs_masks',
+
+        'mc_method',
+    ]), name='in')
+    inputs.iterables = [
+        ('mc_method', ['afni:3dAllinSlices'])
+    ]
+
+    mc = MapNode(
+        AFNIAllinSlices(),
+        iterfield=['in_file', 'in_weight_file'],
+        name='mc')
+    workflow.connect(
+        [(inputs, mc,
+          [('funcs', 'in_file'),
+           ('transweights', 'in_weight_file'),
+           # ('manualweights_func_ref', 'ref_file'),
+           ])])
+    return workflow
+
+    # Outputs:
+    #  * out_file
+    #  * out_init_mc
+    #  * out_warp_params
+    #  * out_transform_matrix
 
 
 def run_workflow():
