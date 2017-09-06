@@ -52,9 +52,6 @@ def create_workflow():
     # ===================================================================
 
     # ------------------ Specify variables
-    subject_list = ['eddy']
-    session_list = ['20170511']
-
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
         'session_id',
@@ -62,10 +59,6 @@ def create_workflow():
         'highpass'
     ]), name="inputspec")
 
-    inputnode.iterables = [
-        ('session_id', session_list),
-        ('subject_id', subject_list),
-    ]
     # SelectFiles
     templates = {
         'manualmask':
@@ -175,7 +168,7 @@ def create_workflow():
         fields=['motion_parameters',
                 'motion_corrected',
                 'motion_plots',
-                'motion_outliers',
+                'motion_outlier_files',
                 'mask',
                 'smoothed_files',
                 'highpassed_files',
@@ -353,8 +346,11 @@ def create_workflow():
           ('statistic_files', 'outliers.@statistic_files'),
           # ('norm_files', 'outliers.@norm_files'),
           ]),
+        (mc, outputnode,
+         [('mc.oned_file', 'motion_parameters'),
+          ]),
         (outliers, outputnode,
-         [('outlier_files', 'motion_outliers.@outlier_files'),
+         [('outlier_files', 'motion_outlier_files'),
           ('plot_files', 'motion_plots.@plot_files'),
           ('displacement_files', 'motion_outliers.@displacement_files'),
           ('intensity_files', 'motion_outliers.@intensity_files'),
@@ -557,16 +553,36 @@ def create_workflow():
 # ===================================================================
 
 def run_workflow():
+    workflow = pe.Workflow(name='level1flow')
+
     featpreproc = create_workflow()
+
+    subject_list = ['eddy']
+    session_list = ['20170511']
+
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+    ]), name="input")
+
+    inputnode.iterables = [
+        ('subject_id', subject_list),
+        ('session_id', session_list),
+    ]
+    workflow.connect([
+        (inputnode, featpreproc,
+         [('subject_id', 'inputspec.subject_id'),
+          ('session_id', 'inputspec.session_id'),
+          ])
+    ])
 
     featpreproc.inputs.inputspec.fwhm = 2.0
     featpreproc.inputs.inputspec.highpass = 50
-
-    featpreproc.stop_on_first_crash = True
-    featpreproc.keep_inputs = True
-    featpreproc.remove_unnecessary_outputs = False
-    featpreproc.write_graph()
-    featpreproc.run()
+    workflow.stop_on_first_crash = True
+    workflow.keep_inputs = True
+    workflow.remove_unnecessary_outputs = False
+    workflow.write_graph()
+    workflow.run()
 
 
 if __name__ == '__main__':
