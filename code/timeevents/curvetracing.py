@@ -1,41 +1,32 @@
 #!/usr/bin/env python3
-import os
-import sys
-import glob
-import re
-import pandas as pd
-
-import pdb
-import errno
-
-import subprocess
 
 
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
+def process_events(event_log, TR, in_nvols):
+    # necessary for importing with NiPype
+    import os
+    import sys
+    import re
 
+    import pdb
+    import errno
 
-class Event(object):
-    def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None):
-        self.time_s = start_s
-        if dur_s is not None:
-            self.dur_s = float(dur_s)
-        elif stop_s is not None:
-            self.dur_s = stop_s - start_s
-        else:
-            self.dur_s = 0
+    import subprocess
 
-        self.event_num = event_num
+    import pandas as pd
 
+    class Event(object):
+        def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None):
+            self.time_s = start_s
+            if dur_s is not None:
+                self.dur_s = float(dur_s)
+            elif stop_s is not None:
+                self.dur_s = stop_s - start_s
+            else:
+                self.dur_s = 0
 
-def process_events(event_log, TR, nvols):
-    events = pd.read_tsv(event_log)
+            self.event_num = event_num
+
+    events = pd.read_table(event_log)
 
     split_ev = {
         'CurveUL': [],  # When correct response
@@ -198,112 +189,26 @@ def process_events(event_log, TR, nvols):
 
     nvols = min(
         int(end_time_s / TR),
-        nvols)
+        in_nvols)
 
-    return (split_ev, end_time_s)
+    cond_events = dict()
+    for key, events in split_ev.items():
+        cevents = []
+        for ev in events:
+            cevents.append({
+                'time': ev.time_s,
+                'dur': ev.dur_s,
+                'amplitude': 1})
+        cond_events[key] = pd.DataFrame(cevents)
 
-
-def main(session_path, beh_paths=None):
-    if beh_paths is None:
-        beh_paths = glob.glob('%s/run0[0-9][0-9]/behavior' % (session_path))
-        beh_paths.sort()
-
-    for cur_beh in beh_paths:
-        try:
-            run_path = os.path.dirname(os.path.abspath(cur_beh))
-            run = os.path.split(run_path)[1]
-            assert len(run), ("Could not process behavior directory %s" %
-                              cur_beh)
-
-            beh_dir = os.path.join(session_path, run, 'behavior')
-            if not os.path.isdir(cur_beh):
-                print('Path not found for %s: %s' % (run, cur_beh))
-                continue
-
-            print('---------------------------------')
-            print('\nProcessing behavior of %s.' % run)
-
-            split_events = None
-            task_dirs = glob.glob('%s/*/' % (beh_dir))
-            assert len(task_dirs), 'The behavior directory %s should have at' \
-                ' least one subdirectory'
-
-            task_group_paths = glob.glob('%s/*/' % (beh_dir))
-            assert len(task_group_paths) == 1
-            task_group_path = task_group_paths[0]
-
-            print(task_group_path)
-
-            # Find the overall/event log file
-            eventlog_pat = re.compile(r'Log_.*_\d+T\d+(?:_eventlog)?\.csv')
-            csv_logs = [os.path.split(f)[1] for f in glob.glob(
-                '%s/Log_*.csv' % task_group_path)]
-            matches = [re.match(eventlog_pat, log) is
-                       not None for log in csv_logs]
-
-            event_log = [log for log, match in
-                         zip(csv_logs, matches) if match]
-            assert len(event_log) != 0, (
-                "There were no matching event logs in %s" % task_group_path)
-            assert len(event_log) <= 1, (
-                "There must only be one event log in %s." % task_group_path)
-
-            events = pd.read_csv(os.path.join(
-                task_group_path,
-                event_log[0]))
-
-            assert split_events is None, (
-                'Events need to be merged before '
-                'multiple task groups are handled.')
-
-            (split_events, end_time_s) = process_events(events)
-
-            print(' '.join(cmd))
-            subprocess.call(cmd)
-
-            mkdir_p(os.path.join(run_path, 'model'))
-
-            for task, task_events in split_events.items():
-                # open file in model directory
-                model_path = os.path.join(run_path, 'model', '%s.txt' % task)
-
-                with open(model_path, 'w') as f:
-                    for ev in task_events:
-                        f.write('%03f\t%f\t%d\n' %
-                                (ev.time_s, ev.dur_s, ev.event_num))
-        except Exception as e:
-            print("\n\nError processing %s:" % cur_beh)
-            print(str(e))
-            print("\n\n")
-
-    print('You may now want to run:')
-    print('\tpmri_get_motion_outliers . fois_roi.nii.gz')
+    return (cond_events, end_time_s, nvols)
 
 
-if __name__ == '__main__':
-    session_path = None
-    beh_paths = None
-    if len(sys.argv) <= 2 and len(glob.glob('run???')):
-        session_path = os.getcwd()
-    else:
-        print("No 'run0xx' directory found in current location.")
+import nipype.interfaces.utility as niu
 
-    if len(sys.argv) == 2:
-        if session_path is None:
-            session_path = sys.argv[1]
-        else:
-            beh_paths = [sys.argv[1]]
-    elif len(sys.argv) == 3:
-        session_path = sys.argv[1]
-        beh_paths = [sys.argv[2]]
 
-    if session_path is not None:
-        sys.exit(main(session_path, beh_paths))
-    else:
-        print("Syntax:")
-        print("\t%s [session_path] [behavior_paths]")
-        print("\nWhere session_path is a directory that contains "
-              "run0xx directories.")
-        print("session_path is optional if the current directory "
-              "contains run0xx directories")
-        print("behavior_paths by default is all the run0xx directories.")
+calc_curvetracing_events = niu.Function(
+    input_names=['event_log', 'TR', 'in_nvols'],
+    output_names=['out_events', 'out_end_time_s', 'out_nvols'],
+    function=process_events,
+)

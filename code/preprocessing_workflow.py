@@ -27,6 +27,9 @@ import motioncorrection_workflow
 import undistort_workflow
 import nipype.interfaces.utility as niu
 
+ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+data_dir = ds_root
+
 
 def getmeanscale(medianvals):
     return ['-mul %.10f' % (10000. / val) for val in medianvals]
@@ -34,9 +37,6 @@ def getmeanscale(medianvals):
 
 def create_workflow():
     featpreproc = pe.Workflow(name="featpreproc")
-
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    data_dir = ds_root
 
     featpreproc.base_dir = os.path.join(ds_root, 'workingdirs')
 
@@ -53,6 +53,7 @@ def create_workflow():
 
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'funcs',
         'subject_id',
         'session_id',
         'fwhm',  # smoothing
@@ -84,12 +85,12 @@ def create_workflow():
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_reference.nii.gz',
 
-        'funcs':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
-            # '.nii.gz',
-            '_nvol10.nii.gz',
+        # 'funcs':
+        # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+        #     # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+        #     'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+        #     # '.nii.gz',
+        #     '_nvol10.nii.gz',
 
         'fmap_phasediff':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
@@ -202,7 +203,7 @@ def create_workflow():
 
     featpreproc.connect(inputfiles, 'manualmask',
                         transmanmask, 'in.manualmask')
-    featpreproc.connect(inputfiles, 'funcs',
+    featpreproc.connect(inputnode, 'funcs',
                         transmanmask, 'in.funcs')
     featpreproc.connect(inputfiles, 'manualmask_func_ref',
                         transmanmask, 'in.manualmask_func_ref')
@@ -231,11 +232,11 @@ def create_workflow():
 #          ])])
 
     featpreproc.connect(
-        [(inputfiles, mc, [
-            ('funcs', 'in.funcs'),
-            # median func image will be used a reference / base
-            # ('manualmask_func_ref', 'in.manualweights_func_ref'),
-         ]),
+        [(inputnode, mc,
+          [('funcs', 'in.funcs'),
+           # median func image will be used a reference / base
+           # ('manualmask_func_ref', 'in.manualweights_func_ref'),
+           ]),
          (transmanmask, mc, [
              ('funcreg.out_file', 'in.transweights'),  # use mask as weights
          ]),
@@ -553,6 +554,7 @@ def create_workflow():
 # ===================================================================
 
 def run_workflow():
+
     workflow = pe.Workflow(name='level1flow')
 
     featpreproc = create_workflow()
@@ -569,10 +571,30 @@ def run_workflow():
         ('subject_id', subject_list),
         ('session_id', session_list),
     ]
+
+    templates = {
+        'funcs':
+        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+            'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+            # '.nii.gz',
+            '_nvol10.nii.gz',
+    }
+    inputfiles = pe.Node(
+        nio.SelectFiles(templates,
+                        base_directory=data_dir), name="input_files")
+
     workflow.connect([
+        (inputnode, inputfiles,
+         [('subject_id', 'subject_id'),
+          ('session_id', 'session_id'),
+          ]),
         (inputnode, featpreproc,
          [('subject_id', 'inputspec.subject_id'),
           ('session_id', 'inputspec.session_id'),
+          ]),
+        (inputfiles, featpreproc,
+         [('funcs', 'inputspec.funcs'),
           ])
     ])
 

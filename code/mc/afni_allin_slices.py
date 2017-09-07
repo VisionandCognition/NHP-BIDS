@@ -24,9 +24,10 @@ def defined_in(key, d):
 
 
 def print_run(cmd, args=None):
+    print('cmd=' + cmd)
     if args is not None:
+        print('args=' + str(args))
         cmd = cmd % args
-    print(cmd)
     sp.check_call(cmd, shell=True)
 
 
@@ -168,7 +169,7 @@ def register(**kwargs):
 #    rm $DEST/*.HEAD
 #
     print_run("fslmaths %(dest_prefix)s.nii -sub %(ref)s -abs "
-              "-mas %(weights)s %(tmpdir)/absdiff.nii.gz", kwargs)
+              "-mas %(weights)s %(tmpdir)s/absdiff.nii.gz", kwargs)
     print_run("fslmaths %(tmpdir)s/absdiff.nii.gz -Tmean "
               "%(tmpdir)s/absdiff_mean.nii.gz", kwargs)
 

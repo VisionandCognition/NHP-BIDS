@@ -3,7 +3,7 @@
 
 # Directories
 /workingdirs/
-/scratch/*/
+/scratch/
 
 # Binary files
 *.nii.gz
