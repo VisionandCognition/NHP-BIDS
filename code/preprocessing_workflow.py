@@ -507,7 +507,7 @@ def create_workflow():
 
     if version < 507:
         featpreproc.connect(
-            highpass, 'out_file', outputfiles, 'highpassed_files')
+            highpass, 'out_file', outputnode, 'highpassed_files')
     else:
         """
         Add back the mean removed by the highpass filter operation as
@@ -525,7 +525,7 @@ def create_workflow():
         featpreproc.connect(highpass, 'out_file', addmean, 'in_file')
         featpreproc.connect(meanfunc4, 'out_file', addmean, 'operand_file')
         featpreproc.connect(
-            addmean, 'out_file', outputfiles, 'highpassed_files')
+            addmean, 'out_file', outputnode, 'highpassed_files')
 
     """
     Generate a mean functional image from the first run
@@ -538,7 +538,8 @@ def create_workflow():
     featpreproc.connect(meanscale, 'out_file', meanfunc3, 'in_file')
     featpreproc.connect(meanfunc3, 'out_file', outputfiles, 'mean')
 
-    featpreproc.connect(meanfunc3, 'out_file', outputnode, 'highpassed_files')
+    featpreproc.connect(meanfunc3, 'out_file', outputnode, 'mean_highpassed')
+    featpreproc.connect(outputnode, 'highpassed_files', outputfiles, 'highpassed_files')
 
     return(featpreproc)
 
