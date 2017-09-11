@@ -249,6 +249,7 @@ level1_workflow.connect([
     (infosource, inputfiles,
      [('subject_id', 'subject_id'),
       ('session_id', 'session_id'),
+      ('run_id', 'run_id'),
       ]),
     (infosource, preproc,
      [('subject_id', 'inputspec.subject_id'),
