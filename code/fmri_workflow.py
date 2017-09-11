@@ -228,8 +228,8 @@ templates = {
     'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
         # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
         'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
-        # '.nii.gz',
-        '_nvol10.nii.gz',
+        '.nii.gz',
+        #'_nvol10.nii.gz',
 
     'event_log':
     'sub-{subject_id}/ses-{session_id}/func/'
