@@ -197,6 +197,7 @@ session_list = ['20170511']
 infosource = pe.Node(niu.IdentityInterface(fields=[
     'subject_id',
     'session_id',
+    'run_id',
 ]), name="infosource")
 
 """Here we set up iteration over all the subjects. The following line
@@ -211,6 +212,7 @@ contained in subject_list.
 infosource.iterables = [
     ('subject_id', subject_list),
     ('session_id', session_list),
+    ('run_id', ['01']),
 ]
 
 """
@@ -227,14 +229,14 @@ templates = {
     'funcs':
     'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
         # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-        'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
         '.nii.gz',
         #'_nvol10.nii.gz',
 
     'event_log':
     'sub-{subject_id}/ses-{session_id}/func/'
         # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-        'sub-{subject_id}_ses-{session_id}*run-01'
+        'sub-{subject_id}_ses-{session_id}*run-{run_id}'
         # '.nii.gz',
         '_events.tsv',
 }
@@ -355,9 +357,7 @@ def get_nvols(func):
     import nibabel as nib
     func_img = nib.load(func)
     header = func_img.header
-    nvols = header['xyzt_units']
-    nvols1 = func_img.get_data().shape[3]
-    assert nvols == nvols1
+    nvols = func_img.get_data().shape[3]
     return(nvols)
 
 
@@ -427,5 +427,9 @@ generate any output. To actually run the analysis on the data the
 
 if __name__ == '__main__':
     # level1_workflow.write_graph()
+    level1_workflow.stop_on_first_crash = True
+    level1_workflow.keep_inputs = True
+    level1_workflow.remove_unnecessary_outputs = False
+    level1_workflow.write_graph()
     level1_workflow.run()
-    # level1_workflow.run(plugin='MultiProc', plugin_args={'n_procs':2})
+    #level1_workflow.run(plugin='MultiProc', plugin_args={'n_procs':2})
