@@ -241,10 +241,9 @@ def create_workflow():
              ('funcreg.out_file', 'in.transweights'),  # use mask as weights
          ]),
          (mc, outputfiles, [
-             ('mc.out_file', 'motioncorrected'),
-             #  ('mc.md1d_file', 'motioncorrected@md1d_file'),
-             ('mc.oned_file', 'motioncorrected.@oned_file'),
-             ('mc.oned_matrix_save', 'motioncorrected.@oned_matrix_save'),
+             ('mc.out_file', 'motion_corrected.out_file'),
+             ('mc.oned_file', 'motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
+             ('mc.oned_matrix_save', 'motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
          ]),
          (mc, outputnode, [
              ('mc.out_file', 'motion_corrected'),
@@ -317,7 +316,7 @@ def create_workflow():
     outliers = pe.MapNode(
         ra.ArtifactDetect(
             mask_type='file',
-            norm_threshold=1.0,  # combines translations in mm and rotations
+            norm_threshold=3.0,  # combines translations in mm and rotations
             # translation_threshold=1.0,  # translation in mm
             # rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score
@@ -339,12 +338,12 @@ def create_workflow():
          [('out.funcmasks', 'mask_file'),
           ]),
         (outliers, outputfiles,
-         [('outlier_files', 'outliers.@outlier_files'),
-          ('plot_files', 'outliers.@plot_files'),
-          ('displacement_files', 'outliers.@displacement_files'),
-          ('intensity_files', 'outliers.@intensity_files'),
-          ('mask_files', 'outliers.@mask_files'),
-          ('statistic_files', 'outliers.@statistic_files'),
+         [('outlier_files', 'motion_outliers.@outlier_files'),
+          ('plot_files', 'motion_outliers.@plot_files'),
+          ('displacement_files', 'motion_outliers.@displacement_files'),
+          ('intensity_files', 'motion_outliers.@intensity_files'),
+          ('mask_files', 'motion_outliers.@mask_files'),
+          ('statistic_files', 'motion_outliers.@statistic_files'),
           # ('norm_files', 'outliers.@norm_files'),
           ]),
         (mc, outputnode,
@@ -469,7 +468,7 @@ def create_workflow():
     featpreproc.connect(selectnode, 'out', outputfiles, 'smoothed_files')
 
     """
-    Scale the median value of the run is set to 10000
+    Scale the median value of the run is set to 10000.
     """
 
     meanscale = pe.MapNode(interface=fsl.ImageMaths(suffix='_gms'),
@@ -576,10 +575,9 @@ def run_workflow():
     templates = {
         'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
-            # '.nii.gz',
-            '_nvol10.nii.gz',
+            'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+            # 'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+            '.nii.gz',
     }
     inputfiles = pe.Node(
         nio.SelectFiles(templates,

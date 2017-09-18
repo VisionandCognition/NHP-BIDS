@@ -7,6 +7,8 @@ import argparse
 import os
 import pdb
 
+from collections import deque
+
 from nipype.interfaces.base import (
     TraitedSpec,
     CommandLineInputSpec,
@@ -83,7 +85,7 @@ def register(**kwargs):
         'fslsplit "%(out_init_mc)s" "%(tmpdir)s/func_time_"' % kwargs,
         shell=True)
 
-    processes = list()
+    processes = deque()
     for t in range(1000):
         print(t)
         t_args = kwargs.copy()
@@ -135,8 +137,11 @@ def register(**kwargs):
                 processes.append(
                     sp.Popen(cmd))
 
-        for p in processes:
-            p.wait()
+            if len(processes) > 10:  # limit parallelism
+                processes.popleft().wait()
+
+        while len(processes) > 0:
+            processes.popleft().wait()
 
         # Delete temporary files
         # rm ${func_time}_slice_????.nii.gz

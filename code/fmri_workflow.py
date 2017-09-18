@@ -427,20 +427,14 @@ generate any output. To actually run the analysis on the data the
 """
 
 if __name__ == '__main__':
-    from nipype import config, logging
-    config.enable_debug_mode()
-    logging.update_logging(config)
-
     from nipype import config
-    cfg = dict(logging=dict(workflow_level = 'DEBUG'),
-               execution={'stop_on_first_crash': False,
-                          'hash_method': 'content'})
-    config.update_config(cfg)
+    config.enable_debug_mode()
 
-    # level1_workflow.write_graph()
+    # redundant with above...
     level1_workflow.stop_on_first_crash = True
-    level1_workflow.keep_inputs = True
     level1_workflow.remove_unnecessary_outputs = False
+    level1_workflow.keep_inputs = True
+    level1_workflow.hash_method = 'content'
+
     level1_workflow.write_graph()
     level1_workflow.run()
-    #level1_workflow.run(plugin='MultiProc', plugin_args={'n_procs':2})
