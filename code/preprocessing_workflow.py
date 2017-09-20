@@ -316,7 +316,7 @@ def create_workflow():
     outliers = pe.MapNode(
         ra.ArtifactDetect(
             mask_type='file',
-            norm_threshold=3.0,  # combines translations in mm and rotations
+            # norm_threshold=3.0,  # combines translations in mm and rotations
             # translation_threshold=1.0,  # translation in mm
             # rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score

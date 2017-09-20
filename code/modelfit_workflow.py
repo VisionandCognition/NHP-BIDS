@@ -33,10 +33,8 @@ ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
 def create_workflow():
-    modelfit = pe.Workflow(name="modelfit")
 
-    modelfit.base_dir = os.path.join(ds_root, 'workingdirs')
-
+    level1_workflow = pe.Workflow(name='level1flow')
     # ===================================================================
     #                  _____                   _
     #                 |_   _|                 | |
@@ -62,6 +60,43 @@ def create_workflow():
         'motion_outlier_files',
     ]), name="inputspec")
 
+    def remove_runs_missing_funcs(in_files, in_funcs):
+        import os
+        import pdb
+        import re
+
+        has_func = set()
+        for f in in_funcs:
+            base = os.path.basename(f)
+            sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
+            ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
+            run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            has_func.add((sub, ses, run)) 
+
+        files = []
+        for f in in_files:
+            base = os.path.basename(f)
+            sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
+            ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
+            run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            if (sub, ses, run) in has_func:
+                files.append(f)
+        return files
+
+    input_events = pe.Node(
+        interface=niu.Function(input_names=['in_files', 'in_funcs'],
+                           output_names=['out_files'],
+                           function=remove_runs_missing_funcs),
+        name='input_events',
+    )
+
+    level1_workflow.connect([
+        (inputnode, input_events,
+         [('funcs', 'in_funcs'),
+          ('event_log', 'in_files'),
+          ]),
+    ])
+
 
     # -------------------------------------------------------------------
     #            /~_ _  _  _  _. _   _ . _  _ |. _  _
@@ -76,8 +111,6 @@ def create_workflow():
     """
 
     fsl.FSLCommand.set_default_output_type('NIFTI_GZ')
-
-    level1_workflow = pe.Workflow(name='level1flow')
 
     modelfit = fslflows.create_modelfit_workflow()
 
@@ -404,21 +437,26 @@ def create_workflow():
     #     crashdump_dir=os.path.abspath('./fsl/crashdumps'))
 
 
-    def get_nvols(func):
+    def get_nvols(funcs):
         import nibabel as nib
-        func_img = nib.load(func)
-        header = func_img.header
-        nvols = func_img.get_data().shape[3]
+        nvols = []
+        for func in funcs:
+            func_img = nib.load(func)
+            header = func_img.header
+            nvols.append(func_img.get_data().shape[3])
         return(nvols)
 
 
-    def get_TR(func):
+    def get_TR(funcs):
         import nibabel as nib
-        func_img = nib.load(func)
-        header = func_img.header
-        TR = round(header.get_zooms()[3], 5)
-        assert TR > 1
-        return(TR)
+        TRs = []
+        for func in funcs:
+            func_img = nib.load(func)
+            header = func_img.header
+            TR = round(header.get_zooms()[3], 5)
+            assert TR > 1
+            TRs.append(TR)
+        return(TRs)
 
     # Ignore volumes after subject has finished working for the run
     beh_roi = pe.MapNode(
@@ -428,10 +466,11 @@ def create_workflow():
 
     level1_workflow.connect([
         (inputnode, timeevents,
-         [('event_log', 'event_log'),
-          (('funcs', get_nvols), 'in_nvols'),
+         [(('funcs', get_nvols), 'in_nvols'),
           (('funcs', get_TR), 'TR'),
           ]),
+        (input_events, timeevents,
+         [('out_files', 'event_log')]),
         (timeevents, modelspec,
          [(('out_events', evt_info), 'subject_info'),
           ]),
@@ -506,30 +545,30 @@ def run_workflow():
     templates = {
         'funcs':
         'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-01_bold_res-1x1x1_preproc_*.nii.gz',
+            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_*.nii.gz',
 
         'funcmasks':
         'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-01_bold_res-1x1x1_preproc'
+            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc'
             '_mc_unwarped.nii.gz',
 
         'highpass':
         'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-01_bold_res-1x1x1_preproc_*.nii.gz',
+            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_*.nii.gz',
 
         'motion_parameters':
         'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-01_bold_res-1x1x1_preproc.param.1D',
+            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc.param.1D',
 
         'motion_outlier_files':
         'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
-            'art.sub-{subject_id}_ses-{session_id}_*_run-01_bold_res-1x1x1_preproc_mc'
+            'art.sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_mc'
             '_unwarped_maths_outliers.txt',
 
         'event_log':
         'sub-{subject_id}/ses-{session_id}/func/'
             # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-01'
+            'sub-{subject_id}_ses-{session_id}*run-*'
             # '.nii.gz',
             '_events.tsv',
     }
