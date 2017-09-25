@@ -282,3 +282,8 @@ class AFNIAllinSlices(CommandLine):
     input_spec = AFNIAllinSlicesInputSpec
     output_spec = AFNIAllinSlicesOutputSpec
     _cmd = 'afni_allin_slices.py'
+
+    # def run(self, updatehash=False):
+    #     import pdb
+    #     pdb.set_trace()
+    #     super(self, AFNIAllinSlices).run(updatehash=updatehash)

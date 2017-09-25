@@ -349,7 +349,7 @@ modelfit.inputs.inputspec.contrasts = contrasts
 modelfit.inputs.inputspec.model_serial_correlations = True
 modelfit.inputs.inputspec.film_threshold = 1000
 
-level1_workflow.base_dir = os.path.abspath('./workingdirs/level1flow')
+level1_workflow.base_dir = os.path.abspath('./workingdirs')
 # level1_workflow.config['execution'] = dict(
 #     crashdump_dir=os.path.abspath('./fsl/crashdumps'))
 

@@ -32,7 +32,7 @@ from filter_numbers import FilterNumsTask
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
-def create_workflow():
+def create_workflow(combine_runs=False):
 
     level1_workflow = pe.Workflow(name='level1flow')
     # ===================================================================
@@ -114,38 +114,10 @@ def create_workflow():
 
     modelfit = fslflows.create_modelfit_workflow()
 
-    fixed_fx = fslflows.create_fixed_effects_flow()
-
-
-
-    #    (preproc, outputfiles,
-    #     [('outputspec.motion_parameters', 'preproc.motion_parameters'),
-    #      ('outputspec.motion_outlier_files', 'preproc.motion_outlier_files'),
-    #      ('outputspec.mask', 'preproc.mask'),
-    #      ('outputspec.smoothed_files', 'preproc.smoothed_files'),
-    #      ('outputspec.highpassed_files', 'preproc.highpassed_files'),
-    #      ('outputspec.mean', 'preproc.mean'),
-    #      ('outputspec.func_unwarp', 'preproc.func_unwarp')
-    #      ]),
-
-    #  'mask',
-    #  'smoothed_files',
-    #  'highpassed_files',
-    #  'mean',
-    #  'func_unwarp'
-
-    #  templates = {
-    #      'funcs':
-    #      'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-    #          # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-    #          'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
-    #          '.nii.gz',
-    #          #'_nvol10.nii.gz',
-    #  
-    #  }
-    #  inputfiles = pe.Node(
-    #      nio.SelectFiles(templates,
-    #                      base_directory=data_dir), name="input_files")
+    if combine_runs:
+        fixed_fx = fslflows.create_fixed_effects_flow()
+    else:
+        fixed_fx = None
 
     """
     Artifact detection is done in preprocessing workflow.
@@ -181,16 +153,17 @@ def create_workflow():
 
     pickfirst = lambda x: x[0]
 
-    level1_workflow.connect([
-        (inputnode, fixed_fx,
-         [('funcmasks', 'flameo.mask_file')]),
-        (modelfit, fixed_fx,
-         [(('outputspec.copes', sort_copes), 'inputspec.copes'),
-          ('outputspec.dof_file', 'inputspec.dof_files'),
-          (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
-          (('outputspec.copes', num_copes), 'l2model.num_copes'),
-          ])
-    ])
+    if fixed_fx is not None:
+        level1_workflow.connect([
+            (inputnode, fixed_fx,
+            [('funcmasks', 'flameo.mask_file')]),
+            (modelfit, fixed_fx,
+            [(('outputspec.copes', sort_copes), 'inputspec.copes'),
+            ('outputspec.dof_file', 'inputspec.dof_files'),
+            (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
+            (('outputspec.copes', num_copes), 'l2model.num_copes'),
+            ])
+        ])
 
     # -------------------------------------------------------------------
     #          /~\  _|_ _   _|_
@@ -239,14 +212,17 @@ def create_workflow():
           ('outputspec.dof_file', 'modelfit.dof_files'),
           (('outputspec.varcopes', sort_copes), 'modelfit.varcopes'),
           ]),
-        (fixed_fx, outputfiles,
-         [('outputspec.res4d', 'fx.res4d'),
-          ('outputspec.copes', 'fx.copes'),
-          ('outputspec.varcopes', 'fx.varcopes'),
-          ('outputspec.zstats', 'fx.zstats'),
-          ('outputspec.tstats', 'fx.tstats'),
-          ]),
     ])
+    if fixed_fx is not None:
+        level1_workflow.connect([
+            (fixed_fx, outputfiles,
+             [('outputspec.res4d', 'fx.res4d'),
+              ('outputspec.copes', 'fx.copes'),
+              ('outputspec.varcopes', 'fx.varcopes'),
+              ('outputspec.zstats', 'fx.zstats'),
+              ('outputspec.tstats', 'fx.tstats'),
+              ]),
+        ])
 
     # -------------------------------------------------------------------
     #          (~   _  _  _. _ _  _  _ _|_   _ _  _  _. |`. _
@@ -601,6 +577,8 @@ def run_workflow():
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
+    workflow.write_graph(graph2use='orig', format='png', simple_form=True)
+    workflow.write_graph(graph2use='detailed', format='png', simple_form=True)
     workflow.run()
 
 

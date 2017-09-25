@@ -62,25 +62,25 @@ def create_workflow():
 
     # SelectFiles
     templates = {
-        'manualmask':
+        'manualmask':  # to-do: rename 'ref_manualmask'
         'manual-masks/sub-eddy/ses-20170511/func/'
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_manualmask.nii.gz',
 
-        'manual_fmapmask':
+        'manual_fmapmask':  # to-do: rename 'ref_manual_fmapmask' ?
         'manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
 
-        'manual_fmapmask_ref':
+        'manual_fmapmask_ref':  # to-do: rename 'ref_manual_fmapmask_magnitude' ?
         'manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
 
-        'manualweights':
-        'manual-masks/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-            '_res-1x1x1_manualweights.nii.gz',
+        # 'manualweights':
+        # 'manual-masks/sub-eddy/ses-20170511/func/'
+        #     'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
+        #     '_res-1x1x1_manualweights.nii.gz',
 
-        'manualmask_func_ref':
+        'ref_func':  # was: manualmask_func_ref
         'manual-masks/sub-eddy/ses-20170511/func/'
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_reference.nii.gz',
@@ -174,8 +174,12 @@ def create_workflow():
                 'smoothed_files',
                 'highpassed_files',
                 'mean',
-                'func_unwarp']),
+                'func_unwarp',
+                'ref_func',
+                'ref_funcmask',
+                ]),
         name='outputspec')
+
     # ===================================================================
     #                  _____ _            _ _
     #                 |  __ (_)          | (_)
@@ -205,7 +209,7 @@ def create_workflow():
                         transmanmask, 'in.manualmask')
     featpreproc.connect(inputnode, 'funcs',
                         transmanmask, 'in.funcs')
-    featpreproc.connect(inputfiles, 'manualmask_func_ref',
+    featpreproc.connect(inputfiles, 'ref_func',
                         transmanmask, 'in.manualmask_func_ref')
 
     trans_fmapmask = transmanmask.clone('trans_fmapmask')
@@ -213,7 +217,7 @@ def create_workflow():
                         trans_fmapmask, 'in.manualmask')
     featpreproc.connect(inputfiles, 'fmap_magnitude',
                         trans_fmapmask, 'in.funcs')
-    featpreproc.connect(inputfiles, 'manualmask_func_ref',
+    featpreproc.connect(inputfiles, 'ref_func',
                         trans_fmapmask, 'in.manualmask_func_ref')
 
     #  |\/| _ _|_. _  _    _ _  _ _ _  __|_. _  _
@@ -235,22 +239,21 @@ def create_workflow():
         [(inputnode, mc,
           [('funcs', 'in.funcs'),
            # median func image will be used a reference / base
-           # ('manualmask_func_ref', 'in.manualweights_func_ref'),
+           # ('ref_func', 'in.manualweights_func_ref'),
            ]),
          (transmanmask, mc, [
              ('funcreg.out_file', 'in.transweights'),  # use mask as weights
          ]),
-         (mc, outputfiles, [
-             ('mc.out_file', 'motion_corrected.out_file'),
-             ('mc.oned_file', 'motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
-             ('mc.oned_matrix_save', 'motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
-         ]),
          (mc, outputnode, [
              ('mc.out_file', 'motion_corrected'),
-             #  ('mc.md1d_file', 'motioncorrected@md1d_file'),
-             ('mc.oned_file', 'motion_parameters.@oned_file'),
-             ('mc.oned_matrix_save', 'motion_parameters.@oned_matrix_save'),
-         ])
+             ('mc.oned_file', 'motion_parameters.oned_file'),
+             ('mc.oned_matrix_save', 'motion_parameters.oned_matrix_save'),
+         ]),
+         (outputnode, outputfiles, [
+             ('motion_corrected', 'motion_corrected.out_file'),
+             ('motion_parameters.oned_file', 'motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
+             ('motion_parameters.oned_matrix_save', 'motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
+         ]),
     ])
 
     #  |~. _ | _| _ _  _  _    _ _  _ _ _  __|_. _  _
@@ -285,38 +288,117 @@ def create_workflow():
            ]),
          ])
 
-    #   /\  _  _ |     _ _  _  _|  _
-    #  /~~\|_)|_)|\/  | | |(_|_\|<_\
-    #      |  |   /
-    # Apply brain masks to functionals
-    # --------------------------------------------------------
-
-    funcbrain = pe.MapNode(
-        fsl.BinaryMaths(operation='mul'),
-        iterfield=('in_file', 'operand_file'),
-        name='funcbrain'
-    )
-
+    # undistort the reference images
+    b0_unwarp_ref = b0_unwarp.clone('b0_unwarp_ref')
     featpreproc.connect(
-        [(b0_unwarp, funcbrain,
-          [('out.funcs', 'in_file'),
-           ('out.funcmasks', 'operand_file'),
+        [(inputfiles, b0_unwarp_ref,
+          [('subject_id', 'in.subject_id'),
+           ('session_id', 'in.session_id'),
+           ('fmap_phasediff', 'in.fmap_phasediff'),
+           ('fmap_magnitude', 'in.fmap_magnitude'),
+           ('ref_func', 'in.funcs'),
            ]),
-         (funcbrain, outputfiles,
-          [('out_file', 'brain'),
+         (transmanmask, b0_unwarp_ref,
+          [('funcreg.out_file', 'in.funcmasks'),
+           ]),
+         (trans_fmapmask, b0_unwarp_ref,
+          [('funcreg.out_file', 'in.fmap_mask')]),
+         (b0_unwarp_ref, outputfiles,
+          [('out.funcs', 'func_unwarp_ref.func'),
+           ('out.funcmasks', 'func_unwarp_ref.funcmask'),
+           ]),
+         (b0_unwarp_ref, outputnode,
+          [('out.funcs', 'ref_func'),
+           ('out.funcmasks', 'ref_mask'),
            ]),
          ])
+
+    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _ 
+    # |~\(/_(_||_\ | (/_|    | (_)  |~\(/_~|~(/_| (/_| |(_(/_
+    #        _|
+    # Register all functionals to common reference
+    # --------------------------------------------------------
+
+    reg_funcs = pe.MapNode(
+        interface=fsl.FLIRT(dof=6),
+        name='reg_funcs',
+        iterfield=('in_file'),
+    )
+    reg_funcmasks = pe.MapNode(
+        interface=fsl.FLIRT(),
+        name='reg_funcmasks',
+        iterfield=('in_file', 'in_matrix_file')
+    )
+    def deref_list(x):
+        assert len(x)==1
+        return x[0]
+
+    featpreproc.connect(
+        [
+         (b0_unwarp, reg_funcs,
+          [
+           ('out.funcs', 'in_file'),
+          ]),
+         (b0_unwarp_ref, reg_funcs,
+          [
+           (('out.funcs', deref_list), 'reference'),
+           (('out.funcmasks', deref_list), 'ref_weight'),
+          ]),
+         (reg_funcs, reg_funcmasks,
+          [
+           ('out_matrix_file', 'in_matrix_file'),
+          ]),
+         (b0_unwarp, reg_funcmasks,
+          [
+           ('out.funcmasks', 'in_file'),
+          ]),
+         (b0_unwarp_ref, reg_funcmasks,
+          [
+           (('out.funcs', deref_list), 'reference'),
+          ]),
+         (reg_funcs, outputfiles,
+          [
+           ('out_file', 'common_ref.func'),
+          ]),
+         (reg_funcmasks, outputfiles,
+          [
+           ('out_file', 'common_ref.funcmask'),
+          ]),
+    ])
+
 
     #  |\/| _ _|_. _  _    _   _|_|. _  _ _
     #  |  |(_) | |(_)| |  (_)|_|| ||(/_| _\
     #
+    # --------------------------------------------------------
+
+    # Apply brain masks to functionals
+    # --------------------------------------------------------
+
+    funcbrain_unreg = pe.MapNode(
+        fsl.BinaryMaths(operation='mul'),
+        iterfield=('in_file', 'operand_file'),
+        name='funcbrain_unreg'
+    )
+
+    featpreproc.connect(
+        [(b0_unwarp, funcbrain_unreg,
+          [('out.funcs', 'in_file'),
+           ('out.funcmasks', 'operand_file'),
+           ]),
+         (funcbrain_unreg, outputfiles,
+          [('out_file', 'brain_unreg'),
+           ]),
+         ])
     # Detect motion outliers
     # --------------------------------------------------------
+
     import nipype.algorithms.rapidart as ra
     outliers = pe.MapNode(
         ra.ArtifactDetect(
             mask_type='file',
-            # norm_threshold=3.0,  # combines translations in mm and rotations
+            # trying to "disable" `norm_threshold`:
+            norm_threshold=10.0,  # combines translations in mm and rotations
             # translation_threshold=1.0,  # translation in mm
             # rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score
@@ -331,7 +413,7 @@ def create_workflow():
          [  # ('mc.par_file', 'realignment_parameters'),
              ('mc.oned_file', 'realignment_parameters'),
          ]),
-        (funcbrain, outliers,
+        (funcbrain_unreg, outliers,
          [('out_file', 'realigned_files'),
           ]),
         (b0_unwarp, outliers,
@@ -363,7 +445,6 @@ def create_workflow():
     """
     Determine the 2nd and 98th percentile intensities of each functional run
     """
-
     getthresh = pe.MapNode(interface=fsl.ImageStats(op_string='-p 2 -p 98'),
                            iterfield=['in_file'],
                            name='getthreshold')
@@ -397,6 +478,7 @@ def create_workflow():
     featpreproc.connect(b0_unwarp, 'out.funcs', medianval, 'in_file')
     featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
 
+    # Dilate mask for spatial smoothing
     """
     Dilate the mask
     """
@@ -404,7 +486,7 @@ def create_workflow():
                                                      op_string='-dilF'),
                             iterfield=['in_file'],
                             name='dilatemask')
-    featpreproc.connect(b0_unwarp, 'out.funcmasks', dilatemask, 'in_file')
+    featpreproc.connect(reg_funcmasks, 'out_file', dilatemask, 'in_file')
     featpreproc.connect(dilatemask, 'out_file', outputfiles, 'dialate_mask')
 
     # (~ _  _ _|_. _ |  (~ _ _  _  _ _|_|_ . _  _
@@ -418,7 +500,8 @@ def create_workflow():
     smooth = create_susan_smooth()
     featpreproc.connect(inputnode, 'fwhm', smooth, 'inputnode.fwhm')
 
-    featpreproc.connect(b0_unwarp, 'out.funcs', smooth, 'inputnode.in_files')
+    # featpreproc.connect(b0_unwarp, 'out.funcs', smooth, 'inputnode.in_files')
+    featpreproc.connect(reg_funcs, 'out_file', smooth, 'inputnode.in_files')
     featpreproc.connect(dilatemask, 'out_file',
                         smooth, 'inputnode.mask_file')
 
@@ -555,7 +638,10 @@ def create_workflow():
 
 def run_workflow():
 
+    # Using the name "level1flow" should allow the workingdirs file to be used
+    #  by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
+    workflow.base_dir = os.path.abspath('./workingdirs')
 
     featpreproc = create_workflow()
 
@@ -575,8 +661,8 @@ def run_workflow():
     templates = {
         'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            # 'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+            'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
             '.nii.gz',
     }
     inputfiles = pe.Node(
