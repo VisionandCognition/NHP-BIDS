@@ -419,7 +419,11 @@ def create_workflow(combine_runs=False):
         for func in funcs:
             func_img = nib.load(func)
             header = func_img.header
-            nvols.append(func_img.get_data().shape[3])
+            try:
+                nvols.append(func_img.get_data().shape[3])
+            except IndexError as e:
+                # if shape only has 3 dimensions, then it is only 1 volume
+                nvols.append(1)
         return(nvols)
 
 
@@ -429,7 +433,14 @@ def create_workflow(combine_runs=False):
         for func in funcs:
             func_img = nib.load(func)
             header = func_img.header
-            TR = round(header.get_zooms()[3], 5)
+            try:
+                TR = round(header.get_zooms()[3], 5)
+            except IndexError as e:
+                TR = 2.5
+                print("Warning: %s did not have TR defined in the header. "
+                      "Using default TR of %0.2f" %
+                      (func, TR))
+
             assert TR > 1
             TRs.append(TR)
         return(TRs)
@@ -578,7 +589,7 @@ def run_workflow():
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     workflow.write_graph(graph2use='orig', format='png', simple_form=True)
-    workflow.write_graph(graph2use='detailed', format='png', simple_form=True)
+    #workflow.write_graph(graph2use='detailed', format='png', simple_form=True)
     workflow.run()
 
 
