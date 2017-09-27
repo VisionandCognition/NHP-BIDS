@@ -16,6 +16,7 @@ import nipype.pipeline.engine as pe          # pypeline engine
 import nipype.algorithms.modelgen as model   # model specification
 from nipype.interfaces.base import Bunch
 import os                                    # system functions
+import argparse
 
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.utility as util     # utility
@@ -164,6 +165,7 @@ def create_workflow():
         (r'/_outliers[0-9]+/', r'/func/'),
         (r'/_undistort_masks[0-9]+/', r'/func/'),
         (r'/_undistort[0-9]+/', r'/func/'),
+        (r'_run_id_[0-9][0-9]', r''),
     ]
     outputnode = pe.Node(interface=util.IdentityInterface(
         fields=['motion_parameters',
@@ -636,7 +638,7 @@ def create_workflow():
 #
 # ===================================================================
 
-def run_workflow():
+def run_workflow(run_num):
 
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
@@ -651,18 +653,20 @@ def run_workflow():
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
         'session_id',
+        'run_id',
     ]), name="input")
 
     inputnode.iterables = [
         ('subject_id', subject_list),
         ('session_id', session_list),
+        ('run_id', ['%02d' % run_num]),
     ]
 
     templates = {
         'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+            'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
             '.nii.gz',
     }
     inputfiles = pe.Node(
@@ -673,6 +677,7 @@ def run_workflow():
         (inputnode, inputfiles,
          [('subject_id', 'subject_id'),
           ('session_id', 'session_id'),
+          ('run_id', 'run_id'),
           ]),
         (inputnode, featpreproc,
          [('subject_id', 'inputspec.subject_id'),
@@ -693,4 +698,11 @@ def run_workflow():
 
 
 if __name__ == '__main__':
-    run_workflow()
+    parser = argparse.ArgumentParser(
+            description='Perform pre-processing step for NHP fMRI.')
+    parser.add_argument('-r', '--run', dest='run_num', required=True, type=int,
+            help='Run number, e.g. 1.')
+
+    args = parser.parse_args()
+
+    run_workflow(**vars(args))

@@ -1,5 +1,5 @@
 #PBS -lwalltime=48:00:00  
-#PBS -lnodes=1:ppn=16    
+#PBS -lnodes=1:ppn=16
 #PBS -S /bin/bash
 
 n=`wc -l < $PBS_NODEFILE`
@@ -24,4 +24,5 @@ export PYTHONPATH=$PYTHONPATH:~/NHP-BIDS/code
 export PATH=$PATH:~/NHP-BIDS/code/mc/
 export FSLOUTPUTTYPE=NIFTI_GZ
 
-./code/preprocessing_workflow.py
+cd NHP-BIDS
+./code/preprocessing_workflow.py --run 1
