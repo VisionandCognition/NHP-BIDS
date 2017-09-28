@@ -67,6 +67,8 @@ def register(**kwargs):
         print_run('fslmaths %(func)s -Tmedian %(ref)s' % kwargs)
 
     if not os.path.isfile(kwargs['out_init_mc']):
+        print("\nIn: %s" % os.getcwd())
+        print("Did not find %(out_init_mc)s." % kwargs)
         print_run(
             '3dAllineate -weight "%(weights)s" '
             '-base %(ref)s '
@@ -87,10 +89,14 @@ def register(**kwargs):
 
     processes = deque()
     for t in range(1000):
-        print(t)
+        print('vol=%d' % t)
         t_args = kwargs.copy()
         t_args['t'] = t
         t_args['func_time'] = "%(tmpdir)s/func_time_%(t)04d" % (t_args)
+
+        t_args['dest_prefix'] = "%(tmpdir)s/reg_time_%(t)04d" % t_args
+        if os.path.isfile('%(dest_prefix)s+orig.BRIK' % t_args):
+            continue
 
         if not os.path.isfile('%(func_time)s.nii.gz' % t_args):
             print('image %(func_time)s.nii.gz does not exist!' % t_args)
@@ -146,20 +152,21 @@ def register(**kwargs):
         # Delete temporary files
         # rm ${func_time}_slice_????.nii.gz
 
-        t_args['dest_prefix'] = "%(tmpdir)s/reg_time_%(t)04d" % t_args
-        if not os.path.isfile('%(dest_prefix)s+orig.BRIK' % t_args):
-            print_run(
-                "3dZcat -prefix %(dest_prefix)s "
-                "%(dest_prefix)s_slice_????.nii.gz",
-                t_args)
+        #if not os.path.isfile('%(dest_prefix)s+orig.BRIK' % t_args):
+        print_run(
+            "3dZcat -prefix %(dest_prefix)s "
+            "%(dest_prefix)s_slice_????.nii.gz",
+            t_args)
         # rm ${dest_prefix}_slice_????.nii.gz
+        print_run("rm %(dest_prefix)s_slice_????.nii.gz" % t_args)
+
 
     print_run("rm %(tmpdir)s/ref_slice_????.nii.gz", kwargs)
     print_run("rm %(tmpdir)s/func_time_????.nii.gz", kwargs)
     print_run("rm %(tmpdir)s/weights_slice_????.nii.gz", kwargs)
 
     kwargs['dest_prefix'] = "%(tmpdir)s/reg" % kwargs
-    if not os.path.isfile("%(dest_prefix)s.nii"):
+    if not os.path.isfile("%(dest_prefix)s.nii" % kwargs):
         # print_run("3dZcat -prefix %(dest_prefix)s %(dest_prefix)s_"
         #           "slice_????.nii.gz", kwargs)
         print_run("3dTcat -tr %(TR)s -prefix %(dest_prefix)s "

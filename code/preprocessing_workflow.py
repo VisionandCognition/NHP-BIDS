@@ -322,9 +322,10 @@ def create_workflow():
     # --------------------------------------------------------
 
     reg_funcs = pe.MapNode(
-        interface=fsl.FLIRT(dof=6),
+        # some runs need to be scaled along the anterior-posterior direction
+        interface=fsl.FLIRT(dof=9),
         name='reg_funcs',
-        iterfield=('in_file'),
+        iterfield=('in_file', 'in_weight'),
     )
     reg_funcmasks = pe.MapNode(
         interface=fsl.FLIRT(),
@@ -340,6 +341,7 @@ def create_workflow():
          (b0_unwarp, reg_funcs,
           [
            ('out.funcs', 'in_file'),
+           ('out.funcmasks', 'in_weight'),
           ]),
          (b0_unwarp_ref, reg_funcs,
           [
@@ -667,6 +669,7 @@ def run_workflow(run_num):
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
             'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
+            # '_nvol10'
             '.nii.gz',
     }
     inputfiles = pe.Node(
