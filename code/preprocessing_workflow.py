@@ -321,14 +321,19 @@ def create_workflow():
     # Register all functionals to common reference
     # --------------------------------------------------------
 
-    reg_funcs = pe.MapNode(
+    reg_to_ref = pe.MapNode(
         # some runs need to be scaled along the anterior-posterior direction
         interface=fsl.FLIRT(dof=9),
-        name='reg_funcs',
+        name='reg_to_ref',
         iterfield=('in_file', 'in_weight'),
     )
+    reg_funcs = pe.MapNode(
+        interface=fsl.preprocess.ApplyXFM(),
+        name='reg_funcs',
+        iterfield=('in_file', 'in_matrix_file'),
+    )
     reg_funcmasks = pe.MapNode(
-        interface=fsl.FLIRT(),
+        interface=fsl.preprocess.ApplyXFM(),
         name='reg_funcmasks',
         iterfield=('in_file', 'in_matrix_file')
     )
@@ -338,17 +343,31 @@ def create_workflow():
 
     featpreproc.connect(
         [
-         (b0_unwarp, reg_funcs,
+         (b0_unwarp, reg_to_ref,  # --> reg_to_ref
           [
            ('out.funcs', 'in_file'),
            ('out.funcmasks', 'in_weight'),
           ]),
-         (b0_unwarp_ref, reg_funcs,
+         (b0_unwarp_ref, reg_to_ref,
           [
            (('out.funcs', deref_list), 'reference'),
            (('out.funcmasks', deref_list), 'ref_weight'),
           ]),
-         (reg_funcs, reg_funcmasks,
+
+         (reg_to_ref, reg_funcs,  # --> reg_funcs
+          [
+           ('out_matrix_file', 'in_matrix_file'),
+          ]),
+         (b0_unwarp, reg_funcs,
+          [
+           ('out.funcs', 'in_file'),
+          ]),
+         (b0_unwarp_ref, reg_funcs,
+          [
+           (('out.funcs', deref_list), 'reference'),
+          ]),
+
+         (reg_to_ref, reg_funcmasks,  # --> reg_funcmasks
           [
            ('out_matrix_file', 'in_matrix_file'),
           ]),
@@ -360,6 +379,7 @@ def create_workflow():
           [
            (('out.funcs', deref_list), 'reference'),
           ]),
+
          (reg_funcs, outputfiles,
           [
            ('out_file', 'common_ref.func'),
@@ -669,7 +689,7 @@ def run_workflow(run_num):
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
             'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
-            # '_nvol10'
+            #'_nvol10'
             '.nii.gz',
     }
     inputfiles = pe.Node(
