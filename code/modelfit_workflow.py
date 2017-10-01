@@ -32,7 +32,7 @@ from filter_numbers import FilterNumsTask
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
-def create_workflow(combine_runs=False):
+def create_workflow(combine_runs=True):
 
     level1_workflow = pe.Workflow(name='level1flow')
     # ===================================================================
