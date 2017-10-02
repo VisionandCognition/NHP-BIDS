@@ -58,6 +58,9 @@ def create_workflow(combine_runs=True):
         'event_log',
         'motion_parameters',
         'motion_outlier_files',
+
+        'ref_func',
+        'ref_funcmask',
     ]), name="inputspec")
 
     def remove_runs_missing_funcs(in_files, in_funcs):
@@ -156,7 +159,7 @@ def create_workflow(combine_runs=True):
     if fixed_fx is not None:
         level1_workflow.connect([
             (inputnode, fixed_fx,
-            [('funcmasks', 'flameo.mask_file')]),
+             [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use reference mask!!!
             (modelfit, fixed_fx,
             [(('outputspec.copes', sort_copes), 'inputspec.copes'),
             ('outputspec.dof_file', 'inputspec.dof_files'),
@@ -558,6 +561,14 @@ def run_workflow():
             'sub-{subject_id}_ses-{session_id}*run-*'
             # '.nii.gz',
             '_events.tsv',
+
+        'ref_func':
+        'featpreproc/func_unwarp_ref/func/sub-eddy/ses-20170511/func/'
+            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_res-1x1x1_'
+            'reference_unwarped.nii.gz',
+        'ref_funcmask':
+        'featpreproc/func_unwarp_ref/funcmask/sub-eddy/ses-20170511/func/'
+            'sub-eddy_ses-20170511_task-curvetracing_run-01_bold_res-1x1x1_preproc-mask.nii.gz'
     }
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
@@ -579,6 +590,8 @@ def run_workflow():
           ('motion_parameters', 'inputspec.motion_parameters'),
           ('motion_outlier_files', 'inputspec.motion_outlier_files'),
           ('event_log', 'inputspec.event_log'),
+          ('ref_func', 'inputspec.ref_func'),
+          ('ref_funcmask', 'inputspec.ref_funcmask'),
           ])
     ])
 
