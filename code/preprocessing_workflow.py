@@ -712,7 +712,7 @@ def run_workflow(run_num):
     ])
 
     featpreproc.inputs.inputspec.fwhm = 2.0
-    featpreproc.inputs.inputspec.highpass = 50
+    featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
     workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False

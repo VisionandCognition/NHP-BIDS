@@ -140,14 +140,22 @@ def create_workflow(combine_runs=True):
 
 
     def sort_copes(files):
+        """ Sort by copes and the runs, ie. 
+            [[cope1_run1, cope1_run2], [cope2_run1, cope2_run2]]
+        """
         if type(files[0]) is str:  # Hack - probably should be fixed upstream
-            files = [files]
+            # Assume only one cope?
+            return [files]
+
         numelements = len(files[0])
         outfiles = []
         for i in range(numelements):
             outfiles.insert(i, [])
             for j, elements in enumerate(files):
                 outfiles[i].append(elements[i])
+
+        import pdb
+        pdb.set_trace()
         return outfiles
 
 
@@ -374,12 +382,6 @@ def create_workflow(combine_runs=True):
                     deepcopy(cond_events0['ResponseCues'].dur)],
             )
 
-            # onsets = [list(range(15, 240, 60)), list(range(45, 240, 60))]
-            # output.insert(r,
-            #               Bunch(conditions=names,
-            #                     onsets=deepcopy(onsets),
-            #                     durations=[[15] for s in names]))
-
             output.append(run_results)
         return output
 
@@ -507,6 +509,7 @@ generate any output. To actually run the analysis on the data the
 
 def run_workflow():
     workflow = pe.Workflow(name='level1flow')
+    workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config
     config.enable_debug_mode()
