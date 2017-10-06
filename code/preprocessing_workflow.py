@@ -86,6 +86,14 @@ def create_workflow():
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_reference.nii.gz',
 
+        'ref_t1':
+        'manual-masks/sub-eddy/ses-20170511/anat/'
+            'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
+
+        'ref_t1mask':
+        'manual-masks/sub-eddy/ses-20170511/anat/'
+            'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
+
         # 'funcs':
         # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
         #     # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
@@ -179,6 +187,8 @@ def create_workflow():
                 'func_unwarp',
                 'ref_func',
                 'ref_funcmask',
+                'ref_t1',
+                'ref_t1mask',
                 ]),
         name='outputspec')
 
@@ -323,7 +333,7 @@ def create_workflow():
 
     reg_to_ref = pe.MapNode(
         # some runs need to be scaled along the anterior-posterior direction
-        interface=fsl.FLIRT(dof=9),
+        interface=fsl.FLIRT(dof=12, cost='corratio'),
         name='reg_to_ref',
         iterfield=('in_file', 'in_weight'),
     )
@@ -348,10 +358,10 @@ def create_workflow():
            ('out.funcs', 'in_file'),
            ('out.funcmasks', 'in_weight'),
           ]),
-         (b0_unwarp_ref, reg_to_ref,
+         (inputfiles, reg_to_ref,
           [
-           (('out.funcs', deref_list), 'reference'),
-           (('out.funcmasks', deref_list), 'ref_weight'),
+           ('ref_t1', 'reference'),
+           ('ref_t1mask', 'ref_weight'),
           ]),
 
          (reg_to_ref, reg_funcs,  # --> reg_funcs
