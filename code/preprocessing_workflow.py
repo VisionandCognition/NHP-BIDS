@@ -63,11 +63,6 @@ def create_workflow():
 
     # SelectFiles
     templates = {
-        'manualmask':  # to-do: rename 'ref_manualmask'
-        'manual-masks/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-            '_res-1x1x1_manualmask.nii.gz',
-
         'manual_fmapmask':  # to-do: rename 'ref_manual_fmapmask' ?
         'manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
@@ -85,6 +80,11 @@ def create_workflow():
         'manual-masks/sub-eddy/ses-20170511/func/'
             'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
             '_res-1x1x1_reference.nii.gz',
+
+        'ref_funcmask':  # was: manualmask
+        'manual-masks/sub-eddy/ses-20170511/func/'
+            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
+            '_res-1x1x1_manualmask.nii.gz',
 
         'ref_t1':
         'manual-masks/sub-eddy/ses-20170511/anat/'
@@ -217,7 +217,7 @@ def create_workflow():
           ('session_id', 'in.session_id'),
           ])])
 
-    featpreproc.connect(inputfiles, 'manualmask',
+    featpreproc.connect(inputfiles, 'ref_funcmask',
                         transmanmask, 'in.manualmask')
     featpreproc.connect(inputnode, 'funcs',
                         transmanmask, 'in.funcs')
@@ -337,6 +337,18 @@ def create_workflow():
         name='reg_to_ref',
         iterfield=('in_file', 'in_weight'),
     )
+    refEPI_to_refT1 = pe.Node(
+        # some runs need to be scaled along the anterior-posterior direction
+        interface=fsl.FLIRT(dof=12, cost='corratio'),
+        name='refEPI_to_refT1',
+    )
+    # combine func -> ref_func and ref_func -> ref_T1
+    reg_to_refT1 = pe.MapNode(
+        interface=fsl.ConvertWarp(relwarp=True),
+        name='reg_to_refT1',
+        iterfield=('warp1'),
+    )
+
     reg_funcs = pe.MapNode(
         interface=fsl.preprocess.ApplyXFM(),
         name='reg_funcs',
@@ -347,26 +359,49 @@ def create_workflow():
         name='reg_funcmasks',
         iterfield=('in_file', 'in_matrix_file')
     )
+
     def deref_list(x):
         assert len(x)==1
         return x[0]
 
     featpreproc.connect(
         [
-         (b0_unwarp, reg_to_ref,  # --> reg_to_ref
+         (b0_unwarp, reg_to_ref,  # --> reg_to_ref, (A)
           [
            ('out.funcs', 'in_file'),
            ('out.funcmasks', 'in_weight'),
           ]),
          (inputfiles, reg_to_ref,
           [
+           ('ref_func', 'reference'),
+           ('ref_funcmask', 'ref_weight'),
+          ]),
+
+         (b0_unwarp_ref, refEPI_to_refT1,  # --> refEPI_to_refT1 (B)
+          [
+           (('out.funcs', deref_list), 'in_file'),
+           (('out.funcmasks', deref_list), 'in_weight'),
+          ]),
+         (inputfiles, refEPI_to_refT1,
+          [
            ('ref_t1', 'reference'),
            ('ref_t1mask', 'ref_weight'),
           ]),
 
-         (reg_to_ref, reg_funcs,  # --> reg_funcs
+         (reg_to_ref, reg_to_refT1,  # --> reg_to_refT1 (A*B)
           [
-           ('out_matrix_file', 'in_matrix_file'),
+           ('out_matrix_file', 'warp1'),
+          ]),
+         (refEPI_to_refT1, reg_to_refT1,
+          [
+           ('out_matrix_file', 'warp2'),
+          ]),
+
+
+         (reg_to_refT1, reg_funcs,  # --> reg_funcs
+          [
+           # ('out_matrix_file', 'in_matrix_file'),
+           ('out_file', 'in_matrix_file'),
           ]),
          (b0_unwarp, reg_funcs,
           [
@@ -377,9 +412,10 @@ def create_workflow():
            (('out.funcs', deref_list), 'reference'),
           ]),
 
-         (reg_to_ref, reg_funcmasks,  # --> reg_funcmasks
+         (reg_to_refT1, reg_funcmasks,  # --> reg_funcmasks
           [
-           ('out_matrix_file', 'in_matrix_file'),
+           # ('out_matrix_file', 'in_matrix_file'),
+           ('out_file', 'in_matrix_file'),
           ]),
          (b0_unwarp, reg_funcmasks,
           [
@@ -679,19 +715,17 @@ def run_workflow(run_num):
 
     featpreproc = create_workflow()
 
-    subject_list = ['eddy']
-    session_list = ['20170511']
-
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
         'session_id',
         'run_id',
     ]), name="input")
 
+    import bids_templates as bt
     inputnode.iterables = [
-        ('subject_id', subject_list),
-        ('session_id', session_list),
-        ('run_id', ['%02d' % run_num]),
+        ('subject_id', bt.subject_list),
+        ('session_id', bt.session_list),
+        ('run_id', ['%02d' % run_num] if run_num is not None else ['*']),
     ]
 
     templates = {
@@ -733,7 +767,7 @@ def run_workflow(run_num):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Perform pre-processing step for NHP fMRI.')
-    parser.add_argument('-r', '--run', dest='run_num', required=True, type=int,
+    parser.add_argument('-r', '--run', dest='run_num', type=int,
             help='Run number, e.g. 1.')
 
     args = parser.parse_args()
