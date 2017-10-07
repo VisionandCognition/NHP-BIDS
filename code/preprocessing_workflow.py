@@ -330,10 +330,10 @@ def create_workflow():
     #        _|
     # Register all functionals to common reference
     # --------------------------------------------------------
-
-    reg_to_ref = pe.MapNode(
+    # FLIRT cost: intermodal: corratio, intramodal: least squares and normcorr
+    reg_to_ref = pe.MapNode(  # intra-modal
         # some runs need to be scaled along the anterior-posterior direction
-        interface=fsl.FLIRT(dof=12, cost='corratio'),
+        interface=fsl.FLIRT(dof=12, cost='normcorr'),
         name='reg_to_ref',
         iterfield=('in_file', 'in_weight'),
     )
