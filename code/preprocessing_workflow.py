@@ -705,7 +705,7 @@ def create_workflow():
 #
 # ===================================================================
 
-def run_workflow(run_num):
+def run_workflow(run_num=None, csv_file=None):
 
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
@@ -720,11 +720,24 @@ def run_workflow(run_num):
         'run_id',
     ]), name="input")
 
+    if csv_file is not None:
+        reader = niu.CSVReader()
+        reader.inputs.header = True  
+        reader.inputs.in_file = csv_file
+        out = reader.run()  
+        subject_list = out.outputs.subject
+        session_list = out.outputs.session
+        run_list = out.outputs.run
+    else:
+        subject_list = bt.subject_list
+        session_list = bt.session_list
+        run_list = ['%02' % run_num] if run_num is not None else ['*']
+
     import bids_templates as bt
     inputnode.iterables = [
-        ('subject_id', bt.subject_list),
-        ('session_id', bt.session_list),
-        ('run_id', ['%02d' % run_num] if run_num is not None else ['*']),
+        ('subject_id', subject_list),
+        ('session_id', session_list),
+        ('run_id', run_list if run_num is not None else ['*']),
     ]
 
     templates = {
@@ -768,6 +781,8 @@ if __name__ == '__main__':
             description='Perform pre-processing step for NHP fMRI.')
     parser.add_argument('-r', '--run', dest='run_num', type=int,
             help='Run number, e.g. 1.')
+    parser.add_argument('--csv', dest='csv_file', default=None,
+                        help='CSV file with subjects, sessions, and runs.')
 
     args = parser.parse_args()
 
