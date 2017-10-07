@@ -344,9 +344,9 @@ def create_workflow():
     )
     # combine func -> ref_func and ref_func -> ref_T1
     reg_to_refT1 = pe.MapNode(
-        interface=fsl.ConvertWarp(relwarp=True),
+        interface=fsl.ConvertXFM(concat_xfm=True),
         name='reg_to_refT1',
-        iterfield=('warp1'),
+        iterfield=('in_file'),
     )
 
     reg_funcs = pe.MapNode(
@@ -390,13 +390,12 @@ def create_workflow():
 
          (reg_to_ref, reg_to_refT1,  # --> reg_to_refT1 (A*B)
           [
-           ('out_matrix_file', 'warp1'),
+           ('out_matrix_file', 'in_file'),
           ]),
          (refEPI_to_refT1, reg_to_refT1,
           [
-           ('out_matrix_file', 'warp2'),
+           ('out_matrix_file', 'in_file2'),
           ]),
-
 
          (reg_to_refT1, reg_funcs,  # --> reg_funcs
           [

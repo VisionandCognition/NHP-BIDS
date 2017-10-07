@@ -193,4 +193,5 @@ if __name__ == '__main__':
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
+    #workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 10})
     workflow.run()

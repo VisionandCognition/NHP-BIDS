@@ -1,6 +1,12 @@
 
 subject_list = ['eddy']
-session_list = ['20170511', '20170607']
+session_list = [
+    '20170511',
+    # '20170525',
+    # '20170614',
+    # '20170621',
+]
+    # '20170607',
 datatype_list = ['func', 'anat', 'fmap']
 
 templates = {
