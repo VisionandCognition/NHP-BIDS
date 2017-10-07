@@ -705,8 +705,7 @@ def create_workflow():
 #
 # ===================================================================
 
-def run_workflow(run_num=None, csv_file=None):
-
+def run_workflow(run_num=None, csv_file=None, use_pbs=False):
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
@@ -773,7 +772,10 @@ def run_workflow(run_num=None, csv_file=None):
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
-    workflow.run()
+    if use_pbs:
+        workflow.run(plugin='PBS', plugin_args={'qsub_args': '-q many'})
+    else:
+        workflow.run()
 
 
 if __name__ == '__main__':
@@ -783,6 +785,8 @@ if __name__ == '__main__':
             help='Run number, e.g. 1.')
     parser.add_argument('--csv', dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
+            help='Whether to use pbs plugin.')
 
     args = parser.parse_args()
 
