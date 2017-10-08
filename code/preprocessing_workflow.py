@@ -705,7 +705,7 @@ def create_workflow():
 #
 # ===================================================================
 
-def run_workflow(run_num=None, csv_file=None, use_pbs=False):
+def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
@@ -718,6 +718,7 @@ def run_workflow(run_num=None, csv_file=None, use_pbs=False):
         'session_id',
         'run_id',
     ]), name="input")
+    import bids_templates as bt
 
     if csv_file is not None:
         reader = niu.CSVReader()
@@ -729,10 +730,9 @@ def run_workflow(run_num=None, csv_file=None, use_pbs=False):
         run_list = out.outputs.run
     else:
         subject_list = bt.subject_list
-        session_list = bt.session_list
-        run_list = ['%02' % run_num] if run_num is not None else ['*']
+        session_list = [session] if session is not None else bt.session_list
+        run_list = ['%02d' % run_num] if run_num is not None else ['*']
 
-    import bids_templates as bt
     inputnode.iterables = [
         ('subject_id', subject_list),
         ('session_id', session_list),
@@ -768,12 +768,12 @@ def run_workflow(run_num=None, csv_file=None, use_pbs=False):
 
     featpreproc.inputs.inputspec.fwhm = 2.0
     featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
-    workflow.stop_on_first_crash = True
+    #workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'qsub_args': '-q many'})
+        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/preprocess-template.sh'})
     else:
         workflow.run()
 
@@ -783,6 +783,8 @@ if __name__ == '__main__':
             description='Perform pre-processing step for NHP fMRI.')
     parser.add_argument('-r', '--run', dest='run_num', type=int,
             help='Run number, e.g. 1.')
+    parser.add_argument('-s', '--session', type=str,
+            help='Run number, e.g. 20170511.')
     parser.add_argument('--csv', dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
