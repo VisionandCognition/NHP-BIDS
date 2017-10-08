@@ -63,13 +63,18 @@ def create_workflow():
 
     # SelectFiles
     templates = {
-        'manual_fmapmask':  # to-do: rename 'ref_manual_fmapmask' ?
+        'ref_manual_fmapmask':  # was: manual_fmapmask
         'manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
 
-        'manual_fmapmask_ref':  # to-do: rename 'ref_manual_fmapmask_magnitude' ?
+        'ref_fmap_magnitude':
         'manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
+
+        'ref_fmap_phasediff':
+        'resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
+            'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc'
+            '.nii.gz',
 
         # 'manualweights':
         # 'manual-masks/sub-eddy/ses-20170511/func/'
@@ -225,7 +230,7 @@ def create_workflow():
                         transmanmask, 'in.manualmask_func_ref')
 
     trans_fmapmask = transmanmask.clone('trans_fmapmask')
-    featpreproc.connect(inputfiles, 'manual_fmapmask',
+    featpreproc.connect(inputfiles, 'ref_manual_fmapmask',
                         trans_fmapmask, 'in.manualmask')
     featpreproc.connect(inputfiles, 'fmap_magnitude',
                         trans_fmapmask, 'in.funcs')
@@ -306,15 +311,12 @@ def create_workflow():
         [(inputfiles, b0_unwarp_ref,
           [('subject_id', 'in.subject_id'),
            ('session_id', 'in.session_id'),
-           ('fmap_phasediff', 'in.fmap_phasediff'),
-           ('fmap_magnitude', 'in.fmap_magnitude'),
+           ('ref_fmap_phasediff', 'in.fmap_phasediff'),
+           ('ref_fmap_magnitude', 'in.fmap_magnitude'),
+           ('ref_manual_fmapmask', 'in.fmap_mask'),
            ('ref_func', 'in.funcs'),
+           ('ref_funcmask', 'in.funcmasks'),
            ]),
-         (transmanmask, b0_unwarp_ref,
-          [('funcreg.out_file', 'in.funcmasks'),
-           ]),
-         (trans_fmapmask, b0_unwarp_ref,
-          [('funcreg.out_file', 'in.fmap_mask')]),
          (b0_unwarp_ref, outputfiles,
           [('out.funcs', 'func_unwarp_ref.func'),
            ('out.funcmasks', 'func_unwarp_ref.funcmask'),
