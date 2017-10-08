@@ -521,9 +521,7 @@ def run_workflow():
     workflow.hash_method = 'content'
 
     modelfit = create_workflow()
-
-    subject_list = ['eddy']
-    session_list = ['20170511']
+    import bids_templates as bt
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -531,8 +529,8 @@ def run_workflow():
     ]), name="input")
 
     inputnode.iterables = [
-        ('subject_id', subject_list),
-        ('session_id', session_list),
+        ('subject_id', bt.subject_list),
+        ('session_id', bt.session_list),
     ]
 
     templates = {
