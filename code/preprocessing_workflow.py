@@ -282,8 +282,8 @@ def create_workflow():
 
     featpreproc.connect(
         [(inputfiles, b0_unwarp,
-          [('subject_id', 'in.subject_id'),
-           ('session_id', 'in.session_id'),
+          [  # ('subject_id', 'in.subject_id'),
+           # ('session_id', 'in.session_id'),
            ('fmap_phasediff', 'in.fmap_phasediff'),
            ('fmap_magnitude', 'in.fmap_magnitude'),
            ]),
@@ -309,8 +309,8 @@ def create_workflow():
     b0_unwarp_ref = b0_unwarp.clone('b0_unwarp_ref')
     featpreproc.connect(
         [(inputfiles, b0_unwarp_ref,
-          [('subject_id', 'in.subject_id'),
-           ('session_id', 'in.session_id'),
+          [  # ('subject_id', 'in.subject_id'),
+           # ('session_id', 'in.session_id'),
            ('ref_fmap_phasediff', 'in.fmap_phasediff'),
            ('ref_fmap_magnitude', 'in.fmap_magnitude'),
            ('ref_manual_fmapmask', 'in.fmap_mask'),
