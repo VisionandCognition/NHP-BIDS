@@ -28,8 +28,8 @@ def create_workflow(unwarp_direction='y'):
         name='func_unwarp')
 
     inputs = Node(IdentityInterface(fields=[
-        'subject_id',
-        'session_id',
+        # 'subject_id',
+        # 'session_id',
         'funcs',
         'funcmasks',
         'fmap_phasediff',

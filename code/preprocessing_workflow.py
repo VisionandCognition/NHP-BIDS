@@ -373,10 +373,10 @@ def create_workflow():
            ('out.funcs', 'in_file'),
            ('out.funcmasks', 'in_weight'),
           ]),
-         (inputfiles, reg_to_ref,
+         (b0_unwarp_ref, reg_to_ref,
           [
-           ('ref_func', 'reference'),
-           ('ref_funcmask', 'ref_weight'),
+           (('out.funcs', deref_list), 'reference'),
+           (('out.funcmasks', deref_list), 'ref_weight'),
           ]),
 
          (b0_unwarp_ref, refEPI_to_refT1,  # --> refEPI_to_refT1 (B)
