@@ -444,6 +444,7 @@ def create_workflow():
     # Apply brain masks to functionals
     # --------------------------------------------------------
 
+    # Why the heck did I call this "unreg"?
     funcbrain_unreg = pe.MapNode(
         fsl.BinaryMaths(operation='mul'),
         iterfield=('in_file', 'operand_file'),
