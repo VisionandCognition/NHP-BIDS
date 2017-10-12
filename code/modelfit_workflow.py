@@ -569,7 +569,8 @@ def run_workflow():
             'reference_unwarped.nii.gz',
         'ref_funcmask':
         'featpreproc/func_unwarp_ref/funcmask/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_bold_res-1x1x1_preproc-mask.nii.gz'
+            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_res-1x1x1_'
+            'manualmask_unwarped.nii.gz'
     }
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
