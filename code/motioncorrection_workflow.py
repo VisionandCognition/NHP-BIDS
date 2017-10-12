@@ -111,8 +111,8 @@ def create_workflow_allin_slices():
         'subject_id',
         'session_id',
 
-        'transweights',
-        # 'manualweights_func_ref',
+        'ref_func',  # was: manualweights_func_ref
+        'ref_func_weights',
 
         'funcs',
         'funcs_masks',
@@ -125,13 +125,13 @@ def create_workflow_allin_slices():
 
     mc = MapNode(
         AFNIAllinSlices(),
-        iterfield=['in_file', 'in_weight_file'],
+        iterfield=['in_file'],  # , 'in_weight_file'
         name='mc')
     workflow.connect(
         [(inputs, mc,
           [('funcs', 'in_file'),
-           ('transweights', 'in_weight_file'),
-           # ('manualweights_func_ref', 'ref_file'),
+           ('ref_func_weights', 'in_weight_file'),
+           ('ref_func', 'ref_file'),
            ])])
     return workflow
 
