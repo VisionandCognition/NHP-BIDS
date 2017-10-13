@@ -473,9 +473,11 @@ def create_workflow():
     )
 
     featpreproc.connect(
-        [(inputfiles, funcbrains,
-          [('ref_func', 'in_file'),
-           ('ref_funcmask', 'operand_file'),
+        [(mc, funcbrains,
+          [('mc.out_file', 'in_file'),
+          ]),
+         (transmanmask, funcbrains,
+          [('funcreg.out_file', 'operand_file'),
           ]),
          (funcbrains, outputfiles,
           [('out_file', 'funcbrains'),
@@ -775,12 +777,13 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
     else:
         subject_list = bt.subject_list
         session_list = [session] if session is not None else bt.session_list
-        run_list = ['%02d' % run_num] if run_num is not None else ['*']
+        assert run_num is not None
+        run_list = ['%02d' % run_num]
 
     inputnode.iterables = [
         ('subject_id', subject_list),
         ('session_id', session_list),
-        ('run_id', run_list if run_num is not None else ['*']),
+        ('run_id', run_list),
     ]
 
     templates = {
