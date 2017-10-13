@@ -25,4 +25,4 @@ export PATH=$PATH:~/NHP-BIDS/code/mc/
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
-./code/preprocessing_workflow.py --run 1
+./code/preprocessing_workflow.py --run 1 -s 20170511
