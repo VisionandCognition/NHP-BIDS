@@ -774,17 +774,24 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
         subject_list = out.outputs.subject
         session_list = out.outputs.session
         run_list = out.outputs.run
+
+        inputnode.iterables = [
+            ('subject_id', subject_list),
+            ('session_id', session_list),
+            ('run_id', run_list),
+        ]
+        inputnode.synchronize = True
     else:
         subject_list = bt.subject_list
         session_list = [session] if session is not None else bt.session_list
         assert run_num is not None
         run_list = ['%02d' % run_num]
 
-    inputnode.iterables = [
-        ('subject_id', subject_list),
-        ('session_id', session_list),
-        ('run_id', run_list),
-    ]
+        inputnode.iterables = [
+            ('subject_id', subject_list),
+            ('session_id', session_list),
+            ('run_id', run_list),
+        ]
 
     templates = {
         'funcs':
