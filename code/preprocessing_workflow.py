@@ -247,22 +247,67 @@ def create_workflow():
     # Perform motion correction, using some pipeline
     # --------------------------------------------------------
     # mc = motioncorrection_workflow.create_workflow_afni()
-    mc = motioncorrection_workflow.create_workflow_allin_slices()
 
-    # - - - - - - Connections - - - - - - -
-#    featpreproc.connect(
-#        [(inputfiles, mc,
-#         [('subject_id', 'in.subject_id'),
-#          ('session_id', 'in.session_id'),
-#          ])])
+    # Register an image from the functionals to the reference image
+    median_func = pe.MapNode(
+        interface=fsl.maths.MedianImage(dimension="T"),
+        name='median_func',
+        iterfield=('in_file'),
+    )
+    pre_mc = motioncorrection_workflow.create_workflow_allin_slices(
+        name='premotioncorrection')
 
     featpreproc.connect(
+        [
+         (inputnode, median_func,
+          [
+           ('funcs', 'in_file'),
+           ]),
+         (median_func, pre_mc,
+          [
+           ('out_file', 'in.funcs'),
+           ]),
+         (inputfiles, pre_mc,
+          [
+           # median func image will be used a reference / base
+           ('ref_func', 'in.ref_func'),
+           ('ref_funcmask', 'in.ref_func_weights'),
+          ]),
+         (transmanmask, pre_mc,
+          [
+           ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights
+         ]),
+         (pre_mc, outputnode,
+          [
+           ('mc.out_file', 'pre_motion_corrected'),
+           ('mc.oned_file', 'pre_motion_parameters.oned_file'),
+           ('mc.oned_matrix_save', 'pre_motion_parameters.oned_matrix_save'),
+         ]),
+         (outputnode, outputfiles,
+          [
+           ('pre_motion_corrected', 'pre_motion_corrected.out_file'),
+           ('pre_motion_parameters.oned_file', 'pre_motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
+           ('pre_motion_parameters.oned_matrix_save', 'pre_motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
+         ]),
+    ])
+
+    mc = motioncorrection_workflow.create_workflow_allin_slices(
+        name='motioncorrection',
+        iterfield=('in_file', 'ref_file', 'in_weight_file'))
+    # - - - - - - Connections - - - - - - -
+    featpreproc.connect(
         [(inputnode, mc,
-          [('funcs', 'in.funcs'),
+          [
+           ('funcs', 'in.funcs'),
+           ]),
+         (pre_mc, mc, [
+             # the median image realigned to the reference functional will serve as reference
+             #  this way motion correction is done to an image more similar to the functionals
+             ('mc.out_file', 'in.ref_func'),
            ]),
          (inputfiles, mc, [
-             # median func image will be used a reference / base
-             ('ref_func', 'in.ref_func'),
+             # Check and make sure the ref func mask is close enough to the registered median
+             # image.
              ('ref_funcmask', 'in.ref_func_weights'),
            ]),
          (transmanmask_mc, mc, [

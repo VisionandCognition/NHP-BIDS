@@ -104,9 +104,8 @@ def create_workflow_afni():
     return workflow
 
 
-def create_workflow_allin_slices():
-    workflow = Workflow(
-        name='motion_correction')
+def create_workflow_allin_slices(name='motion_correction', iterfield=['in_file']):
+    workflow = Workflow(name=name)
     inputs = Node(IdentityInterface(fields=[
         'subject_id',
         'session_id',
@@ -125,7 +124,7 @@ def create_workflow_allin_slices():
 
     mc = MapNode(
         AFNIAllinSlices(),
-        iterfield=['in_file'],  # , 'in_weight_file'
+        iterfield=iterfield,  # , 'in_weight_file'
         name='mc')
     workflow.connect(
         [(inputs, mc,
