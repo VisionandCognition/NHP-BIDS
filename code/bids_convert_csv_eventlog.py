@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 """ Nipype wrapper for bids_convert_csv_eventlog.
+
+    The code is run by bids_minimal_processing.py.
 """
 import os
 import re
