@@ -48,7 +48,7 @@ def create_workflow(combine_runs=True):
 
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'funcmasks',
+        #'funcmasks',
         'subject_id',
         'session_id',
         'fwhm',  # smoothing
@@ -68,20 +68,34 @@ def create_workflow(combine_runs=True):
         import pdb
         import re
 
+        # not sure why in_files and in_funcs are being passed as single files after
+        #  starting to use CSV interface (and using synchronize = True)
+        if isinstance(in_files, str):
+            in_files = [in_files]
+
+        if isinstance(in_funcs, str):
+            in_funcs = [in_funcs]
+
         has_func = set()
         for f in in_funcs:
             base = os.path.basename(f)
-            sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
-            ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
-            run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            try:
+                sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
+                ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
+                run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            except AttributeError as e:
+                raise RuntimeError('Could not process "sub-*_", "ses-*_", or "run-*_" from func "%s"' % f)
             has_func.add((sub, ses, run)) 
 
         files = []
         for f in in_files:
             base = os.path.basename(f)
-            sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
-            ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
-            run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            try:
+                sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
+                ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
+                run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
+            except AttributeError as e:
+                raise RuntimeError('Could not process "sub-*_", "ses-*_", or "run-*_" from event file "%s"' % f)
             if (sub, ses, run) in has_func:
                 files.append(f)
         return files
@@ -507,7 +521,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow():
+def run_workflow(csv_file):
     workflow = pe.Workflow(name='level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
 
@@ -526,52 +540,65 @@ def run_workflow():
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
         'session_id',
+        'run_id',
     ]), name="input")
 
-    inputnode.iterables = [
-        ('subject_id', bt.subject_list),
-        ('session_id', bt.session_list),
-    ]
+    if csv_file is not None:
+        reader = niu.CSVReader()
+        reader.inputs.header = True  
+        reader.inputs.in_file = csv_file
+        out = reader.run()  
+        subject_list = out.outputs.subject
+        session_list = out.outputs.session
+        run_list = out.outputs.run
 
-    templates = {
-        'funcs':
-        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_*.nii.gz',
+        inputnode.iterables = [
+            ('subject_id', subject_list),
+            ('session_id', session_list),
+            ('run_id', run_list),
+        ]
+        print(run_list)
+        inputnode.synchronize = True
+ 
+        templates = {
+            'funcs':
+            'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
-        'funcmasks':
-        'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc'
-            '_mc_unwarped.nii.gz',
+            # 'funcmasks':
+            # 'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
+            #     'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc'
+            #     '_mc_unwarped.nii.gz',
 
-        'highpass':
-        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_*.nii.gz',
+            'highpass':
+            'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
-        'motion_parameters':
-        'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc.param.1D',
+            'motion_parameters':
+            'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc.param.1D',
 
-        'motion_outlier_files':
-        'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
-            'art.sub-{subject_id}_ses-{session_id}_*_run-*_bold_res-1x1x1_preproc_mc'
-            '_unwarped_maths_outliers.txt',
+            'motion_outlier_files':
+            'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
+                'art.sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_mc'
+                '_maths_outliers.txt',
 
-        'event_log':
-        'sub-{subject_id}/ses-{session_id}/func/'
-            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-*'
-            # '.nii.gz',
-            '_events.tsv',
+            'event_log':
+            'sub-{subject_id}/ses-{session_id}/func/'
+                # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+                'sub-{subject_id}_ses-{session_id}*run-{run_id}*'
+                # '.nii.gz',
+                '_events.tsv',
 
-        'ref_func':
-        'featpreproc/func_unwarp_ref/func/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_res-1x1x1_'
-            'reference_unwarped.nii.gz',
-        'ref_funcmask':
-        'featpreproc/func_unwarp_ref/funcmask/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold_res-1x1x1_'
-            'manualmask_unwarped.nii.gz'
-    }
+            'ref_func':
+            'featpreproc/reference/func/*.nii.gz',
+
+            'ref_funcmask':
+            'featpreproc/reference/func_mask/*.nii.gz',
+        }
+    else:
+        assert False, "Use CSV file"
+
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir), name="input_files")
@@ -580,6 +607,7 @@ def run_workflow():
         (inputnode, inputfiles,
          [('subject_id', 'subject_id'),
           ('session_id', 'session_id'),
+          ('run_id', 'run_id'),
           ]),
         (inputnode, modelfit,
          [('subject_id', 'inputspec.subject_id'),
@@ -587,7 +615,7 @@ def run_workflow():
           ]),
         (inputfiles, modelfit,
          [('funcs', 'inputspec.funcs'),
-          ('funcmasks', 'inputspec.funcmasks'),
+          #('funcmasks', 'inputspec.funcmasks'),
           ('highpass', 'inputspec.highpass'),
           ('motion_parameters', 'inputspec.motion_parameters'),
           ('motion_outlier_files', 'inputspec.motion_outlier_files'),
@@ -609,4 +637,11 @@ def run_workflow():
 
 
 if __name__ == '__main__':
-    run_workflow()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+            description='Analyze model fit.')
+    parser.add_argument('--csv', dest='csv_file', required=True,
+                        help='CSV file with subjects, sessions, and runs.')
+    args = parser.parse_args()
+    run_workflow(**vars(args))

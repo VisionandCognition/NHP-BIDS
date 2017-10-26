@@ -213,29 +213,33 @@ def create_workflow():
     #
     # Transform manual skull-stripped masks to multiple images
     # --------------------------------------------------------
-    transmanmask = transform_manualmask.create_workflow()
+    # should just be used as input to motion correction,
+    # after mc, all functionals should be aligned to reference
+    transmanmask_mc = transform_manualmask.create_workflow()
 
     # - - - - - - Connections - - - - - - -
     featpreproc.connect(
-        [(inputfiles, transmanmask,
+        [(inputfiles, transmanmask_mc,
          [('subject_id', 'in.subject_id'),
           ('session_id', 'in.session_id'),
           ])])
 
     featpreproc.connect(inputfiles, 'ref_funcmask',
-                        transmanmask, 'in.manualmask')
+                        transmanmask_mc, 'in.manualmask')
     featpreproc.connect(inputnode, 'funcs',
-                        transmanmask, 'in.funcs')
+                        transmanmask_mc, 'in.funcs')
     featpreproc.connect(inputfiles, 'ref_func',
-                        transmanmask, 'in.manualmask_func_ref')
+                        transmanmask_mc, 'in.manualmask_func_ref')
 
-    trans_fmapmask = transmanmask.clone('trans_fmapmask')
-    featpreproc.connect(inputfiles, 'ref_manual_fmapmask',
-                        trans_fmapmask, 'in.manualmask')
-    featpreproc.connect(inputfiles, 'fmap_magnitude',
-                        trans_fmapmask, 'in.funcs')
-    featpreproc.connect(inputfiles, 'ref_func',
-                        trans_fmapmask, 'in.manualmask_func_ref')
+    # fieldmaps not being used
+    if False:
+        trans_fmapmask = transmanmask.clone('trans_fmapmask')
+        featpreproc.connect(inputfiles, 'ref_manual_fmapmask',
+                            trans_fmapmask, 'in.manualmask')
+        featpreproc.connect(inputfiles, 'fmap_magnitude',
+                            trans_fmapmask, 'in.funcs')
+        featpreproc.connect(inputfiles, 'ref_func',
+                            trans_fmapmask, 'in.manualmask_func_ref')
 
     #  |\/| _ _|_. _  _    _ _  _ _ _  __|_. _  _
     #  |  |(_) | |(_)| |  (_(_)| | (/_(_ | |(_)| |
@@ -261,7 +265,7 @@ def create_workflow():
              ('ref_func', 'in.ref_func'),
              ('ref_funcmask', 'in.ref_func_weights'),
            ]),
-         (transmanmask, mc, [
+         (transmanmask_mc, mc, [
              ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights
          ]),
          (mc, outputnode, [
@@ -466,6 +470,24 @@ def create_workflow():
     # Apply brain masks to functionals
     # --------------------------------------------------------
 
+    # Dilate mask
+    """
+    Dilate the mask
+    """
+    if False:
+        dilatemask = pe.MapNode(interface=fsl.ImageMaths(suffix='_dil',
+                                                         op_string='-dilF'),
+                                iterfield=['in_file'],
+                                name='dilatemask')
+        featpreproc.connect(reg_funcmasks, 'out_file', dilatemask, 'in_file')
+    else:
+        dilatemask = pe.Node(
+            interface=fsl.ImageMaths(suffix='_dil', op_string='-dilF'),
+            name='dilatemask')
+        featpreproc.connect(inputfiles, 'ref_funcmask', dilatemask, 'in_file')
+
+    featpreproc.connect(dilatemask, 'out_file', outputfiles, 'dilate_mask')
+
     funcbrains = pe.MapNode(
         fsl.BinaryMaths(operation='mul'),
         iterfield=('in_file', 'operand_file'),
@@ -476,8 +498,8 @@ def create_workflow():
         [(mc, funcbrains,
           [('mc.out_file', 'in_file'),
           ]),
-         (transmanmask, funcbrains,
-          [('funcreg.out_file', 'operand_file'),
+         (dilatemask, funcbrains,
+          [('out_file', 'operand_file'),
           ]),
          (funcbrains, outputfiles,
           [('out_file', 'funcbrains'),
@@ -509,8 +531,8 @@ def create_workflow():
         (funcbrains, outliers,
          [('out_file', 'realigned_files'),
           ]),
-        (transmanmask, outliers,
-         [('funcreg.out_file', 'mask_file'),
+        (dilatemask, outliers,
+         [('out_file', 'mask_file'),
           ]),
         (outliers, outputfiles,
          [('outlier_files', 'motion_outliers.@outlier_files'),
@@ -582,21 +604,6 @@ def create_workflow():
 
     featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
 
-    # Dilate mask for spatial smoothing
-    """
-    Dilate the mask
-    """
-    dilatemask = pe.MapNode(interface=fsl.ImageMaths(suffix='_dil',
-                                                     op_string='-dilF'),
-                            iterfield=['in_file'],
-                            name='dilatemask')
-    if False:
-        featpreproc.connect(reg_funcmasks, 'out_file', dilatemask, 'in_file')
-    else:
-        featpreproc.connect(transmanmask, 'funcreg.out_file', dilatemask, 'in_file')
-
-    featpreproc.connect(dilatemask, 'out_file', outputfiles, 'dialate_mask')
-
     # (~ _  _ _|_. _ |  (~ _ _  _  _ _|_|_ . _  _
     # _)|_)(_| | |(_||  _)| | |(_)(_) | | ||| |(_|
     #   |                                       _|
@@ -605,7 +612,7 @@ def create_workflow():
 
     # create_susan_smooth takes care of calculating the mean and median
     #   functional, applying mask to functional, and running the smoothing
-    smooth = create_susan_smooth()
+    smooth = create_susan_smooth(separate_masks=False)
     featpreproc.connect(inputnode, 'fwhm', smooth, 'inputnode.fwhm')
 
     # featpreproc.connect(b0_unwarp, 'out.funcs', smooth, 'inputnode.in_files')
