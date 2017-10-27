@@ -49,8 +49,6 @@ def create_workflow(combine_runs=True):
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         #'funcmasks',
-        'subject_id',
-        'session_id',
         'fwhm',  # smoothing
         'highpass',
 
@@ -68,8 +66,13 @@ def create_workflow(combine_runs=True):
         import pdb
         import re
 
-        # not sure why in_files and in_funcs are being passed as single files after
-        #  starting to use CSV interface (and using synchronize = True)
+        # if input.synchronize = True, then in_files and in_funcs will
+        #  be single strings
+        #  assert not isinstance(in_files, str), "in_files must be list"
+        #  assert not isinstance(in_funcs, str), "in_funcs must be list"
+
+        pdb.set_trace()
+
         if isinstance(in_files, str):
             in_files = [in_files]
 
@@ -167,16 +170,14 @@ def create_workflow(combine_runs=True):
             outfiles.insert(i, [])
             for j, elements in enumerate(files):
                 outfiles[i].append(elements[i])
-
-        import pdb
-        pdb.set_trace()
         return outfiles
 
 
     def num_copes(files):
         return len(files)
 
-    pickfirst = lambda x: x[0]
+    # if pickfirst is list, return first element
+    pickfirst = lambda x: x if isinstance(x,str) else x[0]
 
     if fixed_fx is not None:
         level1_workflow.connect([
@@ -354,8 +355,61 @@ def create_workflow(combine_runs=True):
     timeevents = pe.MapNode(
         interface=calc_curvetracing_events,
         iterfield=('event_log', 'in_nvols', 'TR'),
-        name="timeevents")
+        name='timeevents')
 
+    def get_nvols(funcs):
+        import nibabel as nib
+        nvols = []
+
+        if isinstance(funcs, str):
+            funcs = [funcs]
+
+        for func in funcs:
+            func_img = nib.load(func)
+            header = func_img.header
+            try:
+                nvols.append(func_img.get_data().shape[3])
+            except IndexError as e:
+                # if shape only has 3 dimensions, then it is only 1 volume
+                nvols.append(1)
+        return(nvols)
+
+    def get_TR(funcs):
+        import nibabel as nib
+        TRs = []
+
+        if isinstance(funcs, str):
+            funcs = [funcs]
+
+        for func in funcs:
+            func_img = nib.load(func)
+            header = func_img.header
+            try:
+                TR = round(header.get_zooms()[3], 5)
+            except IndexError as e:
+                TR = 2.5
+                print("Warning: %s did not have TR defined in the header. "
+                      "Using default TR of %0.2f" %
+                      (func, TR))
+
+            assert TR > 1
+            TRs.append(TR)
+        return(TRs)
+
+    level1_workflow.connect([
+        (inputnode, timeevents,
+         [(('funcs', get_nvols), 'in_nvols'),
+          (('funcs', get_TR), 'TR'),
+          ]),
+        (input_events, timeevents,
+         [('out_files', 'event_log')]),
+        (inputnode, modelspec,
+         [('motion_parameters', 'realignment_parameters')]),
+        (modelspec, modelfit,
+         [('session_info', 'inputspec.session_info')]),
+    ])
+
+    # Ignore volumes after last good response
     filter_outliers = pe.MapNode(
         interface=FilterNumsTask(),
         name='filter_outliers',
@@ -365,14 +419,10 @@ def create_workflow(combine_runs=True):
     level1_workflow.connect([
         (inputnode, filter_outliers,
          [('motion_outlier_files', 'in_file')]),
-        (timeevents, filter_outliers,
-         [('out_nvols', 'max_number')]),
         (filter_outliers, modelspec,
          [('out_file', 'outlier_files')]),
-        (inputnode, modelspec,
-         [('motion_parameters', 'realignment_parameters')]),
-        (modelspec, modelfit,
-         [('session_info', 'inputspec.session_info')]),
+        (timeevents, filter_outliers,
+         [('out_nvols', 'max_number')]),
     ])
 
 
@@ -431,39 +481,6 @@ def create_workflow(combine_runs=True):
     # level1_workflow.config['execution'] = dict(
     #     crashdump_dir=os.path.abspath('./fsl/crashdumps'))
 
-
-    def get_nvols(funcs):
-        import nibabel as nib
-        nvols = []
-        for func in funcs:
-            func_img = nib.load(func)
-            header = func_img.header
-            try:
-                nvols.append(func_img.get_data().shape[3])
-            except IndexError as e:
-                # if shape only has 3 dimensions, then it is only 1 volume
-                nvols.append(1)
-        return(nvols)
-
-
-    def get_TR(funcs):
-        import nibabel as nib
-        TRs = []
-        for func in funcs:
-            func_img = nib.load(func)
-            header = func_img.header
-            try:
-                TR = round(header.get_zooms()[3], 5)
-            except IndexError as e:
-                TR = 2.5
-                print("Warning: %s did not have TR defined in the header. "
-                      "Using default TR of %0.2f" %
-                      (func, TR))
-
-            assert TR > 1
-            TRs.append(TR)
-        return(TRs)
-
     # Ignore volumes after subject has finished working for the run
     beh_roi = pe.MapNode(
         fsl.ExtractROI(t_min=0),
@@ -471,12 +488,6 @@ def create_workflow(combine_runs=True):
         iterfield=['in_file', 't_size'])
 
     level1_workflow.connect([
-        (inputnode, timeevents,
-         [(('funcs', get_nvols), 'in_nvols'),
-          (('funcs', get_TR), 'TR'),
-          ]),
-        (input_events, timeevents,
-         [('out_files', 'event_log')]),
         (timeevents, modelspec,
          [(('out_events', evt_info), 'subject_info'),
           ]),
@@ -541,7 +552,7 @@ def run_workflow(csv_file):
         'subject_id',
         'session_id',
         'run_id',
-    ]), name="input")
+    ]), name='input')
 
     if csv_file is not None:
         reader = niu.CSVReader()
@@ -601,7 +612,20 @@ def run_workflow(csv_file):
 
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
-                        base_directory=data_dir), name="input_files")
+                        base_directory=data_dir),
+        name='in_files')
+
+
+    joinfiles = pe.JoinNode(
+        niu.IdentityInterface(fields=[
+            'funcs',
+            'event_log',
+            'highpass',
+            'motion_parameters',
+            'motion_outlier_files',
+        ]),
+        joinsource='input',
+        name='joinfiles')
 
     workflow.connect([
         (inputnode, inputfiles,
@@ -609,30 +633,38 @@ def run_workflow(csv_file):
           ('session_id', 'session_id'),
           ('run_id', 'run_id'),
           ]),
-        (inputnode, modelfit,
-         [('subject_id', 'inputspec.subject_id'),
-          ('session_id', 'inputspec.session_id'),
+        (inputfiles, joinfiles,
+         [('funcs', 'funcs'),
+          ('event_log', 'event_log'),
+          ('highpass', 'highpass'),
+          ('motion_parameters', 'motion_parameters'),
+          ('motion_outlier_files', 'motion_outlier_files'),
           ]),
         (inputfiles, modelfit,
+         [('ref_func', 'inputspec.ref_func'),
+          ('ref_funcmask', 'inputspec.ref_funcmask'),
+          ]),
+        (joinfiles, modelfit,
          [('funcs', 'inputspec.funcs'),
-          #('funcmasks', 'inputspec.funcmasks'),
           ('highpass', 'inputspec.highpass'),
           ('motion_parameters', 'inputspec.motion_parameters'),
           ('motion_outlier_files', 'inputspec.motion_outlier_files'),
           ('event_log', 'inputspec.event_log'),
-          ('ref_func', 'inputspec.ref_func'),
-          ('ref_funcmask', 'inputspec.ref_funcmask'),
-          ])
+          ]),
     ])
 
     modelfit.inputs.inputspec.fwhm = 2.0
     modelfit.inputs.inputspec.highpass = 50
+    modelfit.write_graph(simple_form=True)
+    modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
+    # modelfit.write_graph(graph2use='detailed', format='png', simple_form=False)
+
     workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
-    workflow.write_graph()
-    workflow.write_graph(graph2use='orig', format='png', simple_form=True)
-    #workflow.write_graph(graph2use='detailed', format='png', simple_form=True)
+    workflow.write_graph(simple_form=True)
+    workflow.write_graph(graph2use='colored', format='png', simple_form=True)
+    # workflow.write_graph(graph2use='detailed', format='png', simple_form=False)
     workflow.run()
 
 

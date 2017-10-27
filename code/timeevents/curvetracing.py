@@ -14,6 +14,9 @@ def process_events(event_log, TR, in_nvols):
 
     import pandas as pd
 
+    # print("\n\n\nBegan processing: %s" % event_log)
+    # pdb.set_trace()
+
     class Event(object):
         def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None):
             self.time_s = start_s
@@ -26,7 +29,7 @@ def process_events(event_log, TR, in_nvols):
 
             self.event_num = event_num
 
-    events = pd.read_table(event_log)
+    events = pd.read_table(event_log, na_values='n/a')
 
     split_ev = {
         'CurveUL': [],  # When correct response
@@ -201,6 +204,9 @@ def process_events(event_log, TR, in_nvols):
                 'amplitude': 1})
         cond_events[key] = pd.DataFrame(cevents)
 
+    # import pdb
+    # print("\n\n\nFinished processing: %s" % event_log)
+    # pdb.set_trace()
     return (cond_events, end_time_s, nvols)
 
 
@@ -212,3 +218,14 @@ calc_curvetracing_events = niu.Function(
     output_names=['out_events', 'out_end_time_s', 'out_nvols'],
     function=process_events,
 )
+
+if __name__ == '__main__':
+    calc_curvetracing_events.inputs.event_log = (
+        '/big/NHP_MRI/BIDS_raw/sub-eddy/ses-20170614/func/'
+        'sub-eddy_ses-20170614_task-curvetracing_run-02_events.tsv')
+    calc_curvetracing_events.inputs.TR = 2.5
+    calc_curvetracing_events.inputs.in_nvols = 420
+    res = calc_curvetracing_events.run()
+
+    # import pdb
+    # pdb.set_trace()
