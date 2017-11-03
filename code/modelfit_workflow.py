@@ -559,7 +559,7 @@ generate any output. To actually run the analysis on the data the
 
 def run_workflow(csv_file):
     workflow = pe.Workflow(name='level1flow')
-    workflow.base_dir = os.path.abspath('./workingdirs')
+    # workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config
     config.enable_debug_mode()
