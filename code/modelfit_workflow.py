@@ -71,8 +71,6 @@ def create_workflow(combine_runs=True):
         #  assert not isinstance(in_files, str), "in_files must be list"
         #  assert not isinstance(in_funcs, str), "in_funcs must be list"
 
-        pdb.set_trace()
-
         if isinstance(in_files, str):
             in_files = [in_files]
 
@@ -258,74 +256,7 @@ def create_workflow(combine_runs=True):
     #    """
     #    Experiment specific components
     #    ------------------------------
-    #    The nipype tutorial contains data for two subjects.  Subject data
-    #    is in two subdirectories, ``s1`` and ``s2``.  Each subject directory
-    #    contains four functional volumes: f3.nii, f5.nii, f7.nii, f10.nii. And
-    #    one anatomical volume named struct.nii.
-    #    Below we set some variables to inform the ``datasource`` about the
-    #    layout of our data.  We specify the location of the data, the subject
-    #    sub-directories and a dictionary that maps each run to a mnemonic (or
-    #    field) for the run type (``struct`` or ``func``).  These fields become
-    #    the output fields of the ``datasource`` node in the pipeline.
-    #    In the example below, run 'f3' is of type 'func' and gets mapped to a
-    #    nifti filename through a template '%s.nii'. So 'f3' would become
-    #    'f3.nii'.
     #    """
-
-    #    # Specify the subject directories
-    #    subject_list = ['eddy']
-    #    session_list = ['20170511']
-
-    #    # Map field names to individual subject runs.
-    #    # info = dict(func=[['subject_id', ['f3', 'f5', 'f7', 'f10']]],
-    #    #             struct=[['subject_id', 'struct']])
-
-    #    infosource = pe.Node(niu.IdentityInterface(fields=[
-    #        'subject_id',
-    #        'session_id',
-    #        'run_id',
-    #    ]), name="infosource")
-
-    #    """Here we set up iteration over all the subjects. The following line
-    #    is a particular example of the flexibility of the system.  The
-    #    ``datasource`` attribute ``iterables`` tells the pipeline engine that
-    #    it should repeat the analysis on each of the items in the
-    #    ``subject_list``. In the current example, the entire first level
-    #    preprocessing and estimation will be repeated for each subject
-    #    contained in subject_list.
-    #    """
-
-    #    infosource.iterables = [
-    #        ('subject_id', subject_list),
-    #        ('session_id', session_list),
-    #        ('run_id', ['01']),
-    #    ]
-
-    """
-    Now we create a :class:`nipype.interfaces.io.DataSource` object and
-    fill in the information from above about the layout of our data.  The
-    :class:`nipype.pipeline.NodeWrapper` module wraps the interface object
-    and provides additional housekeeping and pipeline specific
-    functionality.
-    """
-
-    # The preprocessing workflow currently reads much of the image data.
-
-    # level1_workflow.connect([
-    #     (infosource, inputfiles,
-    #      [('subject_id', 'subject_id'),
-    #       ('session_id', 'session_id'),
-    #       ('run_id', 'run_id'),
-    #       ]),
-    #     (infosource, preproc,
-    #      [('subject_id', 'inputspec.subject_id'),
-    #       ('session_id', 'inputspec.session_id'),
-    #       ]),
-    #     (inputfiles, preproc,
-    #      [('funcs', 'inputspec.funcs')
-    #       ]),
-    # ])
-
 
     """
     Use the get_node function to retrieve an internal node by name. Then set the
@@ -426,6 +357,29 @@ def create_workflow(combine_runs=True):
     ])
 
 
+    # def evt_info(cond_events):
+    #     output = []
+
+    #     # for each run
+    #     for cond_events0 in cond_events:
+    #         from nipype.interfaces.base import Bunch
+    #         from copy import deepcopy
+
+    #         run_results = []
+    #         names = ['PreSwitchCurves', 'ResponseCues']
+    #         run_results = Bunch(
+    #             conditions=names,
+    #             onsets=[
+    #                 deepcopy(cond_events0['PreSwitchCurves'].time),
+    #                 deepcopy(cond_events0['ResponseCues'].time)],
+    #             durations=[
+    #                 deepcopy(cond_events0['PreSwitchCurves'].dur),
+    #                 deepcopy(cond_events0['ResponseCues'].dur)],
+    #         )
+
+    #         output.append(run_results)
+    #     return output
+
     def evt_info(cond_events):
         output = []
 
@@ -435,15 +389,58 @@ def create_workflow(combine_runs=True):
             from copy import deepcopy
 
             run_results = []
-            names = ['PreSwitchCurves', 'ResponseCues']
+            names = [
+                'AttendUL_COR',
+                'AttendDL_COR',
+                'AttendUR_COR',
+                'AttendDR_COR',
+                'AttendCenter_COR',
+                'HandLeft',
+                'HandRight',
+                'Reward',
+                'ResponseCues',
+                ]
             run_results = Bunch(
                 conditions=names,
                 onsets=[
-                    deepcopy(cond_events0['PreSwitchCurves'].time),
-                    deepcopy(cond_events0['ResponseCues'].time)],
+                    deepcopy(cond_events0['AttendUL_COR'].time),
+                    deepcopy(cond_events0['AttendDL_COR'].time),
+                    deepcopy(cond_events0['AttendUR_COR'].time),
+                    deepcopy(cond_events0['AttendDR_COR'].time),
+                    deepcopy(cond_events0['AttendCenter_COR'].time),
+                    deepcopy(cond_events0['CurveNotCOR'].time),
+
+                    deepcopy(cond_events0['HandLeft'].time),
+                    deepcopy(cond_events0['HandRight'].time),
+                    deepcopy(cond_events0['Reward'].time),
+                    deepcopy(cond_events0['ResponseCues'].time),
+                ],
                 durations=[
-                    deepcopy(cond_events0['PreSwitchCurves'].dur),
-                    deepcopy(cond_events0['ResponseCues'].dur)],
+                    deepcopy(cond_events0['AttendUL_COR'].dur),
+                    deepcopy(cond_events0['AttendDL_COR'].dur),
+                    deepcopy(cond_events0['AttendUR_COR'].dur),
+                    deepcopy(cond_events0['AttendDR_COR'].dur),
+                    deepcopy(cond_events0['AttendCenter_COR'].dur),
+                    deepcopy(cond_events0['CurveNotCOR'].dur),
+
+                    deepcopy(cond_events0['HandLeft'].dur),
+                    deepcopy(cond_events0['HandRight'].dur),
+                    deepcopy(cond_events0['Reward'].dur),
+                    deepcopy(cond_events0['ResponseCues'].dur),
+                ],
+                amplitudes=[
+                    deepcopy(cond_events0['AttendUL_COR'].amplitude),
+                    deepcopy(cond_events0['AttendDL_COR'].amplitude),
+                    deepcopy(cond_events0['AttendUR_COR'].amplitude),
+                    deepcopy(cond_events0['AttendDR_COR'].amplitude),
+                    deepcopy(cond_events0['AttendCenter_COR'].amplitude),
+                    deepcopy(cond_events0['CurveNotCOR'].amplitude),
+
+                    deepcopy(cond_events0['HandLeft'].amplitude),
+                    deepcopy(cond_events0['HandRight'].amplitude),
+                    deepcopy(cond_events0['Reward'].amplitude),
+                    deepcopy(cond_events0['ResponseCues'].amplitude)
+                ],
             )
 
             output.append(run_results)
@@ -457,10 +454,38 @@ def create_workflow(combine_runs=True):
     described above.
     """
 
-    cont1 = ['Curves>Baseline', 'T',  # t-test
-             ['PreSwitchCurves', 'ResponseCues'],
-             [0.5, 0.5]]
-    contrasts = [cont1]
+    contrasts = [
+        ['Curves>Baseline', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR', 'AttendCenter_COR'],
+         [1.0/5]*5],
+        ['AttendLeft>AttendRight', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [1.0, 1.0, -1.0, -1.0]],
+        ['AttendRight>AttendLeft', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [-1.0, -1.0, 1.0, 1.0]],
+        ['AttendUL>AttendOther', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [3.0, -1.0, -1.0, -1.0]],
+        ['AttendDL>AttendOther', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [-1.0, 3.0, -1.0, -1.0]],
+        ['AttendUR>AttendOther', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [-1.0, -1.0, 3.0, -1.0]],
+        ['AttendDR>AttendOther', 'T',  # t-test
+         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
+         [-1.0, -1.0, -1.0, 3.0]],
+        ['HandLeft>HandRight', 'T',  # t-test
+         ['HandLeft', 'HandRight'],
+         [1.0, -1.0]],
+        ['HandRight>HandLeft', 'T',  # t-test
+         ['HandLeft', 'HandRight'],
+         [-1.0, 1.0]],
+        ['Reward>Baseline', 'T',  # t-test
+         ['Reward'],
+         [1.0]],
+    ]
 
     # cont1 = ['Task>Baseline', 'T', ['Task-Odd', 'Task-Even'], [0.5, 0.5]]
     # cont2 = ['Task-Odd>Task-Even', 'T', ['Task-Odd', 'Task-Even'], [1, -1]]
@@ -472,7 +497,7 @@ def create_workflow(combine_runs=True):
     modelspec.inputs.high_pass_filter_cutoff = hpcutoff_s
 
     modelfit.inputs.inputspec.interscan_interval = TR  # to-do: specify per func
-    modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': False}}
+    modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': True}}
     modelfit.inputs.inputspec.contrasts = contrasts
     modelfit.inputs.inputspec.model_serial_correlations = True
     modelfit.inputs.inputspec.film_threshold = 1000

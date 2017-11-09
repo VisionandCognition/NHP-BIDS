@@ -18,7 +18,7 @@ def process_events(event_log, TR, in_nvols):
     # pdb.set_trace()
 
     class Event(object):
-        def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None):
+        def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None, amplitude=1):
             self.time_s = start_s
             if dur_s is not None:
                 self.dur_s = float(dur_s)
@@ -28,19 +28,20 @@ def process_events(event_log, TR, in_nvols):
                 self.dur_s = 0
 
             self.event_num = event_num
+            self.amplitude = amplitude
 
     events = pd.read_table(event_log, na_values='n/a')
 
     split_ev = {
-        'CurveUL': [],  # When correct response
-        'CurveDL': [],
-        'CurveUR': [],
-        'CurveDR': [],
-        'CurveCenter': [],
-        'CurveIncorrect': [],  # False hit / wrong hand
+        'AttendUL_COR': [],  # When correct response
+        'AttendDL_COR': [],
+        'AttendUR_COR': [],
+        'AttendDR_COR': [],
+        'AttendCenter_COR': [],
+        'CurveFalseHit': [],  # False hit / wrong hand
         'CurveNoResponse': [],
         'CurveFixationBreak': [],
-        'CurveNotCorrect': [],  # Catch-all: Incorrect, NoResponse, Fix. Break
+        'CurveNotCOR': [],  # Catch-all: Incorrect, NoResponse, Fix. Break
 
         'PreSwitchCurves': [],  # All PreSwitch displays with Curves & targets
         'ResponseCues': [],  # All response cues events, unless
@@ -129,9 +130,9 @@ def process_events(event_log, TR, in_nvols):
             split_ev['PreSwitchCurves'].append(
                 Event(curve_stim_on, event.time_s))
 
-            event_type = 'Curve%s' % curve_target
+            event_type = 'Attend%s_COR' % curve_target
             if curve_response == 'INCORRECT':
-                event_type = 'CurveIncorrect'
+                event_type = 'CurveFalseHit'
 
             elif curve_response is None:
                 if curve_switched:
@@ -148,10 +149,10 @@ def process_events(event_log, TR, in_nvols):
                     'Unhandled curve_response %s' % curve_response)
 
             split_ev[event_type].append(Event(curve_stim_on, event.time_s))
-            if (event_type == 'CurveIncorrect' or
+            if (event_type == 'CurveFalseHit' or
                     event_type == 'CurveNoResponse' or
                     event_type == 'CurveFixationBreak'):
-                split_ev['CurveNotCorrect'].append(
+                split_ev['CurveNotCOR'].append(
                     Event(curve_stim_on, event.time_s))
 
             if response_cues_on is not None:
@@ -172,15 +173,15 @@ def process_events(event_log, TR, in_nvols):
 
         elif event.event == 'ResponseReward' or event.event == 'TaskReward':
             reward_dur = event.info
-            split_ev['Reward'].append(Event(event.time_s, dur_s=reward_dur))
+            split_ev['Reward'].append(Event(event.time_s, amplitude=reward_dur))
 
         elif event.event == 'ManualReward':
             reward_dur = event.info
             has_ManualRewardField = True
-            split_ev['Reward'].append(Event(event.time_s, dur_s=reward_dur))
+            split_ev['Reward'].append(Event(event.time_s, amplitude=reward_dur))
 
         elif event.event == 'Reward' and event.info == 'Manual':
-            split_ev['Reward'].append(Event(event.time_s, dur_s=0.04))
+            split_ev['Reward'].append(Event(event.time_s, amplitude=0.04))
             assert not has_ManualRewardField, (
                 "Event log should not have ('Reward','Manual') "
                 "entry if it has ('ManualReward') entry.")
@@ -201,8 +202,8 @@ def process_events(event_log, TR, in_nvols):
             cevents.append({
                 'time': ev.time_s,
                 'dur': ev.dur_s,
-                'amplitude': 1})
-        cond_events[key] = pd.DataFrame(cevents)
+                'amplitude': ev.amplitude})
+        cond_events[key] = pd.DataFrame(cevents, dtype=float)
 
     # import pdb
     # print("\n\n\nFinished processing: %s" % event_log)
