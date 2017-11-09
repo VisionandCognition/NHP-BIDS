@@ -879,7 +879,7 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/preprocess-template.sh'})
+        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/code/pbs/template.sh'})
     else:
         workflow.run()
 

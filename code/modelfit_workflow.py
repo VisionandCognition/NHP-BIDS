@@ -557,7 +557,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow(csv_file):
+def run_workflow(csv_file, use_pbs):
     workflow = pe.Workflow(name='level1flow')
     # workflow.base_dir = os.path.abspath('./workingdirs')
 
@@ -690,7 +690,10 @@ def run_workflow(csv_file):
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
     # workflow.write_graph(graph2use='detailed', format='png', simple_form=False)
-    workflow.run()
+    if use_pbs:
+        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/pbs-template.sh'})
+    else:
+        workflow.run()
 
 
 if __name__ == '__main__':
@@ -700,5 +703,7 @@ if __name__ == '__main__':
             description='Analyze model fit.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
+            help='Whether to use pbs plugin.')
     args = parser.parse_args()
     run_workflow(**vars(args))
