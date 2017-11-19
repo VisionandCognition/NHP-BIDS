@@ -29,6 +29,8 @@ import nipype.workflows.fmri.fsl as fslflows
 import preprocessing_workflow as preproc
 from filter_numbers import FilterNumsTask
 
+from nipype import config, logging
+
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
@@ -68,8 +70,8 @@ def create_workflow(combine_runs=True):
 
         # if input.synchronize = True, then in_files and in_funcs will
         #  be single strings
-        #  assert not isinstance(in_files, str), "in_files must be list"
-        #  assert not isinstance(in_funcs, str), "in_funcs must be list"
+        assert not isinstance(in_files, str), "in_files must be list"
+        assert not isinstance(in_funcs, str), "in_funcs must be list"
 
         if isinstance(in_files, str):
             in_files = [in_files]
@@ -158,13 +160,13 @@ def create_workflow(combine_runs=True):
         """ Sort by copes and the runs, ie. 
             [[cope1_run1, cope1_run2], [cope2_run1, cope2_run2]]
         """
-        if type(files[0]) is str:  # Hack - probably should be fixed upstream
-            # Assume only one cope?
-            return [files]
+        assert files[0] is not str
 
-        numelements = len(files[0])
+        numcopes = len(files[0])
+        assert numcopes > 1
+
         outfiles = []
-        for i in range(numelements):
+        for i in range(numcopes):
             outfiles.insert(i, [])
             for j, elements in enumerate(files):
                 outfiles[i].append(elements[i])
@@ -173,9 +175,6 @@ def create_workflow(combine_runs=True):
 
     def num_copes(files):
         return len(files)
-
-    # if pickfirst is list, return first element
-    pickfirst = lambda x: x if isinstance(x,str) else x[0]
 
     if fixed_fx is not None:
         level1_workflow.connect([
@@ -270,7 +269,7 @@ def create_workflow(combine_runs=True):
     hpcutoff_s = 50.  # FWHM in seconds
     TR = 2.5
     hpcutoff_nvol = hpcutoff_s / 2.5  # FWHM in volumns
-    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in volumes
+    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in volumes - (remember to run with Python 3)
 
     """
     Setup a function that returns subject-specific information about the
@@ -502,7 +501,7 @@ def create_workflow(combine_runs=True):
     modelfit.inputs.inputspec.model_serial_correlations = True
     modelfit.inputs.inputspec.film_threshold = 1000
 
-    level1_workflow.base_dir = os.path.abspath('./workingdirs/level1flow')
+    # level1_workflow.base_dir = os.path.abspath('./workingdirs/level1flow')
     # level1_workflow.config['execution'] = dict(
     #     crashdump_dir=os.path.abspath('./fsl/crashdumps'))
 
@@ -559,9 +558,18 @@ generate any output. To actually run the analysis on the data the
 
 def run_workflow(csv_file, use_pbs):
     workflow = pe.Workflow(name='level1flow')
-    # workflow.base_dir = os.path.abspath('./workingdirs')
+    workflow.base_dir = os.path.abspath('./workingdirs')
 
-    from nipype import config
+    from nipype import config, logging
+    config.update_config(
+        {'logging': 
+         {'log_directory': os.path.join(workflow.base_dir, 'level1flow'),
+          'log_to_file': True,
+          'workflow_level': 'DEBUG',
+          'interface_level': 'DEBUG',
+          }})
+    logging.update_logging(config)
+
     config.enable_debug_mode()
 
     # redundant with enable_debug_mode() ...
@@ -593,7 +601,6 @@ def run_workflow(csv_file, use_pbs):
             ('session_id', session_list),
             ('run_id', run_list),
         ]
-        print(run_list)
         inputnode.synchronize = True
  
         templates = {
