@@ -1,4 +1,4 @@
-#PBS -lwalltime=6:00:00  
+#PBS -lwalltime=48:00:00  
 #PBS -lnodes=1:ppn=16
 #PBS -S /bin/bash
 
