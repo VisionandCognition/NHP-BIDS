@@ -34,6 +34,43 @@ from nipype import config, logging
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
+def debug_workflow(combine_runs=True):
+    level1_workflow = pe.Workflow(name='debug')
+    # ------------------ Specify variables
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        #'funcmasks',
+        'fwhm',  # smoothing
+        'highpass',
+
+        'funcs',
+        'event_log',
+        'motion_parameters',
+        'motion_outlier_files',
+
+        'ref_func',
+        'ref_funcmask',
+    ]), name="inputspec")
+
+    def first(x):
+        import pdb
+        pdb.set_trace()
+        return x[0]
+
+    outputfiles = pe.Node(nio.DataSink(
+        base_directory=ds_root,
+        container='level1flow',
+        parameterization=True),
+        name="output_files")
+
+    level1_workflow.connect([
+        (inputnode, outputfiles,
+         [
+             (('funcs', first), 'funcs'),
+          ]),
+    ])
+    return level1_workflow
+
+
 def create_workflow(combine_runs=True):
 
     level1_workflow = pe.Workflow(name='level1flow')
@@ -557,13 +594,13 @@ generate any output. To actually run the analysis on the data the
 """
 
 def run_workflow(csv_file, use_pbs):
-    workflow = pe.Workflow(name='level1flow')
+    workflow = pe.Workflow(name='run_level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config, logging
     config.update_config(
         {'logging': 
-         {'log_directory': os.path.join(workflow.base_dir, 'level1flow'),
+         {'log_directory': os.path.join(workflow.base_dir, 'run_level1flow'),
           'log_to_file': True,
           'workflow_level': 'DEBUG',
           'interface_level': 'DEBUG',
@@ -579,6 +616,7 @@ def run_workflow(csv_file, use_pbs):
     workflow.hash_method = 'content'
 
     modelfit = create_workflow()
+    # modelfit = debug_workflow()
     import bids_templates as bt
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -587,77 +625,64 @@ def run_workflow(csv_file, use_pbs):
         'run_id',
     ]), name='input')
 
-    if csv_file is not None:
-        reader = niu.CSVReader()
-        reader.inputs.header = True  
-        reader.inputs.in_file = csv_file
-        out = reader.run()  
-        subject_list = out.outputs.subject
-        session_list = out.outputs.session
-        run_list = out.outputs.run
+    assert csv_file is not None, "--csv argument must be defined!"
 
-        inputnode.iterables = [
-            ('subject_id', subject_list),
-            ('session_id', session_list),
-            ('run_id', run_list),
-        ]
-        inputnode.synchronize = True
- 
-        templates = {
-            'funcs':
-            'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
+    reader = niu.CSVReader()
+    reader.inputs.header = True
+    reader.inputs.in_file = csv_file
+    out = reader.run()
+    subject_list = out.outputs.subject
+    session_list = out.outputs.session
+    run_list = out.outputs.run
 
-            # 'funcmasks':
-            # 'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
-            #     'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc'
-            #     '_mc_unwarped.nii.gz',
+    inputnode.iterables = [
+        ('subject_id', subject_list),
+        ('session_id', session_list),
+        ('run_id', run_list),
+    ]
+    inputnode.synchronize = True
 
-            'highpass':
-            'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
+    templates = {
+        'funcs':
+        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
-            'motion_parameters':
-            'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc.param.1D',
+        # 'funcmasks':
+        # 'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
+        #     'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc'
+        #     '_mc_unwarped.nii.gz',
 
-            'motion_outlier_files':
-            'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
-                'art.sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_mc'
-                '_maths_outliers.txt',
+        'highpass':
+        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
-            'event_log':
-            'sub-{subject_id}/ses-{session_id}/func/'
-                # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-                'sub-{subject_id}_ses-{session_id}*run-{run_id}*'
-                # '.nii.gz',
-                '_events.tsv',
+        'motion_parameters':
+        'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc.param.1D',
 
-            'ref_func':
-            'featpreproc/reference/func/*.nii.gz',
+        'motion_outlier_files':
+        'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
+            'art.sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_mc'
+            '_maths_outliers.txt',
 
-            'ref_funcmask':
-            'featpreproc/reference/func_mask/*.nii.gz',
-        }
-    else:
-        assert False, "Use CSV file"
+        'event_log':
+        'sub-{subject_id}/ses-{session_id}/func/'
+            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+            'sub-{subject_id}_ses-{session_id}*run-{run_id}*'
+            # '.nii.gz',
+            '_events.tsv',
+
+        'ref_func':
+        'featpreproc/reference/func/*.nii.gz',
+
+        'ref_funcmask':
+        'featpreproc/reference/func_mask/*.nii.gz',
+    }
 
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir),
         name='in_files')
-
-
-    joinfiles = pe.JoinNode(
-        niu.IdentityInterface(fields=[
-            'funcs',
-            'event_log',
-            'highpass',
-            'motion_parameters',
-            'motion_outlier_files',
-        ]),
-        joinsource='input',
-        name='joinfiles')
 
     workflow.connect([
         (inputnode, inputfiles,
@@ -665,23 +690,46 @@ def run_workflow(csv_file, use_pbs):
           ('session_id', 'session_id'),
           ('run_id', 'run_id'),
           ]),
-        (inputfiles, joinfiles,
-         [('funcs', 'funcs'),
-          ('event_log', 'event_log'),
+    ])
+
+    join_input = pe.JoinNode(
+        niu.IdentityInterface(
+            fields=[ 
+                # 'subject_id',
+                # 'session_id',
+                # 'run_id',
+                'funcs',
+                'highpass',
+                'motion_parameters',
+                'motion_outlier_files',
+                'event_log',
+                'ref_func',
+                'ref_funcmask',
+            ]
+            ),
+            joinsource='input',
+            # unique=True,
+            name='join_input')
+
+    workflow.connect([
+        (inputfiles, join_input,
+         [
+          ('funcs', 'funcs'),
           ('highpass', 'highpass'),
           ('motion_parameters', 'motion_parameters'),
           ('motion_outlier_files', 'motion_outlier_files'),
+          ('event_log', 'event_log'),
+          ('ref_func', 'ref_func'),
+          ('ref_funcmask', 'ref_funcmask'),
           ]),
-        (inputfiles, modelfit,
-         [('ref_func', 'inputspec.ref_func'),
-          ('ref_funcmask', 'inputspec.ref_funcmask'),
-          ]),
-        (joinfiles, modelfit,
-         [('funcs', 'inputspec.funcs'),
+        (join_input, modelfit,
+         [
+          ('funcs', 'inputspec.funcs'),
           ('highpass', 'inputspec.highpass'),
           ('motion_parameters', 'inputspec.motion_parameters'),
           ('motion_outlier_files', 'inputspec.motion_outlier_files'),
-          ('event_log', 'inputspec.event_log'),
+          ('event_log', 'inputspec.event_log'), ('ref_func', 'inputspec.ref_func'),
+          ('ref_funcmask', 'inputspec.ref_funcmask'),
           ]),
     ])
 
