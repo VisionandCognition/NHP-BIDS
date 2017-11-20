@@ -234,7 +234,7 @@ def create_workflow(combine_runs=True):
 
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
-        container='level1flow',
+        container='modelfit',
         parameterization=True),
         name="output_files")
 

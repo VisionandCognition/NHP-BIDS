@@ -25,5 +25,5 @@ export PATH=$PATH:~/NHP-BIDS/code/mc/
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
-#./code/fmri_workflow.py
+#./code/modelfit_workflow.py --csv curve-tracing.csv --pbs
 ./code/modelfit_workflow.py --csv curve-tracing.csv
