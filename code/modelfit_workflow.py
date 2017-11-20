@@ -708,6 +708,13 @@ def run_workflow(csv_file, use_pbs):
             ]
             ),
             joinsource='input',
+            joinfield=[
+                'funcs',
+                'highpass',
+                'motion_parameters',
+                'motion_outlier_files',
+                'event_log',
+            ],
             # unique=True,
             name='join_input')
 
