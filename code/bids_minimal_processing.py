@@ -17,7 +17,7 @@ import sys
 import errno
 
 import nipype.interfaces.io as nio           # Data i/o
-import nipype.interfaces.utility as util     # utility
+import nipype.interfaces.utility as niu      # utility
 import nipype.pipeline.engine as pe          # pypeline engine
 import nipype.algorithms.modelgen as model   # model generation
 import nipype.algorithms.rapidart as ra      # artifact detection
@@ -50,7 +50,7 @@ def create_images_workflow():
             sphinx=True,
         ),
         iterfield=['in_file'],
-        name='mc')
+        name='sphinx')
 
     workflow.connect(inputs, 'images',
                      sphinx, 'in_file')
@@ -82,8 +82,15 @@ def process_functionals(raw_dir, glob_pat):
                   (raw_dir, fn, fn))
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
+def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+    ]), name="input")
+    import bids_templates as bt
 
-if __name__ == '__main__':
+    from nipype import config
+    config.enable_debug_mode()
 
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -92,12 +99,40 @@ if __name__ == '__main__':
     output_dir = ''
     working_dir = 'workingdirs/minimal_processing'
 
-    subject_list = bt.subject_list
-    session_list = bt.session_list
+    # ------------------ Input Files
+    infosource = Node(IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
+    ]), name="infosource")
+
+    if csv_file is not None:
+        reader = niu.CSVReader()
+        reader.inputs.header = True  
+        reader.inputs.in_file = csv_file
+        out = reader.run()  
+        subject_list = out.outputs.subject
+        session_list = out.outputs.session
+        infosource.iterables = [
+            ('session_id', session_list),
+            ('subject_id', subject_list),
+        ]
+        if 'run' in out.outputs.traits().keys():
+            print('Ignoring the "run" field of %s.' % csv_file)
+
+        infosource.synchronize = True
+    else:  # neglected code
+        if session is not None:
+            session_list = [session]  # ['20170511']
+        else:
+            session_list = bt.session_list  # ['20170511']
+
+        infosource.iterables = [
+            ('session_id', session_list),
+            ('subject_id', bt.subject_list),
+        ]
 
     process_images = True
 
-    # ------------------ Input Files
     if process_images:
         datatype_list = bt.datatype_list
 
@@ -113,7 +148,7 @@ if __name__ == '__main__':
         imgfiles = Node(
             nio.SelectFiles({
                 'images':
-                'unprocessed/%s' % bt.templates['images'],
+                'sourcedata/%s' % bt.templates['images'],
             }, base_directory=data_dir), name="img_files")
 
     evsource = Node(IdentityInterface(fields=[
@@ -125,9 +160,8 @@ if __name__ == '__main__':
     evfiles = Node(
         nio.SelectFiles({
             'csv_eventlogs':
-            'unprocessed/sub-{subject_id}/ses-{session_id}/func/'
+            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
-            # 'sub-{subject_id}_ses-{session_id}_*run-01_events/Log_*_eventlog.csv',
         }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
@@ -189,9 +223,26 @@ if __name__ == '__main__':
     workflow.connect(csv2tsv, 'out_file',
                      outputfiles, 'minimal_processing.@eventlogs')
 
-    workflow.stop_on_first_crash = True
+    workflow.stop_on_first_crash = stop_on_first_crash
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     #workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 10})
     workflow.run()
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+            description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
+    parser.add_argument('-s', '--session', type=str, default=None,
+            help='Session ID, e.g. 20170511.')
+    parser.add_argument('--csv', dest='csv_file', default=None,
+                        help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
+            help='Whether to use pbs plugin.')
+    parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash', action='store_true',
+            help='Whether to use pbs plugin.')
+
+    args = parser.parse_args()
+
+    run_workflow(**vars(args))

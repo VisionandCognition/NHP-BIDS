@@ -64,15 +64,15 @@ def create_workflow():
     # SelectFiles
     templates = {
         'ref_manual_fmapmask':  # was: manual_fmapmask
-        'manual-masks/sub-eddy/ses-20170511/fmap/'
+        'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
 
         'ref_fmap_magnitude':
-        'manual-masks/sub-eddy/ses-20170511/fmap/'
+        'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
 
         'ref_fmap_phasediff':
-        'resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
+        'derivatives/resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
             'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc'
             '.nii.gz',
 
@@ -82,21 +82,21 @@ def create_workflow():
         #     '_res-1x1x1_manualweights.nii.gz',
 
         'ref_func':  # was: manualmask_func_ref
-        'manual-masks/sub-eddy/ses-20170607/func/'
+        'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
             'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
             'res-1x1x1_fnirt_reference.nii.gz',
 
         'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-eddy/ses-20170607/func/'
+        'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
             'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
             'res-1x1x1_fnirt_mask.nii.gz',
 
         'ref_t1':
-        'manual-masks/sub-eddy/ses-20170511/anat/'
+        'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
             'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/sub-eddy/ses-20170511/anat/'
+        'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
             'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
 
         # 'funcs':
@@ -107,12 +107,12 @@ def create_workflow():
         #     '_nvol10.nii.gz',
 
         'fmap_phasediff':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
+        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
             'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc'
             '.nii.gz',
 
         'fmap_magnitude':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
+        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
             'sub-{subject_id}_ses-{session_id}_magnitude1_res-1x1x1_preproc'
             '.nii.gz',
 
@@ -147,7 +147,7 @@ def create_workflow():
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
-        container='featpreproc',
+        container='derivatives',
         parameterization=True),
         name="output_files")
 
@@ -233,7 +233,7 @@ def create_workflow():
 
     # fieldmaps not being used
     if False:
-        trans_fmapmask = transmanmask.clone('trans_fmapmask')
+        trans_fmapmask = transmanmask_mc.clone('trans_fmapmask')
         featpreproc.connect(inputfiles, 'ref_manual_fmapmask',
                             trans_fmapmask, 'in.manualmask')
         featpreproc.connect(inputfiles, 'fmap_magnitude',
@@ -273,7 +273,7 @@ def create_workflow():
            ('ref_func', 'in.ref_func'),
            ('ref_funcmask', 'in.ref_func_weights'),
           ]),
-         (transmanmask, pre_mc,
+         (transmanmask_mc, pre_mc,
           [
            ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights
          ]),
@@ -346,7 +346,7 @@ def create_workflow():
              (mc, b0_unwarp,
               [('mc.out_file', 'in.funcs'),
                ]),
-             (transmanmask, b0_unwarp,
+             (transmanmask_mc, b0_unwarp,
               [('funcreg.out_file', 'in.funcmasks'),
                ]),
              (trans_fmapmask, b0_unwarp,
@@ -847,7 +847,7 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
 
     templates = {
         'funcs':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
             'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
             #'_nvol10'
@@ -890,7 +890,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--run', dest='run_num', type=int,
             help='Run number, e.g. 1.')
     parser.add_argument('-s', '--session', type=str,
-            help='Run number, e.g. 20170511.')
+            help='Session ID, e.g. 20170511.')
     parser.add_argument('--csv', dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',

@@ -306,7 +306,9 @@ def create_workflow(combine_runs=True):
     hpcutoff_s = 50.  # FWHM in seconds
     TR = 2.5
     hpcutoff_nvol = hpcutoff_s / 2.5  # FWHM in volumns
-    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in volumes - (remember to run with Python 3)
+
+    # Use Python3 for processing. See code/requirements.txt for pip packages.
+    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in volumes - (REMEMBER to run with Python 3)
 
     """
     Setup a function that returns subject-specific information about the
