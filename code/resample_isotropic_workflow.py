@@ -48,7 +48,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
         reader = niu.CSVReader()
         reader.inputs.header = True  
         reader.inputs.in_file = csv_file
-        out = reader.run()  
+        out = reader.run()
 
         infosource.iterables = [
             ('session_id', out.outputs.session),
@@ -97,11 +97,18 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
     ]
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
+        # this works only if datatype is specified in input
         (r'_datatype_([a-z]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
-        r'sub-\3/ses-\2/\1'),
+         r'sub-\3/ses-\2/\1'),
         (r'_fs_iso1mm[0-9]*/', r''),
         (r'/_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
-            r'/sub-\2/ses-\1/'),
+         r'/sub-\2/ses-\1/'),
+        # stupid hacks for when datatype is not specified
+        (r'//(sub-[^/]*_bold_res-.*)', r'/func/\1'),
+        (r'//(sub-[^/]*_phasediff_res-.*.nii.gz)', r'/fmap/\1'),
+        (r'//(sub-[^/]*_magnitude1_res-.*.nii.gz)', r'/fmap/\1'),
+        (r'//(sub-[^/]*_epi_res-.*.nii.gz)', r'/fmap/\1'),
+        (r'//(sub-[^/]*_T1w_res-.*.nii.gz)', r'/anat/\1'),
     ]
 
     # -------------------------------------------- Create Pipeline

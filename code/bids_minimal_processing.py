@@ -28,7 +28,6 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.freesurfer as fs    # freesurfer
 
-import bids_templates as bt
 from bids_convert_csv_eventlog import ConvertCSVEventLog
 
 
@@ -107,9 +106,9 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
 
     if csv_file is not None:
         reader = niu.CSVReader()
-        reader.inputs.header = True  
+        reader.inputs.header = True
         reader.inputs.in_file = csv_file
-        out = reader.run()  
+        out = reader.run()
         subject_list = out.outputs.subject
         session_list = out.outputs.session
         infosource.iterables = [
@@ -241,7 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
             help='Whether to use pbs plugin.')
     parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash', action='store_true',
-            help='Whether to use pbs plugin.')
+            help='Whether to stop on first crash.')
 
     args = parser.parse_args()
 

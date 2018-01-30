@@ -147,37 +147,30 @@ def create_workflow():
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
-        container='derivatives',
+        container='derivatives/featpreproc',
         parameterization=True),
         name="output_files")
 
     # Use the following DataSink output substitutions
+    # each tuple is only matched once per file
     outputfiles.inputs.substitutions = [
+        ('/_mc_method_afni3dAllinSlices/', '/'),
+        ('/_mc_method_afni3dAllinSlices/', '/'),  # needs to appear twice
+        ('/oned_file/', '/'),
+        ('/out_file/', '/'),
+        ('/oned_matrix_save/', '/'),
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
-        ('/mask/', '/'),
-        ('_preproc_flirt_thresh.nii.gz', '_transformedmask.nii.gz'),
-        ('_preproc_volreg_unwarped.nii.gz', '_preproc.nii.gz'),
-        ('_preproc_flirt_unwarped.nii.gz', '_preproc-mask.nii.gz'),
-        ('/_mc_method_afni3dvolreg/', '/'),
-        ('/funcs/', '/'),
-        ('/funcmasks/', '/'),
-        ('preproc_volreg.nii.gz', 'preproc.nii.gz'),
-        ('/_mc_method_afni3dAllinSlices/', '/'),
     ]
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
-
         (r'/_addmean[0-9]+/', r'/func/'),
-        (r'/_dilatemask[0-9]+/', r'/func/'),
-        (r'/_funcbrain[0-9]+/', r'/func/'),
+        (r'/_funcbrains[0-9]+/', r'/func/'),
         (r'/_maskfunc[0-9]+/', r'/func/'),
         (r'/_mc[0-9]+/', r'/func/'),
         (r'/_meanfunc[0-9]+/', r'/func/'),
         (r'/_outliers[0-9]+/', r'/func/'),
-        (r'/_undistort_masks[0-9]+/', r'/func/'),
-        (r'/_undistort[0-9]+/', r'/func/'),
         (r'_run_id_[0-9][0-9]', r''),
     ]
     outputnode = pe.Node(interface=util.IdentityInterface(
@@ -558,11 +551,12 @@ def create_workflow():
         ra.ArtifactDetect(
             mask_type='file',
             # trying to "disable" `norm_threshold`:
-            norm_threshold=10.0,  # combines translations in mm and rotations
-            # translation_threshold=1.0,  # translation in mm
-            # rotation_threshold=0.02,  # rotation in radians
+            # use_norm=True,
+            # norm_threshold=10.0,  # combines translations in mm and rotations
+            use_norm=False,
+            translation_threshold=1.0,  # translation in mm
+            rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score
-            use_norm=True,
             parameter_source='AFNI',
             save_plot=True),
         iterfield=('realigned_files', 'realignment_parameters', 'mask_file'),
