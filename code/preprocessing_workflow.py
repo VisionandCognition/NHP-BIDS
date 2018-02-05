@@ -15,6 +15,7 @@ import nipype.interfaces.io as nio           # Data i/o
 import nipype.pipeline.engine as pe          # pypeline engine
 import nipype.algorithms.modelgen as model   # model specification
 from nipype.interfaces.base import Bunch
+from nipype.interfaces.base import Undefined # to disable use_norm
 import os                                    # system functions
 import argparse
 
@@ -551,11 +552,11 @@ def create_workflow():
         ra.ArtifactDetect(
             mask_type='file',
             # trying to "disable" `norm_threshold`:
-            # use_norm=True,
-            # norm_threshold=10.0,  # combines translations in mm and rotations
-            use_norm=False,
-            translation_threshold=1.0,  # translation in mm
-            rotation_threshold=0.02,  # rotation in radians
+            use_norm=True,
+            norm_threshold=10.0,  # combines translations in mm and rotations
+            # use_norm=Undefined,
+            # translation_threshold=1.0,  # translation in mm
+            # rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score
             parameter_source='AFNI',
             save_plot=True),

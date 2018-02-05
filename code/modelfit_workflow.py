@@ -234,7 +234,7 @@ def create_workflow(combine_runs=True):
 
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
-        container='modelfit',
+        container='derivatives/modelfit',
         parameterization=True),
         name="output_files")
 
@@ -268,9 +268,9 @@ def create_workflow(combine_runs=True):
     ]
     level1_workflow.connect([
         (modelfit, outputfiles,
-         [(('outputspec.copes', sort_copes), 'modelfit.copes'),
-          ('outputspec.dof_file', 'modelfit.dof_files'),
-          (('outputspec.varcopes', sort_copes), 'modelfit.varcopes'),
+         [(('outputspec.copes', sort_copes), 'copes'),
+          ('outputspec.dof_file', 'dof_files'),
+          (('outputspec.varcopes', sort_copes), 'varcopes'),
           ]),
     ])
     if fixed_fx is not None:
@@ -432,7 +432,7 @@ def create_workflow(combine_runs=True):
                 'AttendDL_COR',
                 'AttendUR_COR',
                 'AttendDR_COR',
-                'AttendCenter_COR',
+            #    'AttendCenter_COR',
                 'HandLeft',
                 'HandRight',
                 'Reward',
@@ -445,7 +445,7 @@ def create_workflow(combine_runs=True):
                     deepcopy(cond_events0['AttendDL_COR'].time),
                     deepcopy(cond_events0['AttendUR_COR'].time),
                     deepcopy(cond_events0['AttendDR_COR'].time),
-                    deepcopy(cond_events0['AttendCenter_COR'].time),
+                    # deepcopy(cond_events0['AttendCenter_COR'].time),
                     deepcopy(cond_events0['CurveNotCOR'].time),
 
                     deepcopy(cond_events0['HandLeft'].time),
@@ -458,7 +458,7 @@ def create_workflow(combine_runs=True):
                     deepcopy(cond_events0['AttendDL_COR'].dur),
                     deepcopy(cond_events0['AttendUR_COR'].dur),
                     deepcopy(cond_events0['AttendDR_COR'].dur),
-                    deepcopy(cond_events0['AttendCenter_COR'].dur),
+                    # deepcopy(cond_events0['AttendCenter_COR'].dur),
                     deepcopy(cond_events0['CurveNotCOR'].dur),
 
                     deepcopy(cond_events0['HandLeft'].dur),
@@ -471,7 +471,7 @@ def create_workflow(combine_runs=True):
                     deepcopy(cond_events0['AttendDL_COR'].amplitude),
                     deepcopy(cond_events0['AttendUR_COR'].amplitude),
                     deepcopy(cond_events0['AttendDR_COR'].amplitude),
-                    deepcopy(cond_events0['AttendCenter_COR'].amplitude),
+                    # deepcopy(cond_events0['AttendCenter_COR'].amplitude),
                     deepcopy(cond_events0['CurveNotCOR'].amplitude),
 
                     deepcopy(cond_events0['HandLeft'].amplitude),
@@ -602,7 +602,7 @@ def run_workflow(csv_file, use_pbs):
     from nipype import config, logging
     config.update_config(
         {'logging': 
-         {'log_directory': os.path.join(workflow.base_dir, 'run_level1flow'),
+         {'log_directory': os.path.join(workflow.base_dir, 'logs'),
           'log_to_file': True,
           'workflow_level': 'DEBUG',
           'interface_level': 'DEBUG',
@@ -646,7 +646,7 @@ def run_workflow(csv_file, use_pbs):
 
     templates = {
         'funcs':
-        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
         # 'funcmasks':
@@ -655,15 +655,15 @@ def run_workflow(csv_file, use_pbs):
         #     '_mc_unwarped.nii.gz',
 
         'highpass':
-        'featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
+        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
         'motion_parameters':
-        'featpreproc/motion_corrected/oned_file/sub-{subject_id}/ses-{session_id}/func/'
+        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc.param.1D',
 
         'motion_outlier_files':
-        'featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
+        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
             'art.sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_mc'
             '_maths_outliers.txt',
 
@@ -675,10 +675,10 @@ def run_workflow(csv_file, use_pbs):
             '_events.tsv',
 
         'ref_func':
-        'featpreproc/reference/func/*.nii.gz',
+        'derivatives/featpreproc/reference/func/*.nii.gz',
 
         'ref_funcmask':
-        'featpreproc/reference/func_mask/*.nii.gz',
+        'derivatives/featpreproc/reference/func_mask/*.nii.gz',
     }
 
     inputfiles = pe.Node(

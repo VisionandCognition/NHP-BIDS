@@ -3,14 +3,7 @@
 
 def process_events(event_log, TR, in_nvols):
     # necessary for importing with NiPype
-    import os
-    import sys
-    import re
-
     import pdb
-    import errno
-
-    import subprocess
 
     import pandas as pd
 
@@ -18,7 +11,8 @@ def process_events(event_log, TR, in_nvols):
     # pdb.set_trace()
 
     class Event(object):
-        def __init__(self, start_s, stop_s=None, event_num=1, dur_s=None, amplitude=1):
+        def __init__(self, start_s, stop_s=None, event_num=1,
+                     dur_s=None, amplitude=1):
             self.time_s = start_s
             if dur_s is not None:
                 self.dur_s = float(dur_s)
@@ -123,7 +117,8 @@ def process_events(event_log, TR, in_nvols):
             assert (event.task == 'Curve tracing' or
                     event.task == 'Control CT' or
                     event.task == 'Catch CT' or
-                    event.task == 'Keep busy')
+                    event.task.lower() == 'Keep busy'.lower()
+                    ), "Unknown event task %s" % event.task
 
             assert curve_stim_on is not None
 
