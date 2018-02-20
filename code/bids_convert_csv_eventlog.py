@@ -67,9 +67,9 @@ class ConvertCSVEventLog(CommandLine):
 # test
 if __name__ == '__main__':
     test = ConvertCSVEventLog(
-        in_file='/NHP_MRI/BIDS_raw/'
-        'unprocessed/sub-eddy/ses-20170511/func/'
-        'sub-eddy_ses-20170511_task-curvetracing_run-01_events/'
-        'Log_Spinoza_3T_Eddy_StimSettings_20170511T1410_eventlog.csv')
+        in_file='/NHP_MRI/NHP-BIDS/'
+        'sourcedata/sub-eddy/ses-20180117/func/'
+        'sub-eddy_ses-20180117_task-ctcheckerboard_run-12_events/'
+        'Log_Spinoza_3T_Eddy_StimSettings_CTShapedCheckerboard_20180117T1241_eventlog.csv')
     print(test.cmdline)
     test.run()

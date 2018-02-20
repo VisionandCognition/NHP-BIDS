@@ -27,6 +27,9 @@ def process_events(event_log, TR, in_nvols):
             self.event_num = event_num
             self.amplitude = amplitude
 
+    print('Parse location of event_log to find stimulus-params?')
+    pdb.set_trace()
+
     events = pd.read_table(event_log, na_values='n/a')
 
     split_ev = {
@@ -84,6 +87,14 @@ def process_events(event_log, TR, in_nvols):
                 assert event.info == 'In', (
                     'Unrecognized fixation event info "%s"' % event.info)
                 began_fixation = event.time_s
+
+        if event.event == 'NewStimulus':
+            if event.task.split(' ')[-1] == 'LH':
+                pdb.set_trace()
+            elif event.task.split(' ')[-1] == 'RH':
+                pdb.set_trace()
+
+            event.info # look up the line number
 
         if event.event == 'TargetLoc':
             curve_target = event.info
