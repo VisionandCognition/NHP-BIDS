@@ -319,10 +319,11 @@ def create_workflow(combine_runs=True):
     `doc/examples` folder. Note: Python knowledge required here.
     """
 
-    from timeevents.curvetracing import calc_curvetracing_events
+    # from timeevents.curvetracing import calc_curvetracing_events
+    from timeevents import process_time_events
 
     timeevents = pe.MapNode(
-        interface=calc_curvetracing_events,
+        interface=process_time_events,  # calc_curvetracing_events,
         iterfield=('event_log', 'in_nvols', 'TR'),
         name='timeevents')
 

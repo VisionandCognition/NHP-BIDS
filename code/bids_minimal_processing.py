@@ -81,11 +81,8 @@ def process_functionals(raw_dir, glob_pat):
                   (raw_dir, fn, fn))
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
+
 def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
-    inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id',
-        'session_id',
-    ]), name="input")
     import bids_templates as bt
 
     from nipype import config
@@ -161,6 +158,9 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
             'csv_eventlogs':
             'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
+            'stim_dir':
+            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*events/',
         }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
@@ -203,7 +203,7 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
     workflow.connect([(evsource, evfiles,
                        [('subject_id', 'subject_id'),
                         ('session_id', 'session_id'),
-                        ])
+                        ]),
                       ])
 
     if process_images:
@@ -215,10 +215,12 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
 
     csv2tsv = MapNode(
         ConvertCSVEventLog(),
-        iterfield=['in_file'],
+        iterfield=['in_file', 'stim_dir'],
         name='csv2tsv')
     workflow.connect(evfiles, 'csv_eventlogs',
                      csv2tsv, 'in_file')
+    workflow.connect(evfiles, 'stim_dir',
+                     csv2tsv, 'stim_dir')
     workflow.connect(csv2tsv, 'out_file',
                      outputfiles, 'minimal_processing.@eventlogs')
 

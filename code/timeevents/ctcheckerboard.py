@@ -7,7 +7,7 @@ def process_events(event_log, TR, in_nvols):
     import sys
     import re
 
-    import pdb
+    import ipdb as pdb
     import errno
 
     import subprocess
@@ -27,21 +27,30 @@ def process_events(event_log, TR, in_nvols):
             self.event_num = event_num
             self.amplitude = amplitude
 
-    print('Parse location of event_log to find stimulus-params?')
-    pdb.set_trace()
-
     events = pd.read_table(event_log, na_values='n/a')
 
     split_ev = {
-        'AttendUL_COR': [],  # When correct response
-        'AttendDL_COR': [],
-        'AttendUR_COR': [],
-        'AttendDR_COR': [],
-        'AttendCenter_COR': [],
+        'GapL': [],
+        'GapR': [],
+        'GapDL': [],
+        'GapDR': [],
+        'GapUL': [],
+        'GapUR': [],
+        'CurveSegL': [],
+        'CurveSegR': [],
+        'CurveSegDL': [],
+        'CurveSegDR': [],
+        'CurveSegUL': [],
+        'CurveSegUR': [],
+        'CircleDL': [],
+        'CircleDR': [],
+        'CircleUL': [],
+        'CircleUR': [],
+
+        # Not a hand task! Need to revisit...
         'CurveFalseHit': [],  # False hit / wrong hand
         'CurveNoResponse': [],
         'CurveFixationBreak': [],
-        'CurveNotCOR': [],  # Catch-all: Incorrect, NoResponse, Fix. Break
 
         'PreSwitchCurves': [],  # All PreSwitch displays with Curves & targets
         'ResponseCues': [],  # All response cues events, unless
@@ -54,7 +63,7 @@ def process_events(event_log, TR, in_nvols):
     }
     last_correct_s = -15
 
-    curve_target = None
+    curve_stim = None
     curve_stim_on = None
     curve_response = None
     curve_switched = False
@@ -68,6 +77,7 @@ def process_events(event_log, TR, in_nvols):
     mri_triggers = events[(events['event'] == 'MRI_Trigger') &
                           (events['info'] == 'Received')]
     start_time_s = mri_triggers.iloc[0].time_s
+
     events['time_s'] = events['time_s'] - start_time_s
     events['record_time_s'] = events['record_time_s'] - start_time_s
 
@@ -88,19 +98,13 @@ def process_events(event_log, TR, in_nvols):
                     'Unrecognized fixation event info "%s"' % event.info)
                 began_fixation = event.time_s
 
-        if event.event == 'NewStimulus':
-            if event.task.split(' ')[-1] == 'LH':
-                pdb.set_trace()
-            elif event.task.split(' ')[-1] == 'RH':
-                pdb.set_trace()
-
-            event.info # look up the line number
-
-        if event.event == 'TargetLoc':
-            curve_target = event.info
+        if event.event == 'CombinedStim':
+            curve_stim = set(
+                    event.info.split('+')
+                    ).difference({'BlankL', 'BlankR'})
 
         elif event.event == 'NewState' and event.info == 'TRIAL_END':
-            curve_target = None
+            curve_stim = None
             curve_stim_on = None
             curve_response = None
             curve_switched = False
@@ -108,13 +112,13 @@ def process_events(event_log, TR, in_nvols):
             fixation_stim_on = None
             response_cues_on = None
 
-        elif event.event == 'NewState' and event.info == 'PRESWITCH':
-            assert curve_target is not None
-            curve_stim_on = event.time_s
-
         elif (event.task == 'Fixation' and event.event == 'NewState' and
               event.info == 'FIXATION_PERIOD'):
             fixation_stim_on = event.time_s
+
+        elif event.event == 'NewState' and event.info == 'FIXATION_PERIOD':
+            assert curve_stim is not None
+            curve_stim_on = event.time_s
 
         elif (event.task == 'Fixation' and event.event == 'NewState' and
               event.info == 'POSTFIXATION'):
@@ -124,44 +128,38 @@ def process_events(event_log, TR, in_nvols):
         elif event.event == 'NewState' and event.info == 'SWITCHED':
             response_cues_on = event.time_s
 
-        elif event.event == 'NewState' and (
-            event.info == 'POSTSWITCH') and (
+        elif (event.event == 'NewState' and
+                event.info == 'POSTFIXATION' and
                 event.task != 'Fixation'):
 
-            assert (event.task == 'Curve tracing' or
-                    event.task == 'Control CT' or
-                    event.task == 'Catch CT' or
-                    event.task == 'Keep busy')
+            assert (event.task == 'CT-Shaped Checkerboard RH' or
+                    event.task == 'CT-Shaped Checkerboard LH')
 
             assert curve_stim_on is not None
 
             split_ev['PreSwitchCurves'].append(
                 Event(curve_stim_on, event.time_s))
 
-            event_type = 'Attend%s_COR' % curve_target
-            if curve_response == 'INCORRECT':
-                event_type = 'CurveFalseHit'
+            event_type = curve_stim
+            if curve_response == 'INCORRECT':  # shouldn't happen with fix task
+                pdb.set_trace()
+                event_type = {'CurveFalseHit'}
 
             elif curve_response is None:
-                if curve_switched:
-                    event_type = 'CurveNoResponse'
-                else:
-                    event_type = 'CurveFixationBreak'
+                pdb.set_trace()
+                if not curve_switched:
+                    event_type = {'CurveFixationBreak'}
 
             elif curve_response == 'FixationBreak':
-                event_type = 'CurveFixationBreak'
+                event_type = {'CurveFixationBreak'}
 
             else:
                 last_correct_s = event.time_s
                 assert curve_response == 'CORRECT', (
                     'Unhandled curve_response %s' % curve_response)
 
-            split_ev[event_type].append(Event(curve_stim_on, event.time_s))
-            if (event_type == 'CurveFalseHit' or
-                    event_type == 'CurveNoResponse' or
-                    event_type == 'CurveFixationBreak'):
-                split_ev['CurveNotCOR'].append(
-                    Event(curve_stim_on, event.time_s))
+            for evt in event_type:
+                split_ev[evt].append(Event(curve_stim_on, event.time_s))
 
             if response_cues_on is not None:
                 # regardless of whether it is correct or not
@@ -214,8 +212,8 @@ def process_events(event_log, TR, in_nvols):
         cond_events[key] = pd.DataFrame(cevents, dtype=float)
 
     # import pdb
-    # print("\n\n\nFinished processing: %s" % event_log)
-    # pdb.set_trace()
+    print("\n\n\nFinished processing: %s" % event_log)
+    pdb.set_trace()
     return (cond_events, end_time_s, nvols)
 
 

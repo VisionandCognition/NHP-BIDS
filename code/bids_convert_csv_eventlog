@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 
-def add_missing_stim_info(inp, events):
+def add_missing_stim_info(inp, events, stim_dir):
     # The CTShapedCheckerboard data collected on Jan. 17, 2018 was
     # missing the stimulus information from the event log. This code
     # connects the "NewStimulus" row index with the stimulus CSV files.
@@ -17,7 +17,10 @@ def add_missing_stim_info(inp, events):
     indices_to_dup = np.where(events['event'] == 'NewStimulus')[0]
     tasks = events.iloc[indices_to_dup]['task'].unique()
 
-    stim_csvs = {t: '%s/%s.csv' % (os.path.dirname(inp), t) for t in tasks}
+    if stim_dir is None:
+        stim_dir = os.path.dirname(inp)
+
+    stim_csvs = {t: '%s/%s.csv' % (stim_dir, t) for t in tasks}
     stim = {}
 
     # The column that describes important features of the stimulus
@@ -29,9 +32,10 @@ def add_missing_stim_info(inp, events):
         try:
             df = pd.read_csv(csv)
             stim[task] = df[task_stim_col[task]]
-        except e:
+        except:
             print('Attempted to read %s. Copy stimulus csv to this '
-                  'location if additional stimulus information is needed.' % csv)
+                  'location if additional stimulus information is needed.' %
+                  csv)
             pass
 
     already_contains_stim_info = len(
@@ -39,7 +43,6 @@ def add_missing_stim_info(inp, events):
                 events['event'],
                 [v for v in task_stim_col.values()])) > 0
 
-    # already_contains_stim_info = np.any([events['event'] in v for v in task_stim_col.values()])
     if len(stim) > 0 and not already_contains_stim_info:
         # Add another row after NewStimulus rows
         indices_with_dups = np.sort(np.append(
@@ -59,7 +62,8 @@ def add_missing_stim_info(inp, events):
     return(events)
 
 
-def convert_csv_eventlog(inp, out):
+def convert_csv_eventlog(inp, out, stim_dir=None):
+
     events = pd.read_csv(inp)
 
     mri_triggers = events[(events['event'] == 'MRI_Trigger') &
@@ -70,7 +74,7 @@ def convert_csv_eventlog(inp, out):
     events['time_s'] = events['time_s'] - start_time_s
     events['record_time_s'] = events['record_time_s'] - start_time_s
 
-    events = add_missing_stim_info(inp, events)
+    events = add_missing_stim_info(inp, events, stim_dir)
 
     events.to_csv(out, sep='\t', quoting=csv.QUOTE_NONE, index=False,
                   na_rep='n/a', float_format='%0.4f')
@@ -83,7 +87,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', type=str, help='Input CSV eventlog')
     parser.add_argument('-o', type=str, help='Output TSV eventlog')
+    parser.add_argument('--stim-dir', type=str, help='Directory with Stimulus '
+                        'CSV files.')
 
     args = parser.parse_args()
 
-    convert_csv_eventlog(args.i, args.o)
+    convert_csv_eventlog(args.i, args.o, args.stim_dir)

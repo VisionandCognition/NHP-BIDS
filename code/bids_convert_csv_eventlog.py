@@ -22,6 +22,8 @@ class ConvertCSVInputSpec(CommandLineInputSpec):
     """
     in_file = File(desc="CSV eventlog", exists=True, mandatory=True,
                    argstr="-i %s")
+    stim_dir = File(desc="Stimulus CSV directory",  # exists=True,
+                    argstr="--stim-dir %s")
     # out_file = File(desc="TSV eventlog", argstr="-o %s", genfile=True,
     #                 hash_files=False)
     out_file = File(argstr='-o %s',
@@ -70,6 +72,10 @@ if __name__ == '__main__':
         in_file='/NHP_MRI/NHP-BIDS/'
         'sourcedata/sub-eddy/ses-20180117/func/'
         'sub-eddy_ses-20180117_task-ctcheckerboard_run-12_events/'
-        'Log_Spinoza_3T_Eddy_StimSettings_CTShapedCheckerboard_20180117T1241_eventlog.csv')
+        'Log_Spinoza_3T_Eddy_StimSettings_CTShapedCheckerboard_20180117T1241_eventlog.csv',
+        stim_dir='/NHP_MRI/NHP-BIDS/'
+        'sourcedata/sub-eddy/ses-20180117/func/'
+        'sub-eddy_ses-20180117_task-ctcheckerboard_run-12_events',
+    )
     print(test.cmdline)
     test.run()
