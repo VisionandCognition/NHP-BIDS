@@ -869,13 +869,13 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
 
     featpreproc.inputs.inputspec.fwhm = 2.0
     featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
-    #workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     if use_pbs:
         workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/code/pbs/template.sh'})
     else:
+        #workflow.stop_on_first_crash = True
         workflow.run()
 
 
