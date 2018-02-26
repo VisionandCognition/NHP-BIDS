@@ -82,7 +82,7 @@ def process_functionals(raw_dir, glob_pat):
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
 
-def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
+def run_workflow(session, csv_file, use_pbs, stop_on_first_crash, ignore_events):
     import bids_templates as bt
 
     from nipype import config
@@ -213,16 +213,17 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash):
         workflow.connect(minproc, 'out.images',
                          outputfiles, 'minimal_processing.@images')
 
-    csv2tsv = MapNode(
-        ConvertCSVEventLog(),
-        iterfield=['in_file', 'stim_dir'],
-        name='csv2tsv')
-    workflow.connect(evfiles, 'csv_eventlogs',
-                     csv2tsv, 'in_file')
-    workflow.connect(evfiles, 'stim_dir',
-                     csv2tsv, 'stim_dir')
-    workflow.connect(csv2tsv, 'out_file',
-                     outputfiles, 'minimal_processing.@eventlogs')
+    if not ignore_events:    
+        csv2tsv = MapNode(
+            ConvertCSVEventLog(),
+            iterfield=['in_file', 'stim_dir'],
+            name='csv2tsv')
+        workflow.connect(evfiles, 'csv_eventlogs',
+                         csv2tsv, 'in_file')
+        workflow.connect(evfiles, 'stim_dir',
+                         csv2tsv, 'stim_dir')
+        workflow.connect(csv2tsv, 'out_file',
+                         outputfiles, 'minimal_processing.@eventlogs')
 
     workflow.stop_on_first_crash = stop_on_first_crash
     workflow.keep_inputs = True
@@ -243,6 +244,8 @@ if __name__ == '__main__':
             help='Whether to use pbs plugin.')
     parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash', action='store_true',
             help='Whether to stop on first crash.')
+    parser.add_argument('--ignore_events', dest='ignore_events', action='store_true',
+            help='Whether to ignore the csv event files')
 
     args = parser.parse_args()
 
