@@ -34,44 +34,7 @@ from nipype import config, logging
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
-def debug_workflow(combine_runs=True):
-    level1_workflow = pe.Workflow(name='debug')
-    # ------------------ Specify variables
-    inputnode = pe.Node(niu.IdentityInterface(fields=[
-        #'funcmasks',
-        'fwhm',  # smoothing
-        'highpass',
-
-        'funcs',
-        'event_log',
-        'motion_parameters',
-        'motion_outlier_files',
-
-        'ref_func',
-        'ref_funcmask',
-    ]), name="inputspec")
-
-    def first(x):
-        import pdb
-        pdb.set_trace()
-        return x[0]
-
-    outputfiles = pe.Node(nio.DataSink(
-        base_directory=ds_root,
-        container='level1flow',
-        parameterization=True),
-        name="output_files")
-
-    level1_workflow.connect([
-        (inputnode, outputfiles,
-         [
-             (('funcs', first), 'funcs'),
-          ]),
-    ])
-    return level1_workflow
-
-
-def create_workflow(combine_runs=True):
+def create_workflow(contrasts, combine_runs=True):
 
     level1_workflow = pe.Workflow(name='level1flow')
     # ===================================================================
@@ -102,7 +65,7 @@ def create_workflow(combine_runs=True):
 
     def remove_runs_missing_funcs(in_files, in_funcs):
         import os
-        import pdb
+        # import pdb
         import re
 
         # if input.synchronize = True, then in_files and in_funcs will
@@ -395,141 +358,31 @@ def create_workflow(combine_runs=True):
          [('out_nvols', 'max_number')]),
     ])
 
-
-    # def evt_info(cond_events):
-    #     output = []
-
-    #     # for each run
-    #     for cond_events0 in cond_events:
-    #         from nipype.interfaces.base import Bunch
-    #         from copy import deepcopy
-
-    #         run_results = []
-    #         names = ['PreSwitchCurves', 'ResponseCues']
-    #         run_results = Bunch(
-    #             conditions=names,
-    #             onsets=[
-    #                 deepcopy(cond_events0['PreSwitchCurves'].time),
-    #                 deepcopy(cond_events0['ResponseCues'].time)],
-    #             durations=[
-    #                 deepcopy(cond_events0['PreSwitchCurves'].dur),
-    #                 deepcopy(cond_events0['ResponseCues'].dur)],
-    #         )
-
-    #         output.append(run_results)
-    #     return output
-
     def evt_info(cond_events):
         output = []
 
         # for each run
-        for cond_events0 in cond_events:
+        for ev in cond_events:
             from nipype.interfaces.base import Bunch
             from copy import deepcopy
+            names = []
 
-            run_results = []
-            names = [
-                'AttendUL_COR',
-                'AttendDL_COR',
-                'AttendUR_COR',
-                'AttendDR_COR',
-            #    'AttendCenter_COR',
-                'HandLeft',
-                'HandRight',
-                'Reward',
-                'ResponseCues',
-                ]
+            for name in ev.keys():
+                if ev[name].shape[0] > 0:
+                    names.append(name)
+
+            onsets = [deepcopy(ev[name].time) if ev[name].shape[0] > 0 else [] for name in names]
+            durations = [deepcopy(ev[name].dur) if ev[name].shape[0] > 0 else [] for name in names]
+            amplitudes = [deepcopy(ev[name].amplitude) if ev[name].shape[0] > 0 else [] for name in names]
+
             run_results = Bunch(
                 conditions=names,
-                onsets=[
-                    deepcopy(cond_events0['AttendUL_COR'].time),
-                    deepcopy(cond_events0['AttendDL_COR'].time),
-                    deepcopy(cond_events0['AttendUR_COR'].time),
-                    deepcopy(cond_events0['AttendDR_COR'].time),
-                    # deepcopy(cond_events0['AttendCenter_COR'].time),
-                    deepcopy(cond_events0['CurveNotCOR'].time),
-
-                    deepcopy(cond_events0['HandLeft'].time),
-                    deepcopy(cond_events0['HandRight'].time),
-                    deepcopy(cond_events0['Reward'].time),
-                    deepcopy(cond_events0['ResponseCues'].time),
-                ],
-                durations=[
-                    deepcopy(cond_events0['AttendUL_COR'].dur),
-                    deepcopy(cond_events0['AttendDL_COR'].dur),
-                    deepcopy(cond_events0['AttendUR_COR'].dur),
-                    deepcopy(cond_events0['AttendDR_COR'].dur),
-                    # deepcopy(cond_events0['AttendCenter_COR'].dur),
-                    deepcopy(cond_events0['CurveNotCOR'].dur),
-
-                    deepcopy(cond_events0['HandLeft'].dur),
-                    deepcopy(cond_events0['HandRight'].dur),
-                    deepcopy(cond_events0['Reward'].dur),
-                    deepcopy(cond_events0['ResponseCues'].dur),
-                ],
-                amplitudes=[
-                    deepcopy(cond_events0['AttendUL_COR'].amplitude),
-                    deepcopy(cond_events0['AttendDL_COR'].amplitude),
-                    deepcopy(cond_events0['AttendUR_COR'].amplitude),
-                    deepcopy(cond_events0['AttendDR_COR'].amplitude),
-                    # deepcopy(cond_events0['AttendCenter_COR'].amplitude),
-                    deepcopy(cond_events0['CurveNotCOR'].amplitude),
-
-                    deepcopy(cond_events0['HandLeft'].amplitude),
-                    deepcopy(cond_events0['HandRight'].amplitude),
-                    deepcopy(cond_events0['Reward'].amplitude),
-                    deepcopy(cond_events0['ResponseCues'].amplitude)
-                ],
-            )
+                onsets=[deepcopy(ev[name].time) for name in names],
+                durations=[deepcopy(ev[name].dur) for name in names],
+                amplitudes=[deepcopy(ev[name].amplitude) for name in names])
 
             output.append(run_results)
         return output
-
-    """
-    Setup the contrast structure that needs to be evaluated. This is a list of
-    lists. The inner list specifies the contrasts and has the following format -
-    [Name,Stat,[list of condition names],[weights on those conditions]. The
-    condition names must match the `names` listed in the `evt_info` function
-    described above.
-    """
-
-    contrasts = [
-        ['Curves>Baseline', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR', 'AttendCenter_COR'],
-         [1.0/5]*5],
-        ['AttendLeft>AttendRight', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [1.0, 1.0, -1.0, -1.0]],
-        ['AttendRight>AttendLeft', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [-1.0, -1.0, 1.0, 1.0]],
-        ['AttendUL>AttendOther', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [3.0, -1.0, -1.0, -1.0]],
-        ['AttendDL>AttendOther', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [-1.0, 3.0, -1.0, -1.0]],
-        ['AttendUR>AttendOther', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [-1.0, -1.0, 3.0, -1.0]],
-        ['AttendDR>AttendOther', 'T',  # t-test
-         ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR'],
-         [-1.0, -1.0, -1.0, 3.0]],
-        ['HandLeft>HandRight', 'T',  # t-test
-         ['HandLeft', 'HandRight'],
-         [1.0, -1.0]],
-        ['HandRight>HandLeft', 'T',  # t-test
-         ['HandLeft', 'HandRight'],
-         [-1.0, 1.0]],
-        ['Reward>Baseline', 'T',  # t-test
-         ['Reward'],
-         [1.0]],
-    ]
-
-    # cont1 = ['Task>Baseline', 'T', ['Task-Odd', 'Task-Even'], [0.5, 0.5]]
-    # cont2 = ['Task-Odd>Task-Even', 'T', ['Task-Odd', 'Task-Even'], [1, -1]]
-    # cont3 = ['Task', 'F', [cont1, cont2]]
-    # contrasts = [cont1, cont2]
 
     modelspec.inputs.input_units = 'secs'
     modelspec.inputs.time_repetition = TR  # to-do: specify per func
@@ -542,8 +395,8 @@ def create_workflow(combine_runs=True):
     modelfit.inputs.inputspec.film_threshold = 1000
 
     # level1_workflow.base_dir = os.path.abspath('./workingdirs/level1flow')
-    # level1_workflow.config['execution'] = dict(
-    #     crashdump_dir=os.path.abspath('./fsl/crashdumps'))
+    modelfit.config['execution'] = dict(
+        crashdump_dir=os.path.abspath('.'))
 
     # Ignore volumes after subject has finished working for the run
     beh_roi = pe.MapNode(
@@ -596,13 +449,13 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow(csv_file, use_pbs):
+def run_workflow(csv_file, use_pbs, contrasts_name, template):
     workflow = pe.Workflow(name='run_level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config, logging
     config.update_config(
-        {'logging': 
+        {'logging':
          {'log_directory': os.path.join(workflow.base_dir, 'logs'),
           'log_to_file': True,
           'workflow_level': 'DEBUG',
@@ -618,8 +471,25 @@ def run_workflow(csv_file, use_pbs):
     workflow.keep_inputs = True
     workflow.hash_method = 'content'
 
-    modelfit = create_workflow()
-    # modelfit = debug_workflow()
+    """
+    Setup the contrast structure that needs to be evaluated. This is a list of
+    lists. The inner list specifies the contrasts and has the following format:
+    [Name,Stat,[list of condition names],[weights on those conditions]. The
+    condition names must match the `names` listed in the `evt_info` function
+    described above.
+    """
+
+    try:
+        import importlib
+        mod = importlib.import_module('contrasts.' + contrasts_name)
+        contrasts = mod.contrasts
+        # event_names = mod.event_names
+    except ImportError:
+        raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
+                           ' module in contrasts directory!' % contrasts_name)
+
+    modelfit = create_workflow(contrasts)
+
     import bids_templates as bt
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -756,7 +626,8 @@ def run_workflow(csv_file, use_pbs):
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
     # workflow.write_graph(graph2use='detailed', format='png', simple_form=False)
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/pbs-template.sh'})
+        workflow.run(plugin='PBS', plugin_args={'template':
+                                                os.path.expanduser(template)})
     else:
         workflow.run()
 
@@ -768,7 +639,11 @@ if __name__ == '__main__':
             description='Analyze model fit.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--contrasts', dest='contrasts_name', required=True,
+                        help='Contrasts to use.')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-            help='Whether to use pbs plugin.')
+                        help='Whether to use pbs plugin.')
+    parser.add_argument('--template', default='~/NHP-BIDS/pbs-template.sh',
+                        help='PBS template')
     args = parser.parse_args()
     run_workflow(**vars(args))

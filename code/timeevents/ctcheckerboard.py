@@ -3,15 +3,6 @@
 
 def process_events(event_log, TR, in_nvols):
     # necessary for importing with NiPype
-    import os
-    import sys
-    import re
-
-    import ipdb as pdb
-    import errno
-
-    import subprocess
-
     import pandas as pd
 
     class Event(object):
@@ -49,14 +40,11 @@ def process_events(event_log, TR, in_nvols):
 
         # Not a hand task! Need to revisit...
         'CurveFalseHit': [],  # False hit / wrong hand
-        'CurveNoResponse': [],
         'CurveFixationBreak': [],
 
         'PreSwitchCurves': [],  # All PreSwitch displays with Curves & targets
         'ResponseCues': [],  # All response cues events, unless
                              # subject is not fixating at all
-        'HandLeft': [],
-        'HandRight': [],
         'Reward': [],
         'FixationTask': [],
         'Fixating': [],
@@ -142,11 +130,11 @@ def process_events(event_log, TR, in_nvols):
 
             event_type = curve_stim
             if curve_response == 'INCORRECT':  # shouldn't happen with fix task
-                pdb.set_trace()
+                assert False
                 event_type = {'CurveFalseHit'}
 
             elif curve_response is None:
-                pdb.set_trace()
+                assert False
                 if not curve_switched:
                     event_type = {'CurveFixationBreak'}
 
@@ -174,8 +162,8 @@ def process_events(event_log, TR, in_nvols):
         #  and curve_response is None:
         #    curve_response = 'FixationBreak'
 
-        elif event.event == 'Response_Initiate':
-            split_ev['Hand%s' % event.info].append(Event(event.time_s))
+        # elif event.event == 'Response_Initiate':
+        #     split_ev['Hand%s' % event.info].append(Event(event.time_s))
 
         elif event.event == 'ResponseReward' or event.event == 'TaskReward':
             reward_dur = event.info
@@ -211,9 +199,7 @@ def process_events(event_log, TR, in_nvols):
                 'amplitude': ev.amplitude})
         cond_events[key] = pd.DataFrame(cevents, dtype=float)
 
-    # import pdb
     print("\n\n\nFinished processing: %s" % event_log)
-    pdb.set_trace()
     return (cond_events, end_time_s, nvols)
 
 
@@ -233,6 +219,3 @@ if __name__ == '__main__':
     calc_curvetracing_events.inputs.TR = 2.5
     calc_curvetracing_events.inputs.in_nvols = 420
     res = calc_curvetracing_events.run()
-
-    # import pdb
-    # pdb.set_trace()

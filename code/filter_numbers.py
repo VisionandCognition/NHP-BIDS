@@ -27,7 +27,7 @@ class FilterNumsTask(nib.CommandLine):
     """
     input_spec = FilterNumsInputSpec
     output_spec = FilterNumsOutputSpec
-    cmd = 'awk'
+    _cmd = 'awk'
 
 if __name__ == '__main__':
 
