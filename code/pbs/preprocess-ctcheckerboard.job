@@ -1,4 +1,4 @@
-#PBS -lwalltime=6:00:00  
+#PBS -lwalltime=24:00:00  
 #PBS -lnodes=1:ppn=16
 #PBS -S /bin/bash
 
@@ -11,9 +11,10 @@ cat $PBS_NODEFILE
 module rm Python/2.7.12-intel-2016b 2> /dev/null # might complain if already removed
 
 module load eb
+# source /hpc/eb/ebinit
 
+#module load FSL/5.0.10-intel-2016b
 module load fsl/5.08
-
 module load afni
 module load python/3.5.0-intel
 
@@ -26,3 +27,4 @@ export PATH=$PATH:~/NHP-BIDS/code/mc/
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
+./code/preprocessing_workflow.py --pbs --csv checkerboard-ct-mapping.csv
