@@ -33,7 +33,7 @@ You should change the `curve-tracing-20180125-run02.csv` to a CSV script that ac
    * In order to match the runs with the behavioral data, you either need to the notes that relate the run numbers with the behavioral timestamps, or you need to correspond the AcquisitionTime (in the json files, created by dcm2niix) with the behavioral timestamps. For example, the log `Behavior/Eddy_Curve_Tracing_StimSettings_CTShapedCheckerboard_Spinoza_3T_20180117T1207-T1215.49` matches with the run 8, which has an acquisition time of `12:08:54.410000`.
 2. Modify `code/bids_templates.py` to add the new session (and subject, if needed).
    * May be replaced completely by csv list in the future.
-3. Create or modify csv file that lists the runs to process.
+3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `checkerboard-ct-mapping.csv` for an example).
 4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
   * example: `clear && ./code/bids_minimal_processing.py --csv checkerboard-ct-mapping.csv |& tee log-minproc.txt`
   * help: `./code/bids_minimal_processing.py --help`
