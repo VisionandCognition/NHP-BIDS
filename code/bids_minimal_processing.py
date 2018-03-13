@@ -82,7 +82,8 @@ def process_functionals(raw_dir, glob_pat):
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
 
-def run_workflow(session, csv_file, use_pbs, stop_on_first_crash, ignore_events):
+def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
+                 ignore_events, types):
     import bids_templates as bt
 
     from nipype import config
@@ -101,36 +102,25 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash, ignore_events)
         'session_id',
     ]), name="infosource")
 
-    if csv_file is not None:
-        reader = niu.CSVReader()
-        reader.inputs.header = True
-        reader.inputs.in_file = csv_file
-        out = reader.run()
-        subject_list = out.outputs.subject
-        session_list = out.outputs.session
-        infosource.iterables = [
-            ('session_id', session_list),
-            ('subject_id', subject_list),
-        ]
-        if 'run' in out.outputs.traits().keys():
-            print('Ignoring the "run" field of %s.' % csv_file)
+    reader = niu.CSVReader()
+    reader.inputs.header = True
+    reader.inputs.in_file = csv_file
+    out = reader.run()
+    subject_list = out.outputs.subject
+    session_list = out.outputs.session
+    infosource.iterables = [
+        ('session_id', session_list),
+        ('subject_id', subject_list),
+    ]
+    if 'run' in out.outputs.traits().keys():
+        print('Ignoring the "run" field of %s.' % csv_file)
 
-        infosource.synchronize = True
-    else:  # neglected code
-        if session is not None:
-            session_list = [session]  # ['20170511']
-        else:
-            session_list = bt.session_list  # ['20170511']
-
-        infosource.iterables = [
-            ('session_id', session_list),
-            ('subject_id', bt.subject_list),
-        ]
+    infosource.synchronize = True
 
     process_images = True
 
     if process_images:
-        datatype_list = bt.datatype_list
+        datatype_list = types.split(',')
 
         imgsource = Node(IdentityInterface(fields=[
             'subject_id', 'session_id', 'datatype',
@@ -213,7 +203,7 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash, ignore_events)
         workflow.connect(minproc, 'out.images',
                          outputfiles, 'minimal_processing.@images')
 
-    if not ignore_events:    
+    if not ignore_events:
         csv2tsv = MapNode(
             ConvertCSVEventLog(),
             iterfield=['in_file', 'stim_dir'],
@@ -238,7 +228,9 @@ if __name__ == '__main__':
             description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
     parser.add_argument('-s', '--session', type=str, default=None,
             help='Session ID, e.g. 20170511.')
-    parser.add_argument('--csv', dest='csv_file', default=None,
+    parser.add_argument('--types', type=str, default='func,anat,fmap,dwi',
+                        help='Image datatypes, e.g. func,anat,fmap.')
+    parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
             help='Whether to use pbs plugin.')

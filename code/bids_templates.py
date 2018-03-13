@@ -9,7 +9,7 @@ session_list = [
     '20180125',
 ]
     # '20170607',
-datatype_list = ['func', 'anat', 'fmap','dwi']
+datatype_list = ['func', 'anat', 'fmap', 'dwi']
 
 templates = {
     'images': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
