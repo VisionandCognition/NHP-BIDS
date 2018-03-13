@@ -5,17 +5,26 @@ Installation
 
 The scripts require `python3` (if you use virtual environments: `mkvirtualenv --python=/usr/bin/python3 mri-py3`) and a recent version of nipype (`pip install https://github.com/nipy/nipype/archive/master.zip`, it requires changes shortly after version 1 was released).
 
-You should also add the `code` directory to both the `PYTHONPATH` and `PATH` environment variables.
+You should also add the `code` directory to both the `PYTHONPATH` and `PATH` environment variables, i.e. add these lines to your ``~.bashrc`` :
 
-This documentation used to be located at:
-https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS_processing.md
+```
+export PATH="/home/<username>/NHP-MRI/code:$PATH"
+export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
+```
+
+For processing data using the BIDS format, clone [this](https://github.com/VisionandCognition/NHP-BIDS/) repository:
+
+    $ git clone https://github.com/VisionandCognition/NHP-BIDS.git
+
+**Only on LISA** you also need to create links to the data:
+
+    $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
+    $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
+
+This documentation used to be located [here](https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS_processing.md).
 
 Running the Pipeline
 ====================
-For processing data using the BIDS format, clone the following repository:
-
-https://github.com/VisionandCognition/NHP-BIDS/
-
 
 You should change the `curve-tracing-20180125-run02.csv` to a CSV script that actually exists. There should be some available in the NHP-BIDS directory (perhaps they will be moved to some place cleaner, such as code?).
 
