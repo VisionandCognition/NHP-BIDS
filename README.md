@@ -37,6 +37,7 @@ You should change the `curve-tracing-20180125-run02.csv` to a CSV script that ac
 4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
   * example: `clear && ./code/bids_minimal_processing.py --csv checkerboard-ct-mapping.csv |& tee log-minproc.txt`
   * help: `./code/bids_minimal_processing.py --help`
+  * LISA: make sure to load freesurfer, FSL ``module load freesurfer``, ``module load fsl``
 5. Run `./code/resample_isotropic_workflow.py`
   * example: `clear && ./code/resample_isotropic_workflow.py --csv checkerboard-ct-mapping.csv |& tee log-resample.txt`
 6. Run `./code/preprocessing_workflow.py`
