@@ -10,9 +10,9 @@ cat $PBS_NODEFILE
 
 module rm Python/2.7.12-intel-2016b 2> /dev/null # might complain if already removed
 
-source /hpc/eb/ebinit
+module load eb
 
-module load FSL/5.0.10-intel-2016b
+module load fsl/5.08
 module load afni
 module load python/3.5.0-intel
 
