@@ -3,25 +3,28 @@ This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http
 Installation
 ============
 
-The scripts require `python3` (if you use virtual environments: `mkvirtualenv --python=/usr/bin/python3 mri-py3`) and a recent version of nipype (`pip install https://github.com/nipy/nipype/archive/master.zip`, it requires changes shortly after version 1 was released).
+The pipeline works with **python3** (if you use virtual environments: `mkvirtualenv --python=/usr/bin/python3 mri-py3`) and requires:
+* **nipype** (>=1.0.1dev) (`pip install https://github.com/nipy/nipype/archive/master.zip`)
+* **FSL** (>=5.0.1)
+* **Freesurfer** (>=5.3.0)
+* **AFNI** (>=??)
+* **ANTS** (>=??)
 
-You should also add the `code` directory to both the `PYTHONPATH` and `PATH` environment variables, i.e. add these lines to your ``~.bashrc`` :
+For the installation, clone [this](https://github.com/VisionandCognition/NHP-BIDS/) repository:
+
+    $ git clone https://github.com/VisionandCognition/NHP-BIDS.git
+    
+and add these lines to your ``~.bashrc`` :
 
 ```
 export PATH="/home/<username>/NHP-MRI/code:$PATH"
 export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
-```
+``` 
 
-For processing data using the BIDS format, clone [this](https://github.com/VisionandCognition/NHP-BIDS/) repository:
-
-    $ git clone https://github.com/VisionandCognition/NHP-BIDS.git
-
-**Only on LISA** you also need to create links to the data:
+**Only on LISA** (`lisa.surfsara.nl`) you also need to create links to the data directories:
 
     $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
     $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
-
-This documentation used to be located [here](https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS_processing.md).
 
 Running the Pipeline
 ====================
