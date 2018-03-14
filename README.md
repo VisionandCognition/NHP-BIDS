@@ -18,6 +18,7 @@ and add these lines to your ``~.bashrc`` :
 
 ```
 export PATH="/home/<username>/NHP-MRI/code:$PATH"
+export PATH="/home/<username>/NHP-BIDS/code/mc/:$PATH"
 export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 ``` 
 
