@@ -15,7 +15,7 @@ declare -a RUNS=(3 4 5 6)
 # cd ${log_path}
 for session in ${SESSIONS[@]} ; do
 	for run in ${RUNS[@]} ; do
-		
+
 		tmpscript="pbs_preprocessing_workflow_${project}_${subject}_${session}_run_${run}"
 
 		echo "cd ~/dev/NHP-BIDS" > ${tmpscript}
@@ -24,7 +24,7 @@ for session in ${SESSIONS[@]} ; do
 		echo "module load afni" >> ${tmpscript}
 		echo "export FSLOUTPUTTYPE=NIFTI_GZ" >> ${tmpscript}
 		echo "./code/preprocessing_workflow.py --run $run -s $session" >> ${tmpscript}
-		
+
 		# -V declares that all environment variables in the qsub command's environment are to be exported to the batch job.
 		qsub -V -l walltime=08:00:00,mem=14gb ${tmpscript}
 		rm -f $tmpscript
