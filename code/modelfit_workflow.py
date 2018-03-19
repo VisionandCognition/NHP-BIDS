@@ -640,7 +640,10 @@ if __name__ == '__main__':
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--contrasts', dest='contrasts_name', required=True,
-                        help='Contrasts to use.')
+                        help='Contrasts to use. Look in contrasts directory '
+                        'for valid names (e.g. "ctcheckerboard" for '
+                        'curve-tracing checkerboard localizer or '
+                        '"curvetracing" or curve tracing experiment).')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
                         help='Whether to use pbs plugin.')
     parser.add_argument('--template', default='~/NHP-BIDS/pbs-template.sh',
