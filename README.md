@@ -48,6 +48,7 @@ You should change the `curve-tracing-20180125-run02.csv` to a CSV script that ac
   * example: `clear && ./code/preprocessing_workflow.py --csv checkerboard-ct-mapping.csv |& tee log-preproc.txt`
   * pbs: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `qsub code/pbs/preprocess_SESSION.job`, where SESSION defines which session / run to process.
 7. Run `./code/modelfit_workflow.py`
-  * debug: `clear && python -m pdb ./code/modelfit_workflow.py --csv checkerboard-ct-mapping.csv |& tee log-modelfit.txt`
-  * normal: `clear && ./code/modelfit_workflow.py --csv checkerboard-ct-mapping.csv |& tee log-modelfit.txt`
+  * This script requires the `--contrasts` parameter. This depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes a python module name, you cannot use dashes or spaces.
+  * debug: `clear && python -m pdb ./code/modelfit_workflow.py --csv checkerboard-ct-mapping.csv --contrasts ctcheckerboard |& tee log-modelfit.txt`
+  * normal: `clear && ./code/modelfit_workflow.py --csv checkerboard-ct-mapping.csv  --contrasts ctcheckerboard |& tee log-modelfit.txt`
   * pbs: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `qsub code/pbs/modelfit.job` (modify file or duplicate thereof as needed).
