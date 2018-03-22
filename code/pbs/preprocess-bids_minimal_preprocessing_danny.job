@@ -1,0 +1,34 @@
+#PBS -lwalltime=36:00:00  
+#PBS -lnodes=1:ppn=16
+#PBS -S /bin/bash
+
+n=`wc -l < $PBS_NODEFILE`
+echo start of job in directory $PBS_O_WORKDIR
+echo number of nodes is $n
+echo the allocated nodes are:
+cat $PBS_NODEFILE
+
+#module rm Python/2.7.12-intel-2016b 2> /dev/null # might complain if already removed
+
+module load eb
+module load freesurfer
+module load fsl/5.08
+module load afni
+#module load python/3.5.0-intel
+
+#VIRTUALENVWRAPPER_PYTHON=$(which python)
+#source ~/.local/bin/virtualenvwrapper.sh
+#workon mri-py3
+
+#export PYTHONPATH=$PYTHONPATH:~/dev/NHP-BIDS/code # maybe replayve by source ~/.bash_profile?
+#export PATH=$PATH:~/dev/NHP-BIDS/code/mc/
+# I rather define PATH/PYTHONPATH this way because it allwos me to have NHP_BIDS 
+# in a different location; see README.md for setup
+source ~/.bash_profile 
+source ~/.bashrc
+
+export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
+
+cd ~/NHP-BIDS
+./code/bids_minimal_processing.py --pbs --csv prf-danny-nodti.csv --types func,anat,fmap --ignore_events
+./code/bids_minimal_processing.py --pbs --csv prf-danny-withdti.csv --types func,anat,fmap,dwi --ignore_events
