@@ -23,10 +23,12 @@ export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 ``` 
 
 **Only on LISA** (`lisa.surfsara.nl`) you also need to create links to the data directories:
-For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS-NHP-on-Lisa.md
 
     $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
     $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
+
+For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS-NHP-on-Lisa.md
+
 
 Running the Pipeline
 ====================
