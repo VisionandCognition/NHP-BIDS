@@ -192,7 +192,8 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
                            ('datatype', 'datatype'),
                            ])])
 
-    workflow.connect([(evsource, evfiles,
+    if not ignore_events:
+        workflow.connect([(evsource, evfiles,
                        [('subject_id', 'subject_id'),
                         ('session_id', 'session_id'),
                         ]),
