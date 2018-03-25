@@ -143,15 +143,17 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
     evsource.iterables = [
         ('session_id', session_list), ('subject_id', subject_list),
     ]
-    evfiles = Node(
-        nio.SelectFiles({
-            'csv_eventlogs':
-            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
-            'stim_dir':
-            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*events/',
-        }, base_directory=data_dir), name="evfiles")
+    
+    if not ignore_events:
+        evfiles = Node(
+            nio.SelectFiles({
+                'csv_eventlogs':
+                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
+                'stim_dir':
+                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*events/',
+            }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
     # Datasink
