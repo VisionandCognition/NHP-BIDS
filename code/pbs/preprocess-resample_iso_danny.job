@@ -1,4 +1,4 @@
-#PBS -lwalltime=36:00:00  
+#PBS -lwalltime=12:00:00  
 #PBS -lnodes=1:ppn=16
 #PBS -S /bin/bash
 
@@ -19,5 +19,5 @@ source ~/.bashrc
 export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
 
 cd ~/NHP-BIDS
-./code/bids_minimal_processing.py --pbs --csv prf-danny-nodti.csv --types func,anat,fmap --ignore_events |& tee log-minproc_nodti.txt
-./code/bids_minimal_processing.py --pbs --csv prf-danny-withdti.csv --types func,anat,fmap,dwi --ignore_events |& tee log-minproc_withdti.txt
+./code/resample_isotropic_workflow.py --csv prf-danny-all.csv --pbs |& tee log-resample_iso1.txt
+./code/resample_t1_isotropic_workflow.py --csv prf-danny-all.csv --pbs |& tee log-resample_iso06.txt

@@ -130,6 +130,8 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
             ('datatype', datatype_list),
         ]
 
+        imgsource.synchronize = True
+
         # SelectFiles
         imgfiles = Node(
             nio.SelectFiles({
@@ -143,17 +145,16 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
     evsource.iterables = [
         ('session_id', session_list), ('subject_id', subject_list),
     ]
-    
-    if not ignore_events:
-        evfiles = Node(
-            nio.SelectFiles({
-                'csv_eventlogs':
-                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
-                'stim_dir':
-                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*events/',
-            }, base_directory=data_dir), name="evfiles")
+    evsource.synchronize = True
+    evfiles = Node(
+        nio.SelectFiles({
+            'csv_eventlogs':
+            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
+            'stim_dir':
+            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+            'sub-{subject_id}_ses-{session_id}_*events/',
+        }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
     # Datasink
@@ -192,8 +193,7 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
                            ('datatype', 'datatype'),
                            ])])
 
-    if not ignore_events:
-        workflow.connect([(evsource, evfiles,
+    workflow.connect([(evsource, evfiles,
                        [('subject_id', 'subject_id'),
                         ('session_id', 'session_id'),
                         ]),
