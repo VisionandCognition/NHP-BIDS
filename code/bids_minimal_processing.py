@@ -130,8 +130,6 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
             ('datatype', datatype_list),
         ]
 
-        imgsource.synchronize = True
-
         # SelectFiles
         imgfiles = Node(
             nio.SelectFiles({
@@ -139,22 +137,22 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
                 'sourcedata/%s' % bt.templates['images'],
             }, base_directory=data_dir), name="img_files")
 
-    evsource = Node(IdentityInterface(fields=[
-        'subject_id', 'session_id',
-    ]), name="evsource")
-    evsource.iterables = [
-        ('session_id', session_list), ('subject_id', subject_list),
-    ]
-    evsource.synchronize = True
-    evfiles = Node(
-        nio.SelectFiles({
-            'csv_eventlogs':
-            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
-            'stim_dir':
-            'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*events/',
-        }, base_directory=data_dir), name="evfiles")
+    if not ignore_events:
+        evsource = Node(IdentityInterface(fields=[
+            'subject_id', 'session_id',
+        ]), name="evsource")
+        evsource.iterables = [
+            ('session_id', session_list), ('subject_id', subject_list),
+        ]
+        evfiles = Node(
+            nio.SelectFiles({
+                'csv_eventlogs':
+                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
+                'stim_dir':
+                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}_*events/',
+            }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
     # Datasink
@@ -188,16 +186,16 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
 
     if process_images:
         workflow.connect([(imgsource, imgfiles,
-                          [('subject_id', 'subject_id'),
-                           ('session_id', 'session_id'),
-                           ('datatype', 'datatype'),
-                           ])])
-
-    workflow.connect([(evsource, evfiles,
-                       [('subject_id', 'subject_id'),
-                        ('session_id', 'session_id'),
-                        ]),
-                      ])
+                           [('subject_id', 'subject_id'),
+                            ('session_id', 'session_id'),
+                            ('datatype', 'datatype'),
+                            ])])
+    if not ignore_events:
+        workflow.connect([(evsource, evfiles,
+                           [('subject_id', 'subject_id'),
+                            ('session_id', 'session_id'),
+                            ]),
+                          ])
 
     if process_images:
         minproc = create_images_workflow()
@@ -228,19 +226,19 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-            description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
+        description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
     parser.add_argument('-s', '--session', type=str, default=None,
-            help='Session ID, e.g. 20170511.')
+                        help='Session ID, e.g. 20170511.')
     parser.add_argument('--types', type=str, default='func,anat,fmap,dwi',
                         help='Image datatypes, e.g. func,anat,fmap.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-            help='Whether to use pbs plugin.')
+                        help='Whether to use pbs plugin.')
     parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash', action='store_true',
-            help='Whether to stop on first crash.')
+                        help='Whether to stop on first crash.')
     parser.add_argument('--ignore_events', dest='ignore_events', action='store_true',
-            help='Whether to ignore the csv event files')
+                        help='Whether to ignore the csv event files')
 
     args = parser.parse_args()
 

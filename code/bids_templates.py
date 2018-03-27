@@ -1,5 +1,5 @@
 
-subject_list = ['danny', 'eddy']
+subject_list = ['danny','eddy']
 session_list = [
     # '20170511',
     # '20170525',
@@ -16,7 +16,7 @@ session_list = [
     '20180131',
     '20180201'
 ]
-datatype_list = ['func', 'anat', 'fmap', 'dwi']
+datatype_list = ['func','anat','fmap','dwi']
 
 templates = {
     'images': 'sub-{subject_id}/ses-{session_id}/{datatype}/'

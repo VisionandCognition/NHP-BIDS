@@ -115,3 +115,11 @@ ENV/
 ehthumbs.db
 Icon?
 Thumbs.db
+
+job-logs/
+
+log-minproc_nodti_ITERISSUE\.txt
+
+log-minproc_nodti_single\.txt
+
+log-minproc_nodti\.txt
