@@ -7,9 +7,9 @@
 /job-logs/
 
 # symlinks
-derivatives
-sourcedata
-sub-danny
+/derivatives
+/sourcedata
+/sub-danny
 
 
 # Binary files
