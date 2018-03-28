@@ -19,5 +19,5 @@ source ~/.bashrc
 export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
 
 cd ~/NHP-BIDS
-./code/bids_minimal_processing.py --pbs --csv prf-danny-nodti.csv --types func,anat,fmap --ignore_events |& tee log-minproc_nodti.txt
-./code/bids_minimal_processing.py --pbs --csv prf-danny-withdti.csv --types func,anat,fmap,dwi --ignore_events |& tee log-minproc_withdti.txt
+#./code/bids_minimal_processing.py --pbs --csv ./csv/prf-danny-nodti.csv --types func,anat,fmap --ignore_events |& tee ./logs/log-minproc_nodti.txt
+./code/bids_minimal_processing.py --pbs --csv ./csv/prf-danny-withdti_single.csv --types func,anat,fmap,dwi --ignore_events |& tee ./logs/log-minproc_withdti_single.txt

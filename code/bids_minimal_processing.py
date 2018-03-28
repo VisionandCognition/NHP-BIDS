@@ -137,7 +137,7 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
                 'sourcedata/%s' % bt.templates['images'],
             }, base_directory=data_dir), name="img_files")
 
-    if not ignore_events:
+    if not ignore_events:  # only create an event node when handling events
         evsource = Node(IdentityInterface(fields=[
             'subject_id', 'session_id',
         ]), name="evsource")
@@ -220,25 +220,44 @@ def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
-    #workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 10})
+    # workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 10})
     workflow.run()
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
-    parser.add_argument('-s', '--session', type=str, default=None,
-                        help='Session ID, e.g. 20170511.')
-    parser.add_argument('--types', type=str, default='func,anat,fmap,dwi',
-                        help='Image datatypes, e.g. func,anat,fmap.')
-    parser.add_argument('--csv', dest='csv_file', required=True,
-                        help='CSV file with subjects, sessions, and runs.')
-    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-                        help='Whether to use pbs plugin.')
-    parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash', action='store_true',
-                        help='Whether to stop on first crash.')
-    parser.add_argument('--ignore_events', dest='ignore_events', action='store_true',
-                        help='Whether to ignore the csv event files')
+        description='Perform isotropic resampling for NHP fMRI.'
+        ' Run bids_minimal_processing first.')
+    parser.add_argument('-s', '--session',
+                        type=str,
+                        default=None,
+                        help='Session ID, e.g. 20170511.'
+                        )
+    parser.add_argument('--types',
+                        type=str,
+                        default='func,anat,fmap,dwi',
+                        help='Image datatypes, e.g. func,anat,fmap.'
+                        )
+    parser.add_argument('--csv',
+                        dest='csv_file',
+                        required=True,
+                        help='CSV file with subjects, sessions, and runs.'
+                        )
+    parser.add_argument('--pbs',
+                        dest='use_pbs',
+                        action='store_true',
+                        help='Whether to use pbs plugin.'
+                        )
+    parser.add_argument('--stop_on_first_crash',
+                        dest='stop_on_first_crash',
+                        action='store_true',
+                        help='Whether to stop on first crash.'
+                        )
+    parser.add_argument('--ignore_events',
+                        dest='ignore_events',
+                        action='store_true',
+                        help='Whether to ignore the csv event files'
+                        )
 
     args = parser.parse_args()
 
