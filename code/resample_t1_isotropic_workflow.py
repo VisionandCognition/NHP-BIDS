@@ -46,7 +46,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
 
     if csv_file is not None:
         reader = niu.CSVReader()
-        reader.inputs.header = True  
+        reader.inputs.header = True
         reader.inputs.in_file = csv_file
         out = reader.run()
 
@@ -71,7 +71,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
     templates = {
         # 'image': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
         'image': 'sub-{subject_id}/ses-{session_id}/anat/'
-                'sub-{subject_id}_ses-{session_id}_*.nii.gz',
+        'sub-{subject_id}_ses-{session_id}_*.nii.gz',
     }
     inputfiles = Node(
         nio.SelectFiles(templates,
@@ -130,7 +130,8 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
             fs.Resample(
                 voxel_size=(0.6, 0.6, 0.6),
                 # suffix is not accepted by fs.Resample
-                # suffix='_res-1x1x1_preproc',  # BIDS Extension Proposal: BEP003
+                # suffix='_res-1x1x1_preproc',
+                # BIDS Extension Proposal: BEP003
             ),
             name='fs_iso06mm',
             iterfield=['in_file'],
@@ -164,13 +165,22 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-            description='Perform isotropic resampling for NHP fMRI. Run bids_minimal_processing first.')
-    parser.add_argument('-s', '--session', type=str,
-            help='Session ID, e.g. 20170511.')
-    parser.add_argument('--csv', dest='csv_file', default=None,
-                        help='CSV file with subjects, sessions, and runs.')
-    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-            help='Whether to use pbs plugin.')
+            description='Perform isotropic resampling for NHP fMRI.'
+            ' Run bids_minimal_processing first.')
+    parser.add_argument('-s', '--session',
+                        type=str,
+                        help='Session ID, e.g. 20170511.'
+                        )
+    parser.add_argument('--csv',
+                        dest='csv_file',
+                        default=None,
+                        help='CSV file with subjects, sessions, and runs.'
+                        )
+    parser.add_argument('--pbs',
+                        dest='use_pbs',
+                        action='store_true',
+                        help='Whether to use pbs plugin.'
+                        )
 
     args = parser.parse_args()
 
