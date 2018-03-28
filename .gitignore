@@ -4,6 +4,13 @@
 # Directories
 /workingdirs/
 /scratch/
+/job-logs/
+
+# symlinks
+derivatives
+sourcedata
+sub-danny
+
 
 # Binary files
 *.nii.gz
@@ -116,16 +123,4 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
-job-logs/
 
-log-minproc_nodti_ITERISSUE\.txt
-
-log-minproc_nodti_single\.txt
-
-log-minproc_nodti\.txt
-
-derivatives
-
-sourcedata
-
-sub-danny
