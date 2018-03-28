@@ -65,17 +65,16 @@ def create_workflow():
     # SelectFiles
     templates = {
         'ref_manual_fmapmask':  # was: manual_fmapmask
-        'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
+        'manual-masks/sub-eddy/ses-20170511/fmap/'
+        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
 
         'ref_fmap_magnitude':
-        'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
+        'manual-masks/sub-eddy/ses-20170511/fmap/'
+        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
 
         'ref_fmap_phasediff':
         'derivatives/resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc'
-            '.nii.gz',
+        'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc.nii.gz',
 
         # 'manualweights':
         # 'manual-masks/sub-eddy/ses-20170511/func/'
@@ -83,22 +82,22 @@ def create_workflow():
         #     '_res-1x1x1_manualweights.nii.gz',
 
         'ref_func':  # was: manualmask_func_ref
-        'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
-            'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-            'res-1x1x1_fnirt_reference.nii.gz',
+        'manual-masks/sub-eddy/ses-20170607/func/'
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
+        'res-1x1x1_fnirt_reference.nii.gz',
 
         'ref_funcmask':  # was: manualmask
-        'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
-            'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-            'res-1x1x1_fnirt_mask.nii.gz',
+        'manual-masks/sub-eddy/ses-20170607/func/'
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
+        'res-1x1x1_fnirt_mask.nii.gz',
 
         'ref_t1':
-        'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
-            'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
+        'manual-masks/sub-eddy/ses-20170511/anat/'
+        'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
 
         'ref_t1mask':
-        'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
-            'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
+        'manual-masks/sub-eddy/ses-20170511/anat/'
+        'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
 
         # 'funcs':
         # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
@@ -108,14 +107,16 @@ def create_workflow():
         #     '_nvol10.nii.gz',
 
         'fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
-            'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc'
-            '.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-{subject_id}/ses-{session_id}/fmap/'
+        'sub-{subject_id}_ses-{session_id}_'
+        'phasediff_res-1x1x1_preproc.nii.gz',
 
         'fmap_magnitude':
-        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
-            'sub-{subject_id}_ses-{session_id}_magnitude1_res-1x1x1_preproc'
-            '.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-{subject_id}/ses-{session_id}/fmap/'
+        'sub-{subject_id}_ses-{session_id}_'
+        'magnitude1_res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
@@ -270,20 +271,24 @@ def create_workflow():
          (transmanmask_mc, pre_mc,
           [
            ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights
-         ]),
+          ]),
          (pre_mc, outputnode,
           [
            ('mc.out_file', 'pre_motion_corrected'),
            ('mc.oned_file', 'pre_motion_parameters.oned_file'),
            ('mc.oned_matrix_save', 'pre_motion_parameters.oned_matrix_save'),
-         ]),
+          ]),
          (outputnode, outputfiles,
           [
            ('pre_motion_corrected', 'pre_motion_corrected.out_file'),
-           ('pre_motion_parameters.oned_file', 'pre_motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
-           ('pre_motion_parameters.oned_matrix_save', 'pre_motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
-         ]),
-    ])
+           ('pre_motion_parameters.oned_file',
+            'pre_motion_corrected.oned_file'),
+           # warp parameters in ASCII (.1D)
+           ('pre_motion_parameters.oned_matrix_save',
+            'pre_motion_corrected.oned_matrix_save'),
+           # transformation matrices for each sub-brick
+          ]),
+        ])
 
     mc = motioncorrection_workflow.create_workflow_allin_slices(
         name='motioncorrection',
@@ -295,13 +300,14 @@ def create_workflow():
            ('funcs', 'in.funcs'),
            ]),
          (pre_mc, mc, [
-             # the median image realigned to the reference functional will serve as reference
-             #  this way motion correction is done to an image more similar to the functionals
+             # the median image realigned to the reference functional
+             # will serve as reference. This way motion correction is
+             #  done to an image more similar to the functionals
              ('mc.out_file', 'in.ref_func'),
            ]),
          (inputfiles, mc, [
-             # Check and make sure the ref func mask is close enough to the registered median
-             # image.
+             # Check and make sure the ref func mask is close enough
+             # to the registered median image.
              ('ref_funcmask', 'in.ref_func_weights'),
            ]),
          (transmanmask_mc, mc, [
@@ -314,10 +320,13 @@ def create_workflow():
          ]),
          (outputnode, outputfiles, [
              ('motion_corrected', 'motion_corrected.out_file'),
-             ('motion_parameters.oned_file', 'motion_corrected.oned_file'), # warp parameters in ASCII (.1D)
-             ('motion_parameters.oned_matrix_save', 'motion_corrected.oned_matrix_save'), # transformation matrices for each sub-brick
+             ('motion_parameters.oned_file', 'motion_corrected.oned_file'),
+             # warp parameters in ASCII (.1D)
+             ('motion_parameters.oned_matrix_save',
+              'motion_corrected.oned_matrix_save'),
+             # transformation matrices for each sub-brick
          ]),
-    ])
+         ])
 
     #  |~. _ | _| _ _  _  _    _ _  _ _ _  __|_. _  _
     #  |~|(/_|(_|| | |(_||_)  (_(_)| | (/_(_ | |(_)| |
@@ -395,15 +404,16 @@ def create_workflow():
     # Register all functionals to common reference
     # --------------------------------------------------------
     if False:  # this is now done during motion correction
-        # FLIRT cost: intermodal: corratio, intramodal: least squares and normcorr
+        # FLIRT cost: intermodal: corratio, intramodal:
+        # least squares and normcorr
         reg_to_ref = pe.MapNode(  # intra-modal
-            # some runs need to be scaled along the anterior-posterior direction
+            # some runs need scaling along the anterior-posterior direction
             interface=fsl.FLIRT(dof=12, cost='normcorr'),
             name='reg_to_ref',
             iterfield=('in_file', 'in_weight'),
         )
         refEPI_to_refT1 = pe.Node(
-            # some runs need to be scaled along the anterior-posterior direction
+            # some runs need scaling along the anterior-posterior direction
             interface=fsl.FLIRT(dof=12, cost='corratio'),
             name='refEPI_to_refT1',
         )
@@ -426,7 +436,7 @@ def create_workflow():
         )
 
         def deref_list(x):
-            assert len(x)==1
+            assert len(x) == 1
             return x[0]
 
         featpreproc.connect(
@@ -498,8 +508,7 @@ def create_workflow():
               [
                ('out_file', 'common_ref.funcmask'),
               ]),
-        ])
-
+            ])
 
     #  |\/| _ _|_. _  _    _   _|_|. _  _ _
     #  |  |(_) | |(_)| |  (_)|_|| ||(/_| _\
@@ -536,10 +545,10 @@ def create_workflow():
     featpreproc.connect(
         [(mc, funcbrains,
           [('mc.out_file', 'in_file'),
-          ]),
+           ]),
          (dilatemask, funcbrains,
           [('out_file', 'operand_file'),
-          ]),
+           ]),
          (funcbrains, outputfiles,
           [('out_file', 'funcbrains'),
            ]),
@@ -657,9 +666,11 @@ def create_workflow():
 
     # featpreproc.connect(b0_unwarp, 'out.funcs', smooth, 'inputnode.in_files')
     if False:
-        featpreproc.connect(reg_funcs, 'out_file', smooth, 'inputnode.in_files')
+        featpreproc.connect(reg_funcs, 'out_file',
+                            smooth, 'inputnode.in_files')
     else:
-        featpreproc.connect(mc, 'mc.out_file', smooth, 'inputnode.in_files')
+        featpreproc.connect(mc, 'mc.out_file',
+                            smooth, 'inputnode.in_files')
 
     featpreproc.connect(dilatemask, 'out_file',
                         smooth, 'inputnode.mask_file')
@@ -693,7 +704,8 @@ def create_workflow():
 
     # maskfunc2 is the functional data before SUSAN
     if False:
-        featpreproc.connect(b0_unwarp, ('out.funcs', tolist), concatnode, 'in1')
+        featpreproc.connect(b0_unwarp, ('out.funcs', tolist),
+                            concatnode, 'in1')
     else:
         featpreproc.connect(mc, ('mc.out_file', tolist), concatnode, 'in1')
     # maskfunc3 is the functional data after SUSAN
@@ -783,7 +795,8 @@ def create_workflow():
     featpreproc.connect(meanfunc3, 'out_file', outputfiles, 'mean')
 
     featpreproc.connect(meanfunc3, 'out_file', outputnode, 'mean_highpassed')
-    featpreproc.connect(outputnode, 'highpassed_files', outputfiles, 'highpassed_files')
+    featpreproc.connect(outputnode, 'highpassed_files',
+                        outputfiles, 'highpassed_files')
 
     return(featpreproc)
 
@@ -815,9 +828,9 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
 
     if csv_file is not None:
         reader = niu.CSVReader()
-        reader.inputs.header = True  
+        reader.inputs.header = True
         reader.inputs.in_file = csv_file
-        out = reader.run()  
+        out = reader.run()
         subject_list = out.outputs.subject
         session_list = out.outputs.session
         run_list = out.outputs.run
@@ -842,10 +855,11 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
 
     templates = {
         'funcs':
-        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
-            #'_nvol10'
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-{subject_id}/ses-{session_id}/func/'
+        # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc'
+        # '_nvol10'
             '.nii.gz',
     }
     inputfiles = pe.Node(
@@ -867,14 +881,15 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
           ])
     ])
 
-    featpreproc.inputs.inputspec.fwhm = 2.0
+    featpreproc.inputs.inputspec.fwhm = 2.0     # spatial smoothing
     featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
-    #workflow.stop_on_first_crash = True
+    # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'template': '/home/jonathan/NHP-BIDS/code/pbs/template.sh'})
+        workflow.run(plugin='PBS',
+                     plugin_args={'template': '/home/jonathan/NHP-BIDS/code/pbs/template.sh'})
     else:
         workflow.run()
 
@@ -882,14 +897,19 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Perform pre-processing step for NHP fMRI.')
-    parser.add_argument('-r', '--run', dest='run_num', type=int,
-            help='Run number, e.g. 1.')
-    parser.add_argument('-s', '--session', type=str,
-            help='Session ID, e.g. 20170511.')
-    parser.add_argument('--csv', dest='csv_file', default=None,
+    parser.add_argument('-r', '--run',
+                        dest='run_num',
+                        type=int,
+                        help='Run number, e.g. 1.')
+    parser.add_argument('-s', '--session',
+                        type=str,
+                        help='Session ID, e.g. 20170511.')
+    parser.add_argument('--csv',
+                        dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
-    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-            help='Whether to use pbs plugin.')
+    parser.add_argument('--pbs',
+                        dest='use_pbs', action='store_true',
+                        help='Whether to use pbs plugin.')
 
     args = parser.parse_args()
 
