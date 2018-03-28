@@ -33,7 +33,7 @@ For a more comprehensive explanation of running analyses on LISA see https://git
 Running the Pipeline
 ====================
 
-You should change the `curve-tracing-20180125-run02.csv` to a CSV script that actually exists. There should be some available in the NHP-BIDS directory (perhaps they will be moved to some place cleaner, such as code?).
+You should change the `SubSesRun.csv` to a CSV script that actually exists. There should be some examples available in the NHP-BIDS/csv directory.
 
 1. Create a `copy-to-bids.sh` script in the `Data_raw/SUBJ/YYYYMMDD` folder, and run it.
    * Base script off of existing script, for example, `Data_raw/EDDY/20180222/copy-to-bids.sh`. This script tends to improve each iteration. To find the most recent one, you can try calling `find -maxdepth 3 -name "copy-to-bids.sh" -exec ls -lt {} +` from the `Data_raw` directory. Your colleague, however, maybe keeping a secret version to themselves.
@@ -42,18 +42,21 @@ You should change the `curve-tracing-20180125-run02.csv` to a CSV script that ac
 2. Modify `code/bids_templates.py` to add the new session (and subject, if needed).
    * May be replaced completely by csv list in the future.
 
-3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `checkerboard-ct-mapping.csv` for an example). These csv files can be kept in the csv directory. 
+3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `SubSesRun.csv` for an example). These csv files can be kept in the csv directory. 
 
 4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
-   * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/checkerboard-ct-mapping.csv |& tee ./logs/log-minproc.txt`
+   * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-minproc.txt`
    * help: `./code/bids_minimal_processing.py --help`
    * LISA: make sure to load freesurfer, FSL ``module load freesurfer``, ``module load fsl``
 
-5. Run `./code/resample_isotropic_workflow.py`
-   * example: `clear && ./code/resample_isotropic_workflow.py --csv ./csv/checkerboard-ct-mapping.csv |& tee ./logs/log-resample.txt`
+5. Run `./code/resample_isotropic_workflow.py` to resample all volumes to 1.0 mm isotropic voxels
+   * example: `clear && ./code/resample_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample.txt`
+   
+   Run `./code/resample_hiresanat_isotropic_workflow.py` if you also want the high-resolution 0.6 mm isotropic anatomical images
+   * example: `clear && ./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
 
 6. Run `./code/preprocessing_workflow.py`
-   * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/checkerboard-ct-mapping.csv |& tee ./logs/log-preproc.txt`
+   * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
    * pbs: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `qsub ./code/pbs/preprocess_SESSION.job`, where SESSION defines which session / run to process.
 
 7. Run `./code/modelfit_workflow.py`
