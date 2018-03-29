@@ -64,64 +64,80 @@ def create_workflow():
 
     # SelectFiles
     templates = {
+
+        # FIELDMAP ========
         'ref_manual_fmapmask':  # was: manual_fmapmask
-        'manual-masks/sub-eddy/ses-20170511/fmap/'
-        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
+        'manual-masks/sub-danny/ses-20180117/fmap/'
+        'T1_to_fmap_brainmask.nii.gz',
 
         'ref_fmap_magnitude':
-        'manual-masks/sub-eddy/ses-20170511/fmap/'
-        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-danny/ses-20180117/fmap/'
+        'sub-danny_ses-20180117_magnitude1_res-1x1x1_preproc.nii.gz',
 
         'ref_fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
-        'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc.nii.gz',
-
-        # 'manualweights':
-        # 'manual-masks/sub-eddy/ses-20170511/func/'
-        #     'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-        #     '_res-1x1x1_manualweights.nii.gz',
-
-        'ref_func':  # was: manualmask_func_ref
-        'manual-masks/sub-eddy/ses-20170607/func/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-        'res-1x1x1_fnirt_reference.nii.gz',
-
-        'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-eddy/ses-20170607/func/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-        'res-1x1x1_fnirt_mask.nii.gz',
-
-        'ref_t1':
-        'manual-masks/sub-eddy/ses-20170511/anat/'
-        'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
-
-        'ref_t1mask':
-        'manual-masks/sub-eddy/ses-20170511/anat/'
-        'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
-
-        # 'funcs':
-        # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-        #     # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-        #     'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
-        #     # '.nii.gz',
-        #     '_nvol10.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-danny/ses-20180117/fmap/'
+        'sub-danny_ses-20180117_phasediff_res-1x1x1_preproc.nii.gz',
 
         'fmap_phasediff':
         'derivatives/resampled-isotropic-1mm/'
         'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_'
-        'phasediff_res-1x1x1_preproc.nii.gz',
+        'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
 
         'fmap_magnitude':
         'derivatives/resampled-isotropic-1mm/'
         'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_'
-        'magnitude1_res-1x1x1_preproc.nii.gz',
+        'sub-{subject_id}_ses-{session_id}_magnitude1_'
+        'res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
-        #     'sub-{subject_id}_ses-{session_id}_'
-        #     'magnitude1_res-1x1x1_preproc.nii.gz',
+        # 'sub-{subject_id}_ses-{session_id}_'
+        # 'magnitude1_res-1x1x1_preproc.nii.gz',
+
+
+        # FUNCTIONALS ========
+        'ref_func':  # was: manualmask_func_ref
+        'manual-masks/sub-danny/ses-20180117/func/'
+        'sub-danny_ses-20180117_task-prf_'
+        'run-01_frame-10_bold_res-1x1x1_reference_zcrop.nii.gz',
+
+        'ref_funcmask':  # was: manualmask
+        'manual-masks/sub-danny/ses-20180117/func/'
+        'T1_to_func_brainmask_zcrop.nii.gz',
+
+        # 'funcs':
+        # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+        # # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
+        # 'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
+        # # '.nii.gz',
+        # '_nvol10.nii.gz',
+
+        # T1 ========
+        # 1 mm iso ---
+        # 'ref_t1':
+        # 'manual-masks/sub-danny/ses-20180117/anat/'
+        # 'HiRes-1x1x1.nii.gz',
+
+        # 'ref_t1mask':
+        # 'manual-masks/sub-danny/ses-20180117/anat/'
+        # 'HiRes_brainmask-1x1x1.nii.gz',
+
+        # 0.6 mm iso ---
+        'ref_t1':
+        'manual-masks/sub-danny/ses-20180117/anat/'
+        'HiRes.nii.gz',
+
+        'ref_t1mask':
+        'manual-masks/sub-danny/ses-20180117/anat/'
+        'HiRes_brainmask.nii.gz',
+
+        # WEIGHTS ========
+        # 'manualweights':
+        # 'manual-masks/sub-eddy/ses-20170511/func/'
+        # 'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
+        # '_res-1x1x1_manualweights.nii.gz',
     }
 
     inputfiles = pe.Node(
