@@ -905,7 +905,8 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
     workflow.write_graph()
     if use_pbs:
         workflow.run(plugin='PBS',
-                     plugin_args={'template': '/home/jonathan/NHP-BIDS/code/pbs/template.sh'})
+                     plugin_args={'template': '/home/pcklink/NHP-BIDS/'
+                                  'code/pbs/template_ck.sh'})
     else:
         workflow.run()
 
