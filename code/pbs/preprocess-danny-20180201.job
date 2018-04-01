@@ -19,4 +19,4 @@ source ~/.bashrc
 export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
 
 cd ~/NHP-BIDS
-./code/preprocessing_workflow_danny.py --pbs --csv ./csv/prf-danny-20180201.csv |& tee ./logs/log-preproc_danny-20180201.txt
+./code/preprocessing_workflow_danny.py --csv ./csv/prf-danny-20180201.csv |& tee ./logs/log-preproc_danny-20180201.txt
