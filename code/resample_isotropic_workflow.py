@@ -109,6 +109,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False):
         (r'//(sub-[^/]*_magnitude1_res-.*.nii.gz)', r'/fmap/\1'),
         (r'//(sub-[^/]*_epi_res-.*.nii.gz)', r'/fmap/\1'),
         (r'//(sub-[^/]*_T1w_res-.*.nii.gz)', r'/anat/\1'),
+        (r'//(sub-[^/]*_dwi_res-.*.nii.gz)', r'/dwi/\1'),
     ]
 
     # -------------------------------------------- Create Pipeline
