@@ -13,8 +13,8 @@
 
 
 # Binary files
-*.nii.gz
-*.nii.gz~
+#*.nii.gz
+#*.nii.gz~
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
