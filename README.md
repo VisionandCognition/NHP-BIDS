@@ -58,6 +58,7 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
    * example: `clear && ./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
 
 6. Run `./code/preprocessing_workflow.py`
+   * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you. For undistortion instructions check <TO_BE_WRITTEN> 
    * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
    * pbs: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `qsub ./code/pbs/preprocess_SESSION.job`, where SESSION defines which session / run to process.
 
