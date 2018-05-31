@@ -45,6 +45,8 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
 3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `SubSesRun.csv` for an example). These csv files can be kept in the csv directory. NB! *runs* are not used at this stage, so defining 1 run per session suffices.
 
 4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
+   * NB! All sessions should have the same types of scans (specify which with `--types`, see `help` for details)
+   * If you are not processing standard curve-tracing data use the `--ignore_events` flag
    * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-minproc.txt`
    * help: `./code/bids_minimal_processing.py --help`
    * LISA: make sure to load freesurfer, FSL ``module load freesurfer``, ``module load fsl``
