@@ -37,14 +37,16 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
 
 1. Create a `copy-to-bids.sh` script in the `Data_raw/SUBJ/YYYYMMDD` folder, and run it.
    * Base script off of existing script, for example, `Data_raw/EDDY/20180222/copy-to-bids.sh`. This script tends to improve each iteration. To find the most recent one, you can try calling `find -maxdepth 3 -name "copy-to-bids.sh" -exec ls -lt {} +` from the `Data_raw` directory. Your colleague, however, maybe keeping a secret version to themselves.
-   * In order to match the runs with the behavioral data, you either need to the notes that relate the run numbers with the behavioral timestamps, or you need to correspond the AcquisitionTime (in the json files, created by dcm2niix) with the behavioral timestamps. For example, the log `Behavior/Eddy_Curve_Tracing_StimSettings_CTShapedCheckerboard_Spinoza_3T_20180117T1207-T1215.49` matches with the run 8, which has an acquisition time of `12:08:54.410000`.
+   * In order to match the runs with the behavioral data, you either need to the notes that relate the run numbers with the behavioral timestamps, or you need to correspond the AcquisitionTime (in the json files, created by dcm2niix) with the behavioral timestamps. For example, the log `Behavior/Eddy_Curve_Tracing_StimSettings_CTShapedCheckerboard_Spinoza_3T_20180117T1207-T1215.49` matches with the run 8, which has an acquisition time of `12:08:54.410000`. If there are no json available you can (re)create them with `dcm2niix -b o -o <outputfolder> <location of dicom images>/*`.
 
 2. Modify `code/bids_templates.py` to add the new session (and subject, if needed).
    * May be replaced completely by csv list in the future.
 
-3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `SubSesRun.csv` for an example). These csv files can be kept in the csv directory. 
+3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `SubSesRun.csv` for an example). These csv files can be kept in the csv directory. NB! *runs* are not used at this stage, so defining 1 run per session suffices.
 
 4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
+   * NB! All sessions should have the same types of scans (specify which with `--types`, see `help` for details)
+   * If you are not processing standard curve-tracing data use the `--ignore_events` flag
    * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-minproc.txt`
    * help: `./code/bids_minimal_processing.py --help`
    * LISA: make sure to load freesurfer, FSL ``module load freesurfer``, ``module load fsl``
