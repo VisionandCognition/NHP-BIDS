@@ -235,8 +235,8 @@ if __name__ == '__main__':
                         )
     parser.add_argument('--types',
                         type=str,
-                        default='func,anat,fmap,dwi',
-                        help='Image datatypes, e.g. func,anat,fmap.'
+                        default='func,anat,fmap',
+                        help='Image datatypes, e.g. func,anat,fmap,dwi.'
                         )
     parser.add_argument('--csv',
                         dest='csv_file',

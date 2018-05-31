@@ -1,10 +1,24 @@
 
-subject_list = ['danny','eddy']
+subject_list = ['danny', 'eddy']
 session_list = [
     # '20170511',
     # '20170525',
     # '20170614',
     # '20170621',
+    '20160721',
+    '20160728',
+    '20160729',
+    '20160803',
+    '20160804',
+    '20170411',
+    '20170420',
+    '20170512',
+    '20170516',
+    '20170517',
+    '20170518',
+    '20170607',
+    '20171116',
+    '20171129',
     '20171116',
     '20171129',
     '20171207',
@@ -16,7 +30,7 @@ session_list = [
     '20180131',
     '20180201'
 ]
-datatype_list = ['func','anat','fmap','dwi']
+datatype_list = ['func', 'anat', 'fmap', 'dwi']
 
 templates = {
     'images': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
