@@ -66,16 +66,15 @@ def create_workflow():
     templates = {
         'ref_manual_fmapmask':  # was: manual_fmapmask
         'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
+        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_manualmask.nii.gz',
 
         'ref_fmap_magnitude':
         'derivatives/manual-masks/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
+        'sub-eddy_ses-20170511_magnitude1_res-1x1x1_reference.nii.gz',
 
         'ref_fmap_phasediff':
         'derivatives/resampled-isotropic-1mm/sub-eddy/ses-20170511/fmap/'
-            'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc'
-            '.nii.gz',
+        'sub-eddy_ses-20170511_phasediff_res-1x1x1_preproc.nii.gz',
 
         # 'manualweights':
         # 'manual-masks/sub-eddy/ses-20170511/func/'
@@ -84,21 +83,21 @@ def create_workflow():
 
         'ref_func':  # was: manualmask_func_ref
         'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
-            'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-            'res-1x1x1_fnirt_reference.nii.gz',
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
+        'res-1x1x1_fnirt_reference.nii.gz',
 
         'ref_funcmask':  # was: manualmask
         'derivatives/manual-masks/sub-eddy/ses-20170607/func/'
-            'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
-            'res-1x1x1_fnirt_mask.nii.gz',
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_'
+        'res-1x1x1_fnirt_mask.nii.gz',
 
         'ref_t1':
         'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
-            'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
+        'sub-eddy_ses-20170511_T1w_res-1x1x1_reference.nii.gz',
 
         'ref_t1mask':
         'derivatives/manual-masks/sub-eddy/ses-20170511/anat/'
-            'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
+        'sub-eddy_ses-20170511_T1w_res-1x1x1_manualmask.nii.gz',
 
         # 'funcs':
         # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
@@ -108,14 +107,15 @@ def create_workflow():
         #     '_nvol10.nii.gz',
 
         'fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
-            'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc'
-            '.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-{subject_id}/ses-{session_id}/fmap/'
+        'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
 
         'fmap_magnitude':
-        'derivatives/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
-            'sub-{subject_id}_ses-{session_id}_magnitude1_res-1x1x1_preproc'
-            '.nii.gz',
+        'derivatives/resampled-isotropic-1mm/'
+        'sub-{subject_id}/ses-{session_id}/fmap/'
+        'sub-{subject_id}_ses-{session_id}_'
+        'magnitude1_res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'

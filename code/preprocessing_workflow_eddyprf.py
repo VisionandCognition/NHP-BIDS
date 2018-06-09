@@ -82,16 +82,16 @@ def create_workflow():
         'manual-masks/sub-eddy/ses-20170607b/fmap/'
         'sub-eddy_ses-20170607_phasediff_res-1x1x1_preproc.nii.gz',
 
-        'fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
+        # 'fmap_phasediff':
+        # 'derivatives/resampled-isotropic-1mm/'
+        # 'sub-{subject_id}/ses-{session_id}/fmap/'
+        # 'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
 
-        'fmap_magnitude':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_magnitude1_'
-        'res-1x1x1_preproc.nii.gz',
+        # 'fmap_magnitude':
+        # 'derivatives/resampled-isotropic-1mm/'
+        # 'sub-{subject_id}/ses-{session_id}/fmap/'
+        # 'sub-{subject_id}_ses-{session_id}_magnitude1_'
+        # 'res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
