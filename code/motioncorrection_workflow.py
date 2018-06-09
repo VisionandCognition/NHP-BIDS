@@ -149,8 +149,9 @@ def run_workflow():
     output_dir = 'motion-correction'
     working_dir = 'workingdirs/motion-correction'
 
-    subject_list = ['eddy']
-    session_list = ['20170511']
+    # These are only relevant when this is run independently
+    subject_list = ['eddy']  # WHY IS THIS HARDCODED HERE? NOT USED?!
+    session_list = ['20170511']  # WHY IS THIS HARDCODED HERE? NOT USED?!
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[
