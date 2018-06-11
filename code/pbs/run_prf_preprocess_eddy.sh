@@ -20,5 +20,5 @@ declare -a SESS=( \
 echo 'Submitting sessions as separate jobs...'
 for session in ${SESS[@]} ; do
     echo ${SUBJ}-${session}
-    qsub ~/NHP-BIDS/code/pbs/preprocess-${SUBJ}-${session}    
+    qsub ~/NHP-BIDS/code/pbs/preprocess-${SUBJ}-${session}.job   
 done 
