@@ -108,7 +108,7 @@ def create_workflow():
         'ref_func_undist_inData_al_fnirt.nii.gz',
 
         'ref_funcmask':
-        'manual-masks/sub-danny/ses-20170607b/anat/'
+        'manual-masks/sub-eddyy/ses-20170607b/anat/'
         'HiRes_to_T1_mean.nii_shadowreg_Eddy_brainmask.nii.gz',
 
         # 0.6 mm iso ---
@@ -117,7 +117,7 @@ def create_workflow():
         'Eddy.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/sub-danny/HiRes/'
+        'manual-masks/sub-eddy/HiRes/'
         'Eddy_brainmask.nii.gz',
 
         # WEIGHTS ========
