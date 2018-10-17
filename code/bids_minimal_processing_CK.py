@@ -34,10 +34,38 @@ import nipype.interfaces.freesurfer as fs    # freesurfer
 from bids_convert_csv_eventlog import ConvertCSVEventLog
 
 
+#######################################################################
+# Define some core functions ##########################################
+#######################################################################
+
+# Get image lists =====================================================
+def get_info(csv_file):
+    # Get info from csv
+    reader = niu.CSVReader()
+    reader.inputs.header = True
+    reader.inputs.in_file = csv_file
+    out = reader.run()
+    csv = out.outputs  # assign the columns of the csv-file to 'csv'
+
+    # create empty lists where we will put out to-be-processed files
+    file_in.func = []
+    file_in.anat = []
+    file_in.hires = []
+    file_in.ev = []
 
 
 
 
+
+
+
+
+
+
+
+
+
+# Create images workflow ==============================================
 def create_images_workflow():  # The original code
     """ Correct for the sphinx position and use reorient to standard.
     """
@@ -81,24 +109,19 @@ def create_images_workflow():  # The original code
     return workflow
 
 
+# Create events-file workflow =========================================
 
 
-def print_run(cmd):
-    print('%s\n' % cmd)
-    return os.system(cmd)
+# Define the run_workflow routine =====================================
 
 
 
-# THIS DOES NOT SEEM TO GET USED >>> REPLACED WITH NODES IN WORKFLOW =======
-def process_functionals(raw_dir, glob_pat):
-    for fn in glob.glob("%s/%s" % (raw_dir, glob_pat)):
-        fn = os.path.basename(fn)
-        print("Processing %s" % fn)
 
-        print_run("mri_convert -i %s/%s -o /tmp/%s --sphinx" %
-                  (raw_dir, fn, fn))
-        print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
-# OBSOLETE =================================================================
+
+
+
+
+
 
 
 
@@ -135,43 +158,25 @@ def process_functionals(raw_dir, glob_pat):
 
 
 
-
+#######################################################################
+# Parse function arguments & run ######################################
+#######################################################################
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description='Perform isotropic resampling for NHP fMRI.'
-        ' Run bids_minimal_processing first.')
-    parser.add_argument('-s', '--session',
-                        type=str,
-                        default=None,
-                        help='Session ID, e.g. 20170511.'
-                        )
-    parser.add_argument('--types',
-                        type=str,
-                        default='func,anat,fmap',
-                        help='Image datatypes, e.g. func,anat,fmap,dwi.'
-                        )
+        description='Minimal_processing for NHP-MRI data in BIDS.')
     parser.add_argument('--csv',
                         dest='csv_file',
                         required=True,
-                        help='CSV file with subjects, sessions, and runs.'
-                        )
-    parser.add_argument('--pbs',
-                        dest='use_pbs',
-                        action='store_true',
-                        help='Whether to use pbs plugin.'
+                        help='CSV-file with subjects, session, type, run, ev.'
                         )
     parser.add_argument('--stop_on_first_crash',
                         dest='stop_on_first_crash',
                         action='store_true',
                         help='Whether to stop on first crash.'
                         )
-    parser.add_argument('--ignore_events',
-                        dest='ignore_events',
-                        action='store_true',
-                        help='Whether to ignore the csv event files'
-                        )
 
     args = parser.parse_args()
 
+    # Run the workflow
     run_workflow(**vars(args))

@@ -1,16 +1,61 @@
-def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
-                 ignore_events, types):
-    import bids_templates as bt
+def run_workflow(csv_file, stop_on_first_crash):
 
     from nipype import config
     config.enable_debug_mode()
 
-    # ------------------ Specify variables
+    # Get some path information ---------------------------
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     data_dir = ds_root
     output_dir = ''
     working_dir = 'workingdirs/minimal_processing'
+
+    # Get info from csv -----------------------------------
+    reader = niu.CSVReader()
+    reader.inputs.header = True
+    reader.inputs.in_file = csv_file
+    out = reader.run()
+    csv = out.outputs  # assign the columns of the csv-file to 'csv'
+
+    # create empty lists where we will put our to-be-processed files
+    in_file = {
+        'func': [], 'anat': [], 'hires': [], 'ev': []
+    }
+
+    listind = 0  # keep track of list content
+    for entry in csv.type:
+        curr_img = 'sourcedata/sub-%s/ses-%s/%s
+        if entry == 'func':  # 1 mm iso and check events
+            # add to func list
+            if csv.ev[listind] == 1:
+                # add to ev list
+                curr_img = data_dir
+                in_file['func'].append(curr_file)
+            else:
+                # ignore event-file
+        elif entry == 'anat':  # 1 and 0.6 mm iso
+            # add to anat list
+        elif entry == 'hires':
+            # add to hires list
+    listind = listind + 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # ------------------ Input Files
     # Get info from csv
