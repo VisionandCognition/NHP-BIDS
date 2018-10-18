@@ -17,31 +17,53 @@ def run_workflow(csv_file, stop_on_first_crash):
     out = reader.run()
     csv = out.outputs  # assign the columns of the csv-file to 'csv'
 
-    # create empty lists where we will put our to-be-processed files
+    # create empty lists to facilitate accessing to-be-processed files
     in_file = {
-        'func': [], 'anat': [], 'hires': [], 'ev': []
+        'func': {'subject_id': [], 'session_id': [], 'run_id': []},
+        'anat': {'subject_id': [], 'session_id': [], 'type_id': []},
+        'hires': {'subject_id': [], 'session_id': []},
+        'ev': {'subject_id': [], 'session_id': [], 'run_id': []}
     }
+
+    # func : functional scans only, run # matters
+    # anat : this will also take fmap and dwi scans, ignore run
+    # hires : only T1/T2 scans, ignore runs
+    # ev : only event files, run # matters
 
     listind = 0  # keep track of list content
     for entry in csv.type:
-        curr_img = 'sourcedata/sub-%s/ses-%s/%s
         if entry == 'func':  # 1 mm iso and check events
             # add to func list
+            in_file['func']['subject_id'].append(csv.subject[listind])
+            in_file['func']['session_id'].append(csv.session[listind])
+            in_file['func']['run_id'].append(csv.run[listind])
             if csv.ev[listind] == 1:
                 # add to ev list
-                curr_img = data_dir
-                in_file['func'].append(curr_file)
-            else:
-                # ignore event-file
-        elif entry == 'anat':  # 1 and 0.6 mm iso
+                in_file['ev']['subject_id'].append(csv.subject[listind])
+                in_file['ev']['session_id'].append(csv.session[listind])
+                in_file['ev']['run_id'].append(csv.run[listind])
+        elif entry == 'anat' or entry == 'dwi' or entry == 'fmap':
             # add to anat list
-        elif entry == 'hires':
-            # add to hires list
+            in_file['anat']['subject_id'].append(csv.subject[listind])
+            in_file['anat']['session_id'].append(csv.session[listind])
+            in_file['anat']['type_id'].append(entry)
+            if entry == 'anat':
+                # add to hires list
+                in_file['hires']['subject_id'].append(csv.subject[listind])
+                in_file['hires']['session_id'].append(csv.session[listind])
     listind = listind + 1
 
 
-
-
+# WILL THIS WORK ??!!
+ds_anat = nio.DataGrabber(infields=['subject_id', 'session_id', 'type_id'])
+ds_anat.input.base_directory = data_dir
+ds_anat.inputs.template = 'sourcedata/sub-%s/sess-%s/%s/*.nii.gz'
+ds_anat.inputs.sort_filelist = True
+ds_anat.inputs.subject_id = in_files['anat']['subject_id']
+ds_anat.inputs.session_id = in_files['anat']['session_id']
+ds_anat.inputs.type_id = in_files['anat']['type_id']
+anat_files = ds_anat.run()
+# files are in ds_anat.outfiles
 
 
 
@@ -68,31 +90,6 @@ def run_workflow(csv_file, stop_on_first_crash):
     type_list = out.outputs.type
     run_list = out.outputs.run
     ev_list = out.outputs.ev
-
-    # initiate separate lists
-    hires.sub = []
-    hires.ses = []
-    anat.list = []
-    func.list = []
-    func_ev_list = []
-
-    listind = 0  # keep track of list content
-    for entry in type_list:
-        if entry == 'func':  # 1 mm iso and check events
-            if ev_list[listind] == 1:
-                # add to do_ev_list
-                list.append(func_ev_list,)
-
-        elif entry == 'anat':  # 1 and 0.6 mm iso
-        else:
-            # 1mm iso
-        listind = listind + 1
-            
-
-
-
-
-
 
 
 
