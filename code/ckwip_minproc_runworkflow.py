@@ -53,17 +53,16 @@ def run_workflow(csv_file, stop_on_first_crash):
                 in_file['hires']['session_id'].append(csv.session[listind])
     listind = listind + 1
 
-
-# WILL THIS WORK ??!!
-ds_anat = nio.DataGrabber(infields=['subject_id', 'session_id', 'type_id'])
-ds_anat.input.base_directory = data_dir
-ds_anat.inputs.template = 'sourcedata/sub-%s/sess-%s/%s/*.nii.gz'
-ds_anat.inputs.sort_filelist = True
-ds_anat.inputs.subject_id = in_files['anat']['subject_id']
-ds_anat.inputs.session_id = in_files['anat']['session_id']
-ds_anat.inputs.type_id = in_files['anat']['type_id']
-anat_files = ds_anat.run()
-# files are in ds_anat.outfiles
+    # Grab the actual file-pointers
+    ds_anat = nio.DataGrabber(infields=['subject_id', 'session_id', 'type_id'])
+    ds_anat.input.base_directory = data_dir
+    ds_anat.inputs.template = 'sourcedata/sub-%s/sess-%s/%s/*.nii.gz'
+    ds_anat.inputs.sort_filelist = True
+    ds_anat.inputs.subject_id = in_files['anat']['subject_id']
+    ds_anat.inputs.session_id = in_files['anat']['session_id']
+    ds_anat.inputs.type_id = in_files['anat']['type_id']
+    anat_files = ds_anat.run()
+    # files are in ds_anat.outfiles
 
 
 
