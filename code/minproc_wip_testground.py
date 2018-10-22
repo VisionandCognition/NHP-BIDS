@@ -104,5 +104,5 @@ if in_file['ev']:
     ds_ev.inputs.session_id = in_file['func']['session_id']
     ds_ev.inputs.run_id = in_file['func']['run_id']
     ev_files = ds_ev.run()
-
+        
 #%% 
