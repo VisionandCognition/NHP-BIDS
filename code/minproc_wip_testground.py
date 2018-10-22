@@ -2,6 +2,7 @@
 import glob
 import os
 import sys
+import platform
 import errno
 
 import nipype.interfaces.io as nio           # Data i/o
@@ -25,8 +26,10 @@ config.enable_debug_mode()
 
 #%% Get some path information ---------------------------
 #ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-ds_root = '/home/chris/Documents/MRI_ANALYSIS/NHP-BIDS'
-
+if platform.system() == 'Darwin':
+    ds_root = '/Users/chris/Documents/MRI_ANALYSIS/NHP-BIDS'
+else:
+    ds_root = '/home/chris/Documents/MRI_ANALYSIS/NHP-BIDS'
 data_dir = ds_root
 output_dir = ''
 working_dir = 'workingdirs/minimal_processing'
