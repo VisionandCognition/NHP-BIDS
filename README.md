@@ -21,16 +21,17 @@ export PATH="/home/<username>/NHP-BIDS/code:$PATH"
 export PATH="/home/<username>/NHP-BIDS/code/mc:$PATH"
 export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 ``` 
-On LISA you should also make newly created accessible to all 'cortalg' group memmbers by adding the following line to your ``~.bashrc`` as well:
-
-```
-umask u+rwx g+rwx
-```
 
 **Only on LISA** (`lisa.surfsara.nl`) you also need to create links to the data directories:
 
     $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
     $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
+    
+and make new files accessible to all 'cortalg' group members by adding this to ``~.bashrc`` :
+
+```
+umask u+rwx g+rwx
+```
 
 For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS-NHP-on-Lisa.md
 
