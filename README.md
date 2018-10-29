@@ -21,6 +21,11 @@ export PATH="/home/<username>/NHP-BIDS/code:$PATH"
 export PATH="/home/<username>/NHP-BIDS/code/mc:$PATH"
 export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 ``` 
+On LISA you should also make newly created accessible to all 'cortalg' group memmbers by adding the following line to your ``~.bashrc`` as well:
+
+```
+umask u+rwx g+rwx
+```
 
 **Only on LISA** (`lisa.surfsara.nl`) you also need to create links to the data directories:
 
