@@ -1,4 +1,4 @@
-#PBS -lwalltime=72:00:00  
+#PBS -lwalltime=24:00:00  
 #PBS -lnodes=1:ppn=16
 #PBS -S /bin/bash
 
@@ -25,6 +25,6 @@ cd ~/NHP-BIDS
 #./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_isohires.txt
 
 #./code/preprocessing_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_preproc.txt
-./code/modelfit_workflow.py --csv ./csv/ck-curve-tracing-20180222-modelfit.csv --contrast curvetracing |& tee ./logs/log-ck-curve-tracing-20180222_modelfit.txt
+./code/modelfit_workflow_eddy.py --csv ./csv/ck-curve-tracing-20180222-modelfit.csv --contrast curvetracing |& tee ./logs/log-ck-curve-tracing-20180222_modelfit.txt
 
 echo "Job $PBS_JOBID ended at `date`." | mail $USER -s "Job $PBS_JOBID ended"
