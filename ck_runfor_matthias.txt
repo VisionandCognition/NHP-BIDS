@@ -1,4 +1,5 @@
 ./code/resample_isotropic_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_iso.txt
+./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_iso.txt
 
 qsub code/pbs/ck-preprocess-curvetracing.job
 

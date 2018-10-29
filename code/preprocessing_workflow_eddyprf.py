@@ -108,7 +108,7 @@ def create_workflow():
         'ref_func_undist_inData_al_fnirt.nii.gz',
 
         'ref_funcmask':
-        'manual-masks/sub-eddyy/ses-20170607b/anat/'
+        'manual-masks/sub-eddy/ses-20170607b/anat/'
         'HiRes_to_T1_mean.nii_shadowreg_Eddy_brainmask.nii.gz',
 
         # 0.6 mm iso ---
