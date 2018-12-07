@@ -6,7 +6,6 @@ fMRI Workflow for NHP
 =========================
 
 See:
-
 * https://github.com/nipy/nipype/blob/master/examples/fmri_fsl_reuse.py
 * http://nipype.readthedocs.io/en/latest/users/examples/fmri_fsl_reuse.html
 """
@@ -34,9 +33,18 @@ from nipype import config, logging
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
 
-def create_workflow(contrasts, combine_runs=True):
+
+def get_csv_stem(csv_file):
+    csv_filename = csv_file.split('/')[-1]
+    csv_stem = csv_filename.split('.')[0]
+    return csv_stem
+
+
+def create_workflow(contrasts, csv_stem, combine_runs=True):
 
     level1_workflow = pe.Workflow(name='level1flow')
+    level1_workflow.base_dir = os.path.abspath(
+        './workingdirs/level1flow/' + csv_stem)
     # ===================================================================
     #                  _____                   _
     #                 |_   _|                 | |
@@ -50,7 +58,7 @@ def create_workflow(contrasts, combine_runs=True):
 
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        #'funcmasks',
+        # 'funcmasks',
         'fwhm',  # smoothing
         'highpass',
 
@@ -87,8 +95,9 @@ def create_workflow(contrasts, combine_runs=True):
                 ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
                 run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
             except AttributeError as e:
-                raise RuntimeError('Could not process "sub-*_", "ses-*_", or "run-*_" from func "%s"' % f)
-            has_func.add((sub, ses, run)) 
+                raise RuntimeError('Could not process "sub-*_", "ses-*_", " \
+                    "or "run-*_" from func "%s"' % f)
+            has_func.add((sub, ses, run))
 
         files = []
         for f in in_files:
@@ -98,15 +107,16 @@ def create_workflow(contrasts, combine_runs=True):
                 ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
                 run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
             except AttributeError as e:
-                raise RuntimeError('Could not process "sub-*_", "ses-*_", or "run-*_" from event file "%s"' % f)
+                raise RuntimeError('Could not process "sub-*_", "ses-*_", " \
+                    "or "run-*_" from event file "%s"' % f)
             if (sub, ses, run) in has_func:
                 files.append(f)
         return files
 
     input_events = pe.Node(
         interface=niu.Function(input_names=['in_files', 'in_funcs'],
-                           output_names=['out_files'],
-                           function=remove_runs_missing_funcs),
+                               output_names=['out_files'],
+                               function=remove_runs_missing_funcs),
         name='input_events',
     )
 
@@ -116,7 +126,6 @@ def create_workflow(contrasts, combine_runs=True):
           ('event_log', 'in_files'),
           ]),
     ])
-
 
     # -------------------------------------------------------------------
     #            /~_ _  _  _  _. _   _ . _  _ |. _  _
@@ -147,17 +156,15 @@ def create_workflow(contrasts, combine_runs=True):
     Add model specification nodes between the preprocessing and modelfitting
     workflows.
     """
-    modelspec = pe.Node(model.SpecifyModel(),
-                        name="modelspec")
+    modelspec = pe.Node(model.SpecifyModel(), name="modelspec")
 
     """
     Set up first-level workflow
     ---------------------------
     """
 
-
     def sort_copes(files):
-        """ Sort by copes and the runs, ie. 
+        """ Sort by copes and the runs, ie.
             [[cope1_run1, cope1_run2], [cope2_run1, cope2_run2]]
         """
         assert files[0] is not str
@@ -172,34 +179,39 @@ def create_workflow(contrasts, combine_runs=True):
                 outfiles[i].append(elements[i])
         return outfiles
 
-
     def num_copes(files):
         return len(files)
 
     if fixed_fx is not None:
         level1_workflow.connect([
             (inputnode, fixed_fx,
-             [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use reference mask!!!
+             [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use ref mask!!!
             (modelfit, fixed_fx,
-            [(('outputspec.copes', sort_copes), 'inputspec.copes'),
-            ('outputspec.dof_file', 'inputspec.dof_files'),
-            (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
-            (('outputspec.copes', num_copes), 'l2model.num_copes'),
-            ])
+                [(('outputspec.copes', sort_copes), 'inputspec.copes'),
+                 ('outputspec.dof_file', 'inputspec.dof_files'),
+                 (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
+                 (('outputspec.copes', num_copes), 'l2model.num_copes'),
+                 ])
         ])
 
-    # -------------------------------------------------------------------
-    #          /~\  _|_ _   _|_
-    #          \_/|_|| |_)|_||
-    #                  |
-    # -------------------------------------------------------------------
-    # Datasink
+    # ===================================================================
+    #                   ____        _               _
+    #                  / __ \      | |             | |
+    #                 | |  | |_   _| |_ _ __  _   _| |_
+    #                 | |  | | | | | __| '_ \| | | | __|
+    #                 | |__| | |_| | |_| |_) | |_| | |_
+    #                  \____/ \__,_|\__| .__/ \__,_|\__|
+    #                                  | |
+    #                                  |_|
+    # ===================================================================
 
+    # Datasink
     outputfiles = pe.Node(nio.DataSink(
-        base_directory=ds_root,
-        container='derivatives/modelfit',
-        parameterization=True),
-        name="output_files")
+                base_directory=ds_root,
+                # container='derivatives/modelfit', << original
+                container='derivatives/modelfit/' + csv_stem,
+                parameterization=True),
+                name="output_files")
 
     # Use the following DataSink output substitutions
     outputfiles.inputs.substitutions = [
@@ -258,7 +270,7 @@ def create_workflow(contrasts, combine_runs=True):
     #    """
 
     """
-    Use the get_node function to retrieve an internal node by name. Then set the
+    Use the get_node function to retrieve an internal node by name. Then set
     iterables on this node to perform two different extents of smoothing.
     """
 
@@ -271,15 +283,16 @@ def create_workflow(contrasts, combine_runs=True):
     hpcutoff_nvol = hpcutoff_s / 2.5  # FWHM in volumns
 
     # Use Python3 for processing. See code/requirements.txt for pip packages.
-    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in volumes - (REMEMBER to run with Python 3)
+    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in vols
+    # (REMEMBER to run with Python 3)
 
     """
     Setup a function that returns subject-specific information about the
     experimental paradigm. This is used by the
     :class:`nipype.modelgen.SpecifyModel` to create the information necessary
-    to generate an SPM design matrix. In this tutorial, the same paradigm was used
-    for every participant. Other examples of this function are available in the
-    `doc/examples` folder. Note: Python knowledge required here.
+    to generate an SPM design matrix. In this tutorial, the same paradigm was
+    used for every participant. Other examples of this function are available
+    in the `doc/examples` folder. Note: Python knowledge required here.
     """
 
     # from timeevents.curvetracing import calc_curvetracing_events
@@ -371,9 +384,12 @@ def create_workflow(contrasts, combine_runs=True):
                 if ev[name].shape[0] > 0:
                     names.append(name)
 
-            onsets = [deepcopy(ev[name].time) if ev[name].shape[0] > 0 else [] for name in names]
-            durations = [deepcopy(ev[name].dur) if ev[name].shape[0] > 0 else [] for name in names]
-            amplitudes = [deepcopy(ev[name].amplitude) if ev[name].shape[0] > 0 else [] for name in names]
+            onsets = [deepcopy(ev[name].time)
+                      if ev[name].shape[0] > 0 else [] for name in names]
+            durations = [deepcopy(ev[name].dur)
+                         if ev[name].shape[0] > 0 else [] for name in names]
+            amplitudes = [deepcopy(ev[name].amplitude)
+                          if ev[name].shape[0] > 0 else [] for name in names]
 
             run_results = Bunch(
                 conditions=names,
@@ -388,13 +404,13 @@ def create_workflow(contrasts, combine_runs=True):
     modelspec.inputs.time_repetition = TR  # to-do: specify per func
     modelspec.inputs.high_pass_filter_cutoff = hpcutoff_s
 
-    modelfit.inputs.inputspec.interscan_interval = TR  # to-do: specify per func
+    modelfit.inputs.inputspec.interscan_interval = TR
+    # to-do: specify per func
     modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': True}}
     modelfit.inputs.inputspec.contrasts = contrasts
     modelfit.inputs.inputspec.model_serial_correlations = True
     modelfit.inputs.inputspec.film_threshold = 1000
 
-    # level1_workflow.base_dir = os.path.abspath('./workingdirs/level1flow')
     modelfit.config['execution'] = dict(
         crashdump_dir=os.path.abspath('.'))
 
@@ -425,7 +441,8 @@ def create_workflow(contrasts, combine_runs=True):
           ]),
         # (inputnode, datasource, [('in_data', 'base_directory')]),
         # (infosource, datasource, [('subject_id', 'subject_id')]),
-        # (infosource, modelspec, [(('subject_id', subjectinfo), 'subject_info')]),
+        # (infosource, modelspec, [(('subject_id', subjectinfo),
+        # 'subject_info')]),
         # (datasource, preproc, [('func', 'inputspec.func')]),
     ])
     return(level1_workflow)
@@ -449,8 +466,12 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
+
 def run_workflow(csv_file, use_pbs, contrasts_name, template):
-    workflow = pe.Workflow(name='run_level1flow')
+    # get a unique label, derived from csv name
+    csv_stem = get_csv_stem(csv_file)
+    csv_stem_us = csv_stem.replace('-', '_')  # replace - with _
+    workflow = pe.Workflow(name='run_level1flow_' + csv_stem_us)
     workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config, logging
@@ -458,8 +479,10 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
         {'logging':
          {'log_directory': os.path.join(workflow.base_dir, 'logs'),
           'log_to_file': True,
-          'workflow_level': 'DEBUG',
-          'interface_level': 'DEBUG',
+          # 'workflow_level': 'DEBUG', #  << massive output
+          # 'interface_level': 'DEBUG', #  << massive output
+          'workflow_level': 'INFO',
+          'interface_level': 'INFO',
           }})
     logging.update_logging(config)
 
@@ -488,9 +511,9 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts)
+    modelfit = create_workflow(contrasts, csv_stem)
 
-    import bids_templates as bt
+    # import bids_templates as bt << NOT USED?!
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -517,8 +540,9 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
 
     templates = {
         'funcs':
-        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
+        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
+        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+        'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
         # 'funcmasks':
         # 'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
@@ -526,36 +550,33 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
         #     '_mc_unwarped.nii.gz',
 
         'highpass':
-        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
+        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
+        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+        'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
         'motion_parameters':
-        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc.param.1D',
+        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+        'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
 
         'motion_outlier_files':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/ses-{session_id}/func/'
-            'art.sub-{subject_id}_ses-{session_id}_*_run-{run_id}_bold_res-1x1x1_preproc_mc'
-            '_maths_outliers.txt',
+        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
+        'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
 
         'event_log':
         'sub-{subject_id}/ses-{session_id}/func/'
-            # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-            'sub-{subject_id}_ses-{session_id}*run-{run_id}*'
-            # '.nii.gz',
-            '_events.tsv',
+            'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
         'ref_func':
         'derivatives/featpreproc/reference/func/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_res-1x1x1_fnirt_reference.nii.gz',
-        #'*.nii.gz',
-        # >> weird wildcard construct falls apart because files for Danny exist now
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02_'
+        'bold_res-1x1x1_fnirt_reference.nii.gz',
 
         'ref_funcmask':
         'derivatives/featpreproc/reference/func_mask/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_res-1x1x1_fnirt_mask.nii.gz',
-        #'*.nii.gz',
-        # >> weird wildcard construct falls apart because files for Danny exist now
+        'sub-eddy_ses-20170607_task-RestingPRF_run-02'
+        '_bold_res-1x1x1_fnirt_mask.nii.gz',
     }
 
     inputfiles = pe.Node(
@@ -572,30 +593,29 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
     ])
 
     join_input = pe.JoinNode(
-        niu.IdentityInterface(
-            fields=[ 
-                # 'subject_id',
-                # 'session_id',
-                # 'run_id',
-                'funcs',
-                'highpass',
-                'motion_parameters',
-                'motion_outlier_files',
-                'event_log',
-                'ref_func',
-                'ref_funcmask',
+        niu.IdentityInterface(fields=[
+            # 'subject_id',
+            # 'session_id',
+            # 'run_id',
+            'funcs',
+            'highpass',
+            'motion_parameters',
+            'motion_outlier_files',
+            'event_log',
+            'ref_func',
+            'ref_funcmask',
             ]
             ),
-            joinsource='input',
-            joinfield=[
-                'funcs',
-                'highpass',
-                'motion_parameters',
-                'motion_outlier_files',
-                'event_log',
+        joinsource='input',
+        joinfield=[
+            'funcs',
+            'highpass',
+            'motion_parameters',
+            'motion_outlier_files',
+            'event_log',
             ],
-            # unique=True,
-            name='join_input')
+        # unique=True,
+        name='join_input')
 
     workflow.connect([
         (inputfiles, join_input,
@@ -614,7 +634,8 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
           ('highpass', 'inputspec.highpass'),
           ('motion_parameters', 'inputspec.motion_parameters'),
           ('motion_outlier_files', 'inputspec.motion_outlier_files'),
-          ('event_log', 'inputspec.event_log'), ('ref_func', 'inputspec.ref_func'),
+          ('event_log', 'inputspec.event_log'),
+          ('ref_func', 'inputspec.ref_func'),
           ('ref_funcmask', 'inputspec.ref_funcmask'),
           ]),
     ])
@@ -623,14 +644,16 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
     modelfit.inputs.inputspec.highpass = 50
     modelfit.write_graph(simple_form=True)
     modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
-    # modelfit.write_graph(graph2use='detailed', format='png', simple_form=False)
+    # modelfit.write_graph(graph2use='detailed',
+    # format='png', simple_form=False)
 
     workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
-    # workflow.write_graph(graph2use='detailed', format='png', simple_form=False)
+    # workflow.write_graph(graph2use='detailed',
+    # format='png', simple_form=False)
     if use_pbs:
         workflow.run(plugin='PBS', plugin_args={'template':
                                                 os.path.expanduser(template)})

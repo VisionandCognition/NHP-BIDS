@@ -148,7 +148,6 @@ def create_workflow():
     #                                  |_|
     # ===================================================================
 
-    # ------------------ Output Files
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
@@ -401,7 +400,7 @@ def create_workflow():
                ]),
              ])
 
-    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _ 
+    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _
     # |~\(/_(_||_\ | (/_|    | (_)  |~\(/_~|~(/_| (/_| |(_(/_
     #        _|
     # Register all functionals to common reference
