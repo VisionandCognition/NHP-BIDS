@@ -1,0 +1,30 @@
+#PBS -lwalltime=72:00:00  
+#PBS -lnodes=1:ppn=16
+#PBS -S /bin/bash
+
+n=`wc -l < $PBS_NODEFILE`
+echo start of job in directory $PBS_O_WORKDIR
+echo number of nodes is $n
+echo the allocated nodes are:
+cat $PBS_NODEFILE
+
+module load eb
+module load freesurfer
+module load fsl/5.08
+module load afni
+
+source ~/.bash_profile 
+source ~/.bashrc
+
+export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
+
+cd ~/NHP-BIDS
+
+#./code/bids_minimal_processing.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_minproc.txt
+#./code/resample_isotropic_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_iso.txt
+#./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_isohires.txt
+
+#./code/preprocessing_workflow.py --csv ./csv/ck-curve-tracing-20180222.csv  |& tee ./logs/log-ck-curve-tracing-20180222_preproc.txt
+./code/modelfit_workflow.py --csv ./csv/ck-curve-tracing-20180222-modelfit.csv --contrast curvetracing |& tee ./logs/log-ck-curve-tracing-20180222_modelfit.txt
+
+echo "Job $PBS_JOBID ended at `date`." | mail $USER -s "Job $PBS_JOBID ended"

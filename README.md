@@ -26,6 +26,12 @@ export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 
     $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
     $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
+    
+and make new files accessible to all 'cortalg' group members by adding this to ``~.bashrc`` :
+
+```
+umask u+rwx g+rwx
+```
 
 For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS-NHP-on-Lisa.md
 

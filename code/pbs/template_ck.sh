@@ -19,3 +19,5 @@ source ~/.bashrc
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
+
+echo "Job $PBS_JOBID ended at `date`." | mail $USER -s "Job $PBS_JOBID ended"
