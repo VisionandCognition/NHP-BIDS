@@ -5,11 +5,13 @@
 /workingdirs/
 /scratch/
 /job-logs/
+/logs/
 
 # symlinks
 /derivatives
 /sourcedata
 /sub-danny
+/sub-eddy
 
 
 # Binary files
@@ -123,12 +125,5 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
-
-
-logs/
-
-manual-masks/sub-eddy/ses-20170607/func/sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_res-1x1x1_preproc\.nii\.gz
-
-sub-eddy
-
+# freefile sync database
 *.ffs_db
