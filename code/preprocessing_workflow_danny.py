@@ -67,17 +67,15 @@ def create_workflow():
 
         # FIELDMAP ========
         'ref_manual_fmapmask':  # was: manual_fmapmask
-        'manual-masks/sub-danny/ses-20180117/fmap/'
-        'T1_to_fmap_brainmask.nii.gz',
+        'manual-masks/final/sub-danny/ses-20180117/fmap/'
+        'sub-danny_ses-20180117_fmap_brainmask.nii.gz',
 
         'ref_fmap_magnitude':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-danny/ses-20180117/fmap/'
+        'manual-masks/final/sub-danny/ses-20180117/fmap/'
         'sub-danny_ses-20180117_magnitude1_res-1x1x1_preproc.nii.gz',
 
         'ref_fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-danny/ses-20180117/fmap/'
+        'manual-masks/final/sub-danny/ses-20180117/fmap/'
         'sub-danny_ses-20180117_phasediff_res-1x1x1_preproc.nii.gz',
 
         'fmap_phasediff':
@@ -99,12 +97,12 @@ def create_workflow():
 
         # FUNCTIONALS ========
         'ref_func':  # was: manualmask_func_ref
-        'manual-masks/sub-danny/ses-20180117/func/'
+        'manual-masks/final/sub-danny/ses-20180117/func/'
         'sub-danny_ses-20180117_task-prf_'
         'run-01_frame-10_bold_res-1x1x1_reference_zcrop.nii.gz',
 
         'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-danny/ses-20180117/func/'
+        'manual-masks/final/sub-danny/ses-20180117/func/'
         'T1_to_func_brainmask_zcrop.nii.gz',
 
         # 'funcs':
@@ -126,11 +124,11 @@ def create_workflow():
 
         # 0.6 mm iso ---
         'ref_t1':
-        'manual-masks/sub-danny/ses-20180117/anat/'
+        'manual-masks/final/sub-danny/ses-20180117/anat/'
         'HiRes.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/sub-danny/ses-20180117/anat/'
+        'manual-masks/final/sub-danny/ses-20180117/anat/'
         'HiRes_brainmask.nii.gz',
 
         # WEIGHTS ========
