@@ -128,3 +128,6 @@ Thumbs.db
 
 # freefile sync database
 *.ffs_db
+
+# auto created index files
+*.DS_Store
