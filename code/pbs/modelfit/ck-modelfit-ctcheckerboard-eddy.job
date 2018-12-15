@@ -20,6 +20,6 @@ export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
 
 cd ~/NHP-BIDS
 
-./code/modelfit_workflow.py --csv ./csv/ct-danny/ck-curve-tracing-201812-modelfit.csv --contrast curvetracing |& tee ./logs/modelfit/log-ck-curve-tracing-201812_modelfit.txt
+./code/modelfit_workflow_eddy.py --csv ./csv/ck-ctcheckerboard-20180222-modelfit.csv --contrast ctcheckerboard |& tee ./logs/log-ck-ctcheckerboard-20180222_modelfit.txt
 
 echo "Job $PBS_JOBID ended at `date`." | mail $USER -s "Job $PBS_JOBID ended"
