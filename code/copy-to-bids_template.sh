@@ -111,12 +111,12 @@ declare -a funcs=( \
     NHP_20170607_EDDY_1601_run010_pRF_TR2.5s_20170607140954.nii.gz \
     )
 declare -a runnr=( 02 03 05 08 09 10 )
-
+declare -a task=( prf curvetraving ctcheckerboard)
 mkdir -p "$BIDS_UNPROC_DEST/func"
 
 ## now loop through the above array
 for i in "${!funcs[@]}"; do
-   cp -n  MRI/NII/${funcs[$i]} "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-prf_run-${runnr[$i]}_bold.nii.gz"
+   cp -n  MRI/NII/${funcs[$i]} "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-${task[$i]}_run-${runnr[$i]}_bold.nii.gz"
 done
 
 # Copy top-up [not present for Danny's prf scans]
@@ -145,7 +145,7 @@ declare -a behs=( \
 mkdir -p "$BIDS_UNPROC_DEST/func"
 
 for i in "${!behs[@]}"; do
-   cp -r -n Behavior/${behs[$i]}/ "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-prf_run-${runnr[$i]}_events"
+   cp -r -n Behavior/${behs[$i]}/ "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-${task[$i]}_run-${runnr[$i]}_events"
 done
 
 # also copy run000 is if exists
@@ -172,6 +172,6 @@ declare -a eyes=( \
 mkdir -p "$BIDS_DEST/func"
 
 for i in "${!eyes[@]}" ; do
-   cp -n Eye/${eyes[$i]} "$BIDS_DEST/func/${bsub}${bses}task-prf_run-${runnr[$i]}_recording-eyetrace_physio.tda"
+   cp -n Eye/${eyes[$i]} "$BIDS_DEST/func/${bsub}${bses}task-${task[$i]}_run-${runnr[$i]}_recording-eyetrace_physio.tda"
 done
 
