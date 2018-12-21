@@ -568,15 +568,14 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
         'sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
-        'ref_func':
-        'derivatives/featpreproc/reference/func/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02_'
-        'bold_res-1x1x1_fnirt_reference.nii.gz',
+        'ref_func':  # was: manualmask_func_ref
+        'manual-masks/final/sub-danny/ses-20180117/func/'
+        'sub-danny_ses-20180117_task-prf_'
+        'run-01_frame-10_bold_res-1x1x1_reference_zcrop.nii.gz',
 
-        'ref_funcmask':
-        'derivatives/featpreproc/reference/func_mask/'
-        'sub-eddy_ses-20170607_task-RestingPRF_run-02'
-        '_bold_res-1x1x1_fnirt_mask.nii.gz',
+        'ref_funcmask':  # was: manualmask
+        'manual-masks/final/sub-danny/ses-20180117/func/'
+        'T1_to_func_brainmask_zcrop.nii.gz',
     }
 
     inputfiles = pe.Node(
