@@ -24,9 +24,13 @@ import nipype.interfaces.utility as util     # utility
 from nipype.workflows.fmri.fsl.preprocess import create_susan_smooth
 from nipype import LooseVersion
 
-import transform_manualmask
-import motioncorrection_workflow
-import undistort_workflow
+# import transform_manualmask
+# import motioncorrection_workflow
+# import undistort_workflow
+import subcode.transform_manualmask
+import subcode.motioncorrection_workflow
+import subcode.undistort_workflow
+
 import nipype.interfaces.utility as niu
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

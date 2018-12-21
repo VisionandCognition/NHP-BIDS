@@ -25,8 +25,9 @@ import nipype.algorithms.rapidart as ra       # artifact detection
 
 import nipype.workflows.fmri.fsl as fslflows
 
-import preprocessing_workflow as preproc
-from filter_numbers import FilterNumsTask
+# import preprocessing_workflow as preproc
+# from filter_numbers import FilterNumsTask
+from subcode.filter_numbers import FilterNumsTask
 
 from nipype import config, logging
 

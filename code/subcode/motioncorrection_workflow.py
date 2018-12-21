@@ -18,7 +18,8 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 from nipype import config
 config.enable_debug_mode()
 
-from mc.afni_allin_slices import AFNIAllinSlices
+#from mc.afni_allin_slices import AFNIAllinSlices
+from subcode.afni_allin_slices import AFNIAllinSlices
 
 
 def create_workflow_fsl():

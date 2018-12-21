@@ -17,8 +17,9 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.freesurfer as fs    # freesurfer
 
+#from bids_convert_csv_eventlog import ConvertCSVEventLog
+from subcode.bids_convert_csv_eventlog import ConvertCSVEventLog
 
-from bids_convert_csv_eventlog import ConvertCSVEventLog
 
 #%% Define the images workflows ===============================================
 def create_images_workflow():
