@@ -1,4 +1,4 @@
-#SBATCH -S /bin/bash
+#!/bin/bash
 #SBATCH -N 1 --ntasks-per-node=16
 #SBATCH -t 24:00:00
 
