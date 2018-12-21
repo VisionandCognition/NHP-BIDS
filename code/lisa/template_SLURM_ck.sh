@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH -N 1 --ntasks-per-node=16
 #SBATCH -t 24:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=p.c.klink@gmail.com
 
 echo job id $SLURM_JOBID
 echo job name $SLURM_JOB_NAME
@@ -21,5 +23,3 @@ export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
 
-#SBATCH --mail-type=END
-#SBATCH --mail-user=p.c.klink@gmail.com
