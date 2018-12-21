@@ -467,7 +467,7 @@ generate any output. To actually run the analysis on the data the
 """
 
 
-def run_workflow(csv_file, use_pbs, contrasts_name, template):
+def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
     # get a unique label, derived from csv name
     csv_stem = get_csv_stem(csv_file)
     csv_stem_us = csv_stem.replace('-', '_')  # replace - with _
@@ -656,6 +656,9 @@ def run_workflow(csv_file, use_pbs, contrasts_name, template):
     if use_pbs:
         workflow.run(plugin='PBS', plugin_args={'template':
                                                 os.path.expanduser(template)})
+    elif use_slurm:
+        workflow.run(plugin='SLURM', plugin_args={'template':
+                                                os.path.expanduser(template)})
     else:
         workflow.run()
 
@@ -674,6 +677,8 @@ if __name__ == '__main__':
                         '"curvetracing" or curve tracing experiment).')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
                         help='Whether to use pbs plugin.')
+    parser.add_argument('--slurm', dest='use_slurm', action='store_true',
+                        help='Whether to use slurm plugin.')
     parser.add_argument('--template', default='~/NHP-BIDS/pbs-template.sh',
                         help='PBS template')
     args = parser.parse_args()

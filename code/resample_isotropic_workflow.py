@@ -14,7 +14,7 @@ from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
 
-def run_workflow(session=None, csv_file=None, use_pbs=False):
+def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
         'session_id',
@@ -181,6 +181,11 @@ if __name__ == '__main__':
                         dest='use_pbs',
                         action='store_true',
                         help='Whether to use pbs plugin.'
+                        )
+    parser.add_argument('--slurm',
+                        dest='use_slurm',
+                        action='store_true',
+                        help='Whether to use slurm plugin.'
                         )
 
     args = parser.parse_args()

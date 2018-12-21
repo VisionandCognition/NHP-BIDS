@@ -82,7 +82,7 @@ def process_functionals(raw_dir, glob_pat):
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
 
-def run_workflow(session, csv_file, use_pbs, stop_on_first_crash,
+def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
                  ignore_events, types):
     import bids_templates as bt
 
@@ -247,6 +247,11 @@ if __name__ == '__main__':
                         dest='use_pbs',
                         action='store_true',
                         help='Whether to use pbs plugin.'
+                        )
+    parser.add_argument('--slurm',
+                        dest='use_slurm',
+                        action='store_true',
+                        help='Whether to use slurm plugin.'
                         )
     parser.add_argument('--stop_on_first_crash',
                         dest='stop_on_first_crash',

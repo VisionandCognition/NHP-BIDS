@@ -813,7 +813,7 @@ def create_workflow():
 #
 # ===================================================================
 
-def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
+def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False, use_slurm=False):
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
@@ -892,6 +892,9 @@ def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False):
     if use_pbs:
         workflow.run(plugin='PBS', plugin_args={
                 'template': '/home/pcklink/NHP-BIDS/code/pbs/template_ck.sh'})
+    elif use_slurm:
+        workflow.run(plugin='SLURM', plugin_args={
+                'template': '/home/pcklink/NHP-BIDS/code/lisa/template_ck.sh'})
     else:
         workflow.run()
 
@@ -912,6 +915,9 @@ if __name__ == '__main__':
     parser.add_argument('--pbs',
                         dest='use_pbs', action='store_true',
                         help='Whether to use pbs plugin.')
+    parser.add_argument('--slurm',
+                        dest='use_slurm', action='store_true',
+                        help='Whether to use slurm plugin.')
 
     args = parser.parse_args()
 
