@@ -61,7 +61,8 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
    * If you are not processing standard curve-tracing data use the `--ignore_events` flag
    * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-minproc.txt`
    * help: `./code/bids_minimal_processing.py --help`
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/minproc/minproc_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file. Make sure to load freesurfer, FSL using ``module load freesurfer``, ``module load fsl``.
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run:
+   `sbatch ./code/minproc/minproc_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file. Make sure to load freesurfer, FSL using ``module load freesurfer``, ``module load fsl``.
 
 5. Run `./code/resample_isotropic_workflow.py` to resample all volumes to 1.0 mm isotropic voxels
    * example: `clear && ./code/resample_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample.txt`
@@ -69,16 +70,19 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
    Run `./code/resample_hiresanat_isotropic_workflow.py` if you also want the high-resolution 0.6 mm isotropic anatomical images
    * example: `clear && ./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
    
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/isoresample/isoresample_SESSION.sh`, where SESSION defines which session / run to process. Command like the above should be part of the job-file.
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run:
+   `sbatch ./code/isoresample/isoresample_SESSION.sh`, where SESSION defines which session / run to process. Command like the above should be part of the job-file.
 
 6. Run `./code/preprocessing_workflow.py`
    * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you. For undistortion instructions check <TO_BE_WRITTEN> 
    * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run:
+   `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
 
 
 7. Run `./code/modelfit_workflow.py`
    * This script requires the `--contrasts` parameter. This depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes a python module name, you cannot use dashes or spaces.
    * debug: `clear && python -m pdb ./code/modelfit_workflow.py --csv ./csv/checkerboard-ct-mapping.csv --contrasts ctcheckerboard |& tee ./logs/log-modelfit.txt`
    * normal: `clear && ./code/modelfit_workflow.py --csv ./csv/checkerboard-ct-mapping.csv  --contrasts ctcheckerboard |& tee ./logs/log-modelfit.txt`
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/modelfit/modelfit_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run:
+   `sbatch ./code/lisa/modelfit/modelfit_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
