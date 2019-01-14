@@ -102,12 +102,12 @@ def create_workflow():
         # FUNCTIONALS ========
         'ref_func':  # was: manualmask_func_ref
         'manual-masks/final/sub-danny/ses-20180117/func/'
-        'sub-danny_ses-20180117_task-prf_'
+        'fix_LR/sub-danny_ses-20180117_task-prf_'
         'run-01_frame-10_bold_res-1x1x1_reference_zcrop.nii.gz',
 
         'ref_funcmask':  # was: manualmask
         'manual-masks/final/sub-danny/ses-20180117/func/'
-        'T1_to_func_brainmask_zcrop.nii.gz',
+        'fix_LR/T1_to_func_brainmask_zcrop.nii.gz',
 
         # 'funcs':
         # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
