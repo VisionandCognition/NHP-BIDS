@@ -109,8 +109,9 @@ def process_events(event_log, TR, in_nvols):
 
             elif (event.task == 'Fixation' and event.event == 'NewState' and
                   event.info == 'POSTFIXATION'):
-                split_ev['FixationTask'].append(
-                    Event(fixation_stim_on, event.time_s))
+                if fixation_stim_on < TR*in_nvols:
+                    split_ev['FixationTask'].append(
+                        Event(fixation_stim_on, event.time_s))
 
             elif event.event == 'NewState' and event.info == 'SWITCHED':
                 response_cues_on = event.time_s
@@ -148,7 +149,10 @@ def process_events(event_log, TR, in_nvols):
                     assert curve_response == 'CORRECT', (
                         'Unhandled curve_response %s' % curve_response)
 
-                split_ev[event_type].append(Event(curve_stim_on, event.time_s))
+                # for some reason the CurveNoResponse is sometimes problematic
+                if (event_type != 'CurveNoResponse'):
+                    split_ev[event_type].append(Event(curve_stim_on, event.time_s))
+                
                 if (event_type == 'CurveFalseHit' or
                         event_type == 'CurveNoResponse' or
                         event_type == 'CurveFixationBreak'):
