@@ -9,6 +9,8 @@ def process_events(event_log, TR, in_nvols):
         from timeevents.ctcheckerboard import process_events as process_events_for_task
     elif tmat.group(1) == 'curvetracing':
         from timeevents.curvetracing import process_events as process_events_for_task
+    elif tmat.group(1) == 'figureground':
+        from timeevents.figureground import process_events as process_events_for_task    
     else:
         raise RuntimeError('Unknown experimental task %s. '
                 'Needed for ' % tmat.group(1))
