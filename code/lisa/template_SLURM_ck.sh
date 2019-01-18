@@ -22,4 +22,4 @@ source ~/.bashrc
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
-
+# whatever you want to do on the cluster goes here
