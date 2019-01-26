@@ -6,10 +6,9 @@
 
 echo job id $SLURM_JOBID
 echo job name $SLURM_JOB_NAME
-echo submitted by $mail-user
+echo submitted by $SLURM_JOB_ACCOUNT
 echo from $SLURM_SUBMIT_DIR
-echo the allocated nodes are:
-cat $SLURM_JOB_NODELIST
+echo the allocated nodes are: $SLURM_JOB_NODELIST
 
 module load eb
 module load freesurfer
