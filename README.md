@@ -76,7 +76,7 @@ You should change the `SubSesRun.csv` to a CSV script that actually exists. Ther
    * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you. For undistortion instructions check <TO_BE_WRITTEN> 
    * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
-
+   * NB! It is possible that the workflow crashes with a messsage that starts with `RuntimeError: Command: convert_xfm -omat ....` This is an FSL bug in which a flirt operation creates a hexadecimal matrix file instead of a decimal one. You can fix this with the script `./helper_scripts/hex2dec.sh` and re-run the workflow.
 
 7. Run `./code/modelfit_workflow.py`
    * This script requires the `--contrasts` parameter. This depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes a python module name, you cannot use dashes or spaces.
