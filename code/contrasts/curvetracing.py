@@ -1,20 +1,21 @@
 # Curve tracing contrasts
 contrasts = [
     ['AttendUL_COR>CurveNoResponse', 'T',  # t-test
-     ['AttendUL_COR','CurveNoResponse'],
-     [1.0, -1.0],
+     ['AttendUL_COR', 'CurveNoResponse'],
+     [1.0, -1.0]],
     ['AttendDL_COR>CurveNoResponse', 'T',  # t-test
-     ['AttendDL_COR','CurveNoResponse'],
-     [1.0, -1.0],
+     ['AttendDL_COR', 'CurveNoResponse'],
+     [1.0, -1.0]],
     ['AttendUR_COR>CurveNoResponse', 'T',  # t-test
-     ['AttendUR_COR','CurveNoResponse'],
-     [1.0, -1.0],
+     ['AttendUR_COR', 'CurveNoResponse'],
+     [1.0, -1.0]],
     ['AttendDR_COR>CurveNoResponse', 'T',  # t-test
-     ['AttendDR_COR','CurveNoResponse'],
-     [1.0, -1.0],
+     ['AttendDR_COR', 'CurveNoResponse'],
+     [1.0, -1.0]],
     ['Correct>Incorrect', 'T',  # t-test
-     ['AttendUL_COR','AttendDL_COR','AttendUR_COR','AttendDR_COR','CurveNotCOR'],
-     [1.0, 1.0, 1.0, 1.0, -4.0],
+     ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR',
+      'CurveNotCOR'],
+     [1.0, 1.0, 1.0, 1.0, -4.0]],
     ['Curves>Baseline', 'T',  # t-test
      ['AttendUL_COR', 'AttendDL_COR', 'AttendUR_COR', 'AttendDR_COR',
       'AttendCenter_COR'],
@@ -63,4 +64,4 @@ contrasts = [
 #  11   DR > other
 #  12   Hand Left > Hand Right
 #  13   Hand Right > Hand Left
-#  14   Reward > baseline       
+#  14   Reward > baseline
