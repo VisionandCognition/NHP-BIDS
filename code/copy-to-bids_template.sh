@@ -42,20 +42,17 @@ bses="ses-${date}_"
 #                                              
 # ==========================================================================
 echo "Copying anatomicals"
-declare -a anat=( \
-  NHP_20170607_EDDY_701_T1_NoSENSE_NHP_20170607140954.nii.gz \
-  NHP_20170607_EDDY_1301_T1_NoSENSE_NHP_20170607140954.nii.gz \
-  NHP_20170607_EDDY_1701_T1_NoSENSE_NHP_20170607140954.nii.gz \
-  )
-declare -a scn=( 07 13 17 ) 
 
 mkdir -p "$BIDS_UNPROC_DEST/anat"
 
-for i in "${!anat[@]}"; do
-   cp -n MRI/NII/${anat[$i]}  "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-${scn[$i]}_T1w.nii.gz"
-done
-
-cp -n MRI/NII/NHP_20170607_EDDY_2001_T2_TRA_20170607140954.nii.gz "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-20_T2w.nii.gz"
+cp -n MRI/NII/T1_NoSENSE_NHP_20190213141308_501.nii.gz \
+    "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-05_T1w.nii.gz"
+cp -n MRI/NII/WIP_T2_TRA_20190213141308_1301.nii.gz \
+    "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-13_T2w.nii.gz"
+cp -n MRI/NII/WIP_T2_TRA_20190213141308_2901.nii.gz \
+    "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-29_T2w.nii.gz"
+cp -n MRI/NII/WIP_T2_TRA_20190213141308_3001.nii.gz \
+    "$BIDS_UNPROC_DEST/anat/${bsub}${bses}acq-nosense_scan-30_T2w.nii.gz"
 
 # ==========================================================================
 #    ___ _     _    _                 
@@ -65,12 +62,11 @@ cp -n MRI/NII/NHP_20170607_EDDY_2001_T2_TRA_20170607140954.nii.gz "$BIDS_UNPROC_
 #                               |_|   
 # ==========================================================================
 echo "Copying fieldmaps"
-fmap_mag01=NHP_20170607_EDDY_401_B0_EPI_20170607140954a.nii.gz
-fmap_phase01=NHP_20170607_EDDY_401_B0_EPI_20170607140954.nii.gz
-scannr01=04
+fmap_mag01=B0_EPI_20190213141308_2801_e1a.nii.gz
+fmap_phase01=B0_EPI_20190213141308_2801_e1.nii.gz
+scannr01=28
 
 mkdir -p "$BIDS_UNPROC_DEST/fmap/"
-
 cp -n MRI/NII/$fmap_mag01 "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}magnitude1.nii.gz"
 cp -n MRI/NII/$fmap_phase01 "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}phasediff.nii.gz"
 
@@ -82,17 +78,22 @@ cp -n MRI/NII/$fmap_phase01 "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}phasediff.nii.
 #   |___/ |_| |___|
 #                
 # ==========================================================================
-#echo "Copying dwi"
+echo "Copying dwi"
 # No extensions here!
-#dti01=xx
-#scn01=xx
+dti01=DTI64_20190213141308_2301
+scn01=23
+dti02=DTI64_20190213141308_3101
+scn02=31
 
-#mkdir -p "$BIDS_UNPROC_DEST/dwi/"
+mkdir -p "$BIDS_UNPROC_DEST/dwi/"
 
-#cp -n MRI/NII/${dti01}.nii.gz  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.nii.gz"
-#cp -n MRI/NII/${dti01}.bval  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.bval"
-#cp -n MRI/NII/${dti01}.bvec  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.bvec"
+cp -n MRI/NII/${dti01}.nii.gz  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.nii.gz"
+cp -n MRI/NII/${dti01}.bval  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.bval"
+cp -n MRI/NII/${dti01}.bvec  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn01}_dwi.bvec"
 
+cp -n MRI/NII/${dti02}.nii.gz  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn02}_dwi.nii.gz"
+cp -n MRI/NII/${dti02}.bval  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn02}_dwi.bval"
+cp -n MRI/NII/${dti02}.bvec  "$BIDS_UNPROC_DEST/dwi/${bsub}${bses}scan-${scn02}_dwi.bvec"
 
 # ==========================================================================
 #    ___             _   _               _    
@@ -103,25 +104,60 @@ cp -n MRI/NII/$fmap_phase01 "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}phasediff.nii.
 # ==========================================================================
 echo "Copying functionals"
 declare -a funcs=( \
-    NHP_20170607_EDDY_601_run002_pRF_TR2.5s_20170607140954.nii.gz \
-    NHP_20170607_EDDY_801_run003_pRF_TR2.5s_20170607140954.nii.gz \
-    NHP_20170607_EDDY_1001_run005_pRF_TR2.5s_20170607140954.nii.gz \
-    NHP_20170607_EDDY_1401_run008_pRF_TR2.5s_20170607140954.nii.gz \
-    NHP_20170607_EDDY_1501_run009_pRF_TR2.5s_20170607140954.nii.gz \
-    NHP_20170607_EDDY_1601_run010_pRF_TR2.5s_20170607140954.nii.gz \
+    run001_CurveTrace_TR2.5s_20190213141308_301.nii.gz \
+    run002_CurveTrace_TR2.5s_20190213141308_601.nii.gz \
+    run003_CurveTrace_TR2.5s_20190213141308_801.nii.gz \
+    run004_CurveTrace_TR2.5s_20190213141308_1001.nii.gz \
+    run005_CurveTrace_TR2.5s_20190213141308_1101.nii.gz \
+    run006_CurveTrace_TR2.5s_20190213141308_1401.nii.gz \
+    run007_CurveTrace_TR2.5s_20190213141308_1601.nii.gz \
+    run008_CurveTrace_TR2.5s_20190213141308_1801.nii.gz \
+    run009_CurveTrace_TR2.5s_20190213141308_2101.nii.gz \
+    run010_CurveTrace_TR2.5s_20190213141308_2401.nii.gz \
+    run011_CurveTrace_TR2.5s_20190213141308_2601.nii.gz \
     )
-declare -a runnr=( 02 03 05 08 09 10 )
-declare -a task=( prf curvetraving ctcheckerboard)
+declare -a runnr=( 01 02 03 04 05 06 07 08 09 10 11 )
+declare -a task=( \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    curvetracing \
+    )
+
 mkdir -p "$BIDS_UNPROC_DEST/func"
 
 ## now loop through the above array
 for i in "${!funcs[@]}"; do
-   cp -n  MRI/NII/${funcs[$i]} "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-${task[$i]}_run-${runnr[$i]}_bold.nii.gz"
+   cp -n  MRI/NII/${funcs[$i]} "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-${task[$i]}run-${runnr[$i]}_bold.nii.gz"
 done
 
+echo "Copying topups"
 # Copy top-up [not present for Danny's prf scans]
-# cp -n MRI/NII/NHP_20180125_EDDY_20180125_601_run002_CurveTrace_TR2.5s_Topup_20180125101154.nii.gz "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}_run-02_epi.nii.gz"
-# cp -n MRI/NII/NHP_20180125_EDDY_20180125_901_run004_CurveTrace_TR2.5s_Topup_20180125101154.nii.gz "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}_run-04_epi.nii.gz"
+declare -a topup=( \
+    run001_topup_20190213141308_401.json \
+    run002_topup_20190213141308_701.nii.gz \
+    run003_topup_20190213141308_901.nii.gz \
+    run005_topup_20190213141308_1201.nii.gz \
+    run006_topup_20190213141308_1501.nii.gz \
+    run007_topup_20190213141308_1701.nii.gz \
+    run008_topup_20190213141308_1901.nii.gz \
+    run009_topup_20190213141308_2201.nii.gz \
+    run010_topup_20190213141308_2501.nii.gz \
+    run011_topup_20190213141308_2701.nii.gz \
+    )
+
+## now loop through the above array
+for i in "${!topup[@]}"; do
+  cp -n  MRI/NII/${topup[$i]} "$BIDS_UNPROC_DEST/fmap/${bsub}${bses}_run-${runnr[$i]}_epi.nii.gz"
+done
+
 
 # ==========================================================================
 #   ___      _             _           _              
@@ -134,12 +170,17 @@ done
 # ==========================================================================
 echo "Copying behavioral logs"
 declare -a behs=( \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1445 \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1503 \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1519 \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1542 \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1552 \
-    Eddy_StimSettings_pRF_8bars_3T_TR2500ms_20170607T1601 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1432-T1442.50 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1450-T1501.48 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1503-T1512.55 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1514-T1515.53 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1516-T1526.29 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1532-T1542.27 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1543-T1554.36 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1555-T1606.36 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1607-T1619.00 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1630-T1641.06 \
+    Danny_Curve_Tracing_StimSettings_3T_Spinoza_3T_20190213T1642-T1653.46 \
     )
 
 mkdir -p "$BIDS_UNPROC_DEST/func"
@@ -149,7 +190,7 @@ for i in "${!behs[@]}"; do
 done
 
 # also copy run000 is if exists
-cp -r -n Behavior/Eddy_Curve_Tracing_StimSettings_CurveMapping_Spinoza_3T_20170607T1425-T1444.24/ "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-prf_run-00_events"
+# cp -r -n Behavior/Eddy_Curve_Tracing_StimSettings_CurveMapping_Spinoza_3T_20170607T1425-T1444.24/ "$BIDS_UNPROC_DEST/func/${bsub}${bses}task-prf_run-00_events"
 
 # ==========================================================================
 #   ___           _                      
@@ -161,12 +202,17 @@ cp -r -n Behavior/Eddy_Curve_Tracing_StimSettings_CurveMapping_Spinoza_3T_201706
 # ==========================================================================
 echo "Copying eye data"
 declare -a eyes=( \
-    Eddy_20170607T1445.tda \
-    Eddy_20170607T1503.tda \
-    Eddy_20170607T1519.tda \
-    Eddy_20170607T1542.tda \
-    Eddy_20170607T1552.tda \
-    Eddy_20170607T1601.tda \
+    Danny_20190213T1432.tda \
+    Danny_20190213T1450.tda \
+    Danny_20190213T1503.tda \
+    Danny_20190213T1514.tda \
+    Danny_20190213T1516.tda \
+    Danny_20190213T1532.tda \
+    Danny_20190213T1543.tda \
+    Danny_20190213T1555.tda \
+    Danny_20190213T1607.tda \
+    Danny_20190213T1630.tda \
+    Danny_20190213T1642.tda \
     )
 
 mkdir -p "$BIDS_DEST/func"
