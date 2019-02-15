@@ -17,8 +17,19 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
+umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd NHP-BIDS
-# whatever you want to do on the cluster goes here
+
+# tasks to be executed 1
+wait
+# tasks to be executed 2
+wait
+# tasks to be executed 1
+wait
+
+# change group permissions on projectfolder
+# to allow syncing with server and xs4all
+# chmod -R g+rwx /nfs/cortalg 
