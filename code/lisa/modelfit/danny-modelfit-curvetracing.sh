@@ -17,6 +17,7 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
+umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ 
 
@@ -26,4 +27,4 @@ cd ~/NHP-BIDS
 ./code/modelfit_workflow_danny.py \
 	--csv ./csv/ct-danny/danny-curvetracing-modelfit.csv \
 	--contrast curvetracing |& tee \
-	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190207.txt
+	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190213.txt
