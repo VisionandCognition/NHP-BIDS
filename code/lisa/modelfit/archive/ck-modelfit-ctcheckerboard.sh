@@ -6,9 +6,10 @@
 
 echo job id $SLURM_JOBID
 echo job name $SLURM_JOB_NAME
-echo submitted by $SLURM_JOB_ACCOUNT
+echo submitted by $mail-user
 echo from $SLURM_SUBMIT_DIR
-echo the allocated nodes are: $SLURM_JOB_NODELIST
+echo the allocated nodes are:
+cat $SLURM_JOB_NODELIST
 
 module load eb
 module load freesurfer
@@ -17,15 +18,13 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
-umask u+rwx,g+rwx
 
-export FSLOUTPUTTYPE=NIFTI_GZ 
+export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
 
 cd ~/NHP-BIDS
 
-
-# modelfit
 ./code/modelfit_workflow_danny.py \
-	--csv ./csv/ct-danny/danny-curvetracing-modelfit-extra.csv \
-	--contrast curvetracing-extra |& tee \
-	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190221-extra.txt
+	--csv ./csv/ct-danny/ck-ctcheckerboard-201812-modelfit.csv \
+	--contrast ctcheckerboard |& tee \
+	./logs/modelfit/log-ck-ctcheckerboard-201812_modelfit.txt
+

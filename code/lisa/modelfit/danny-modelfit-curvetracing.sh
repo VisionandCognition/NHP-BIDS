@@ -27,4 +27,4 @@ cd ~/NHP-BIDS
 ./code/modelfit_workflow_danny.py \
 	--csv ./csv/ct-danny/danny-curvetracing-modelfit.csv \
 	--contrast curvetracing |& tee \
-	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190213.txt
+	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190221.txt

@@ -17,6 +17,7 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
+umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ
 

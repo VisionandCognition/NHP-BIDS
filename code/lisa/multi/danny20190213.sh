@@ -17,26 +17,27 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
+umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ
 
 cd ~/NHP-BIDS
 
 # minimal processing
-./code/bids_minimal_processing.py --csv ./csv/multi/Danny_20190213.csv --types func,anat,fmap,dwi |& \
-    tee ./logs/minproc/log-minproc-danny-20190213.txt
-wait
+#./code/bids_minimal_processing.py --csv ./csv/multi/Danny_20190213.csv --types func,anat,fmap,dwi |& \
+#    tee ./logs/minproc/log-minproc-danny-20190213.txt
+#wait
 
 # resample iso
-./code/resample_isotropic_workflow.py --csv ./csv/multi/Danny_20190213.csv  |& \
-    tee ./logs/resample/sub-danny/log-resample_iso-danny-20190213.txt
-./code/resample_hires_isotropic_workflow.py --csv ./csv/multi/Danny_20190213.csv  |& \
-    tee ./logs/resample/sub-danny/log-resample_iso-hires-danny-20190213.txt
-wait
+#./code/resample_isotropic_workflow.py --csv ./csv/multi/Danny_20190213.csv  |& \
+#    tee ./logs/resample/sub-danny/log-resample_iso-danny-20190213.txt
+#./code/resample_hires_isotropic_workflow.py --csv ./csv/multi/Danny_20190213.csv  |& \
+#    tee ./logs/resample/sub-danny/log-resample_iso-hires-danny-20190213.txt
+#wait
 
 # preprocessing
 ./code/preprocessing_workflow_danny.py --csv ./csv/multi/Danny_20190213.csv  |& \
-    tee ./logs/preproc/sub-danny/log-preproc-danny-201902013.txt
+    tee ./logs/preproc/sub-danny/log-preproc-danny-20190213.txt
 
 # modelfit
 

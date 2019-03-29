@@ -17,7 +17,6 @@ module load afni
 
 source ~/.bash_profile 
 source ~/.bashrc
-umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ
 
@@ -36,8 +35,8 @@ cd ~/NHP-BIDS
 #wait
 
 # preprocessing
-./code/preprocessing_workflow_danny.py --csv ./csv/multi/Danny_20190207.csv  |& \
-    tee ./logs/preproc/sub-danny/log-preproc-danny-20190207.txt
+./code/preprocessing_workflow_danny.py --csv ./csv/multi/Danny_20190207_10.csv  |& \
+    tee ./logs/preproc/sub-danny/log-preproc-danny-20190207_10.txt
 
 # modelfit
 

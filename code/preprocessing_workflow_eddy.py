@@ -27,9 +27,9 @@ from nipype import LooseVersion
 # import transform_manualmask
 # import motioncorrection_workflow
 # import undistort_workflow
-import subcode.transform_manualmask
-import subcode.motioncorrection_workflow
-import subcode.undistort_workflow
+import subcode.transform_manualmask as transform_manualmask
+import subcode.motioncorrection_workflow as motioncorrection_workflow
+import subcode.undistort_workflow as undistort_workflow
 
 import nipype.interfaces.utility as niu
 

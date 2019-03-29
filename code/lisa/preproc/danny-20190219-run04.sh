@@ -24,8 +24,7 @@ export FSLOUTPUTTYPE=NIFTI_GZ
 cd ~/NHP-BIDS
 
 
-# modelfit
-./code/modelfit_workflow_danny.py \
-	--csv ./csv/ct-danny/danny-curvetracing-modelfit-extra.csv \
-	--contrast curvetracing-extra |& tee \
-	./logs/ct/sub-danny/log-danny-curvetracing-modelfit-20190221-extra.txt
+# preprocess 1 missing run
+./code/preprocessing_workflow_danny.py --csv ./csv/preproc/Danny_20190219_r04.csv  |& \
+    tee ./logs/preproc/sub-danny/log-preproc-danny-20190219-run04.txt
+
