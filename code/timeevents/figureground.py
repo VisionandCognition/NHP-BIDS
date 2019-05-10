@@ -17,12 +17,8 @@ import nipype.interfaces.utility as niu
 
 def process_events(event_log, TR, in_nvols):
     # necessary for importing with NiPype
-    import pdb
-
     import pandas as pd
 
-    # print("\n\n\nBegan processing: %s" % event_log)
-    # pdb.set_trace()
 
     class Event(object):
         def __init__(self, start_s, stop_s=None, event_num=1,
@@ -221,9 +217,6 @@ def process_events(event_log, TR, in_nvols):
                 'amplitude': ev.amplitude})
         cond_events[key] = pd.DataFrame(cevents, dtype=float)
 
-    # import pdb
-    # print("\n\n\nFinished processing: %s" % event_log)
-    # pdb.set_trace()
     return (cond_events, end_time_s, nvols)
 
 
@@ -239,6 +232,3 @@ if __name__ == '__main__':
     calc_curvetracing_events.inputs.TR = 2.5
     calc_curvetracing_events.inputs.in_nvols = 420
     res = calc_curvetracing_events.run()
-
-    # import pdb
-    # pdb.set_trace()
