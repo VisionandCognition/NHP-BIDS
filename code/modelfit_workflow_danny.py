@@ -469,7 +469,7 @@ generate any output. To actually run the analysis on the data the
 
 
 def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
-    # get a *unique* label, derived from csv name
+    # get a unique label, derived from csv name
     csv_stem = get_csv_stem(csv_file)
     csv_stem_us = csv_stem.replace('-', '_')  # replace - with _
     workflow = pe.Workflow(name='run_level1flow_' + csv_stem_us)
@@ -480,8 +480,8 @@ def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
         {'logging':
          {'log_directory': os.path.join(workflow.base_dir, 'logs'),
           'log_to_file': True,
-          # 'workflow_level': 'DEBUG', #  << massive output, dont use if script works
-          # 'interface_level': 'DEBUG', 
+          # 'workflow_level': 'DEBUG', #  << massive output
+          # 'interface_level': 'DEBUG', #  << massive output
           'workflow_level': 'INFO',
           'interface_level': 'INFO',
           }})
@@ -655,11 +655,11 @@ def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
     # workflow.write_graph(graph2use='detailed',
     # format='png', simple_form=False)
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'template':
-                                                os.path.expanduser(template)})
+        workflow.run(plugin='PBS',
+                     plugin_args={'template': os.path.expanduser(template)})
     elif use_slurm:
-        workflow.run(plugin='SLURM', plugin_args={'template':
-                                                os.path.expanduser(template)})
+        workflow.run(plugin='SLURM',
+                     plugin_args={'template': os.path.expanduser(template)})
     else:
         workflow.run()
 
