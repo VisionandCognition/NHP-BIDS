@@ -72,9 +72,10 @@ def convert_csv_eventlog(inp, out, stim_dir=None):
     start_time_s = mri_triggers.iloc[0].time_s
 
     events['time_s'] = events['time_s'] - start_time_s
-    events['record_time_s'] = events['record_time_s'] - start_time_s
-
-    events = add_missing_stim_info(inp, events, stim_dir)
+    
+    if 'record_time_s' in events.columns:  # record_time_s does not exist in FG events
+        events['record_time_s'] = events['record_time_s'] - start_time_s
+        events = add_missing_stim_info(inp, events, stim_dir)
 
     events.to_csv(out, sep='\t', quoting=csv.QUOTE_NONE, index=False,
                   na_rep='n/a', float_format='%0.4f')
