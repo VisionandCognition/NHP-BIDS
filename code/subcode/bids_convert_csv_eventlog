@@ -72,8 +72,8 @@ def convert_csv_eventlog(inp, out, stim_dir=None):
     start_time_s = mri_triggers.iloc[0].time_s
 
     events['time_s'] = events['time_s'] - start_time_s
-    
-    if 'record_time_s' in events.columns:  # record_time_s does not exist in FG events
+
+    if 'record_time_s' in events.columns:  # record_time_s doesn't exist for FG
         events['record_time_s'] = events['record_time_s'] - start_time_s
         events = add_missing_stim_info(inp, events, stim_dir)
 
