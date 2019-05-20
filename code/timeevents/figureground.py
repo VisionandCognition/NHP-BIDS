@@ -30,11 +30,13 @@ def process_events(event_log, TR, in_nvols):
         'Reward': [],
         'Fixating': [],
     }
+    last_block_end = -15
 
     StimType = None
     FigShape = None
     FigSide = None
     FigOn = False
+    GndOn = False
 
     mri_triggers = events[(events['event'] == 'MRI_Trigger') &
                           (events['info'] == 'Received')]
@@ -46,34 +48,45 @@ def process_events(event_log, TR, in_nvols):
             if event.task == 'FigGnd':
                 if event.event == 'StimType':
                     StimType = event.info
-                if FigOn is False:
+                if FigOn is False and GndOn is False:
                     if event.event == 'FigShape':
                         FigShape = event.info
                     elif event.event == 'FigLoc':
                         FigSide = event.info
                     elif event.event == 'FigOrient':
                         FigOrient = event.info
-                    elif event.event == 'Figure' & event.info is 'start':
+                    elif event.event == 'Figure' and event.info is 'start':
                         fig_start_time = event.time_s
                         FigOn = True
-                else:  # Fig is on
-                    if event.event == 'Figure' & event.info == 'stop':
-                        fig_stop_time = event.time_s  # getting overwritten
-                    elif event.event == 'Ground' & event.info == 'start':
+                        GndOn = False
+                    elif event.event == 'Ground' and event.info is 'start':
+                        gnd_start_time = event.time_s
+                        GndOn = True
                         FigOn = False
+                elif FigOn is True and GndOn is False:
+                    if event.event == 'Figure' and event.info == 'stop':
+                        fig_stop_time = event.time_s  # getting overwritten
+                        last_block_end = fig_stop_time
+                    elif event.event == 'Ground' and event.info == 'start':
+                        FigOn = False
+                        GndOn = True
                         fig_dur = fig_stop_time - fig_start_time
-                        if FigShape == 'Triangle_up' & FigSide == 'left':
+                        if FigShape == 'Triangle_up' and FigSide == 'left':
                             split_ev['Fig_LU'].append(Event(
                                 fig_start_time, dur_s=fig_dur))
-                        elif FigShape == 'Triangle_down' & FigSide == 'left':
+                        elif FigShape == 'Triangle_down' and FigSide == 'left':
                             split_ev['Fig_LD'].append(Event(
                                 fig_start_time, dur_s=fig_dur))
-                        elif FigShape == 'Triangle_up' & FigSide == 'right':
+                        elif FigShape == 'Triangle_up' and FigSide == 'right':
                             split_ev['Fig_RU'].append(Event(
                                 fig_start_time, dur_s=fig_dur))
-                        elif FigShape == 'Triangle_down' & FigSide == 'right':
+                        elif FigShape == 'Triangle_down' and FigSide == 'right':
                             split_ev['Fig_RD'].append(Event(
                                 fig_start_time, dur_s=fig_dur))
+                elif FigOn is False and GndOn is True:
+                    if event.event == 'Ground' and event.info is 'stop':
+                        gnd_stop_time = event.time_s
+                        last_block_end = gnd_stop_time
             elif event.task == 'Fixate':
                 if event.info == 'start':
                     fix_start_time = event.time_s
@@ -92,7 +105,7 @@ def process_events(event_log, TR, in_nvols):
                                 rew_start_time, dur_s=rew_dur,
                                 amplitude=rew_dur))
     end_time_s = min(
-        fig_stop_time + 15,
+        last_block_end + 15,
         events.iloc[len(events) - 1]['time_s'])
 
     nvols = min(
