@@ -141,3 +141,5 @@ sub-eddy
 *.DS_Store
 
 workingdirs
+
+manual-masks/final/sub-danny/ses-20180117/func/fix_LR/\._T1_to_func_brainmask_zcrop\.nii\.gz
