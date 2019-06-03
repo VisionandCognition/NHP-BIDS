@@ -21,11 +21,9 @@ import nipype.interfaces.fsl as fsl           # fsl
 from nipype.interfaces import utility as niu  # Utilities
 import nipype.pipeline.engine as pe           # pypeline engine
 import nipype.algorithms.modelgen as model    # model generation
-import nipype.algorithms.rapidart as ra       # artifact detection
 
 import nipype.workflows.fmri.fsl as fslflows
 
-# import preprocessing_workflow_danny as preproc
 # from filter_numbers import FilterNumsTask
 from subcode.filter_numbers import FilterNumsTask
 
@@ -41,8 +39,7 @@ def get_csv_stem(csv_file):
     return csv_stem
 
 
-def create_workflow(contrasts, csv_stem, combine_runs=True):
-
+def create_workflow(contrasts, csv_stem, hrf, combine_runs=True):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
         './workingdirs/level1flow/' + csv_stem)
@@ -74,7 +71,6 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
 
     def remove_runs_missing_funcs(in_files, in_funcs):
         import os
-        # import pdb
         import re
 
         # if input.synchronize = True, then in_files and in_funcs will
@@ -148,10 +144,6 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
         fixed_fx = fslflows.create_fixed_effects_flow()
     else:
         fixed_fx = None
-
-    """
-    Artifact detection is done in preprocessing workflow.
-    """
 
     """
     Add model specification nodes between the preprocessing and modelfitting
@@ -265,10 +257,6 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
     #          (_><|_)(/_| || | |(/_| | |   _\|_)(/_(_|~|~|(_
     #              |                          |
     # -------------------------------------------------------------------
-    #    """
-    #    Experiment specific components
-    #    ------------------------------
-    #    """
 
     """
     Use the get_node function to retrieve an internal node by name. Then set
@@ -405,9 +393,16 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
     modelspec.inputs.time_repetition = TR  # to-do: specify per func
     modelspec.inputs.high_pass_filter_cutoff = hpcutoff_s
 
+    # Find out which HRF function we want to use
+    if hrf == 'fsl_doublegamma':  # this is the default
+        modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': True}}
+    else:
+        # use a custom hrf as defined in arguments
+        currpath = os.getcwd()
+        hrftxt = currpath + hrf[1:]
+        modelfit.inputs.inputspec.bases = {'custom': {'bfcustompath': hrftxt}}
+        
     modelfit.inputs.inputspec.interscan_interval = TR
-    # to-do: specify per func
-    modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': True}}
     modelfit.inputs.inputspec.contrasts = contrasts
     modelfit.inputs.inputspec.model_serial_correlations = True
     modelfit.inputs.inputspec.film_threshold = 1000
@@ -447,6 +442,8 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
         # (datasource, preproc, [('func', 'inputspec.func')]),
     ])
     return(level1_workflow)
+
+
 # ===================================================================
 #                       ______ _
 #                      |  ____(_)
@@ -457,7 +454,6 @@ def create_workflow(contrasts, csv_stem, combine_runs=True):
 #
 # ===================================================================
 
-
 """
 Execute the pipeline
 --------------------
@@ -467,8 +463,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-
-def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
+def run_workflow(csv_file, hrf, use_pbs, use_slurm, contrasts_name, template):
     # get a unique label, derived from csv name
     csv_stem = get_csv_stem(csv_file)
     csv_stem_us = csv_stem.replace('-', '_')  # replace - with _
@@ -512,9 +507,7 @@ def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, csv_stem)
-
-    # import bids_templates as bt << NOT USED?!
+    modelfit = create_workflow(contrasts, csv_stem, hrf)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -640,20 +633,18 @@ def run_workflow(csv_file, use_pbs, use_slurm, contrasts_name, template):
           ]),
     ])
 
+
     modelfit.inputs.inputspec.fwhm = 2.0
     modelfit.inputs.inputspec.highpass = 50
     modelfit.write_graph(simple_form=True)
     modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
-    # modelfit.write_graph(graph2use='detailed',
-    # format='png', simple_form=False)
 
     workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
-    # workflow.write_graph(graph2use='detailed',
-    # format='png', simple_form=False)
+
     if use_pbs:
         workflow.run(plugin='PBS',
                      plugin_args={'template': os.path.expanduser(template)})
@@ -676,6 +667,8 @@ if __name__ == '__main__':
                         'for valid names (e.g. "ctcheckerboard" for '
                         'curve-tracing checkerboard localizer or '
                         '"curvetracing" or curve tracing experiment).')
+    parser.add_argument('--hrf', dest='hrf', default='fsl_doublegamma',
+                        help='Custom HRF file in fsl format to be used in GLM')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
                         help='Whether to use pbs plugin.')
     parser.add_argument('--slurm', dest='use_slurm', action='store_true',

@@ -20,13 +20,17 @@ def process_events(event_log, TR, in_nvols):
             self.event_num = event_num
             self.amplitude = amplitude
 
-    events = pd.read_table(event_log, na_values='n/a')
+    events = pd.read_csv(event_log, na_values='n/a', sep='\t', header=0)
 
     split_ev = {
         'Fig_LU': [],  # Left upwards pointing triangle
         'Fig_LD': [],  # Left downwards pointing triangle
         'Fig_RU': [],  # Right upwards pointing triangle
         'Fig_RD': [],  # Right downwards pointing triangle
+        'Fig_LUB': [],  # Left upwards pointing triangle block
+        'Fig_LDB': [],  # Left downwards pointing triangle block
+        'Fig_RUB': [],  # Right upwards pointing triangle block
+        'Fig_RDB': [],  # Right downwards pointing triangle block
         'Reward': [],
         'Fixating': [],
     }
@@ -37,6 +41,8 @@ def process_events(event_log, TR, in_nvols):
     FigSide = None
     FigOn = False
     GndOn = False
+    FigBlockStarted = False
+    GndBlockStarted = False
 
     mri_triggers = events[(events['event'] == 'MRI_Trigger') &
                           (events['info'] == 'Received')]
@@ -55,21 +61,41 @@ def process_events(event_log, TR, in_nvols):
                         FigSide = event.info
                     elif event.event == 'FigOrient':
                         FigOrient = event.info
-                    elif event.event == 'Figure' and event.info is 'start':
+                    elif event.event == 'Figure' and event.info == 'start':
                         fig_start_time = event.time_s
                         FigOn = True
                         GndOn = False
-                    elif event.event == 'Ground' and event.info is 'start':
+                        if FigBlockStarted is False:
+                            figblock_start_time = fig_start_time
+                            FigBlockStarted = True
+                            GndBlockStarted = False
+                    elif event.event == 'Ground' and event.info == 'start':
                         gnd_start_time = event.time_s
                         GndOn = True
                         FigOn = False
+                        if GndBlockStarted is False:
+                            gndblock_start_time = gnd_start_time
+                            GndBlockStarted = True
+                        if FigBlockStarted is True:
+                            figblock_dur = event.time_s - figblock_start_time
+                            if FigShape == 'Triangle_up' and FigSide == 'left':
+                                split_ev['Fig_LUB'].append(Event(
+                                    figblock_start_time, dur_s=figblock_dur))
+                            elif FigShape == 'Triangle_down' and FigSide == 'left':
+                                split_ev['Fig_LDB'].append(Event(
+                                    figblock_start_time, dur_s=figblock_dur))
+                            elif FigShape == 'Triangle_up' and FigSide == 'right':
+                                split_ev['Fig_RUB'].append(Event(
+                                    figblock_start_time, dur_s=figblock_dur))
+                            elif FigShape == 'Triangle_down' and FigSide == 'right':
+                                split_ev['Fig_RDB'].append(Event(
+                                    figblock_start_time, dur_s=figblock_dur))
+                            FigBlockStarted = False
                 elif FigOn is True and GndOn is False:
                     if event.event == 'Figure' and event.info == 'stop':
                         fig_stop_time = event.time_s  # getting overwritten
                         last_block_end = fig_stop_time
-                    elif event.event == 'Ground' and event.info == 'start':
                         FigOn = False
-                        GndOn = True
                         fig_dur = fig_stop_time - fig_start_time
                         if FigShape == 'Triangle_up' and FigSide == 'left':
                             split_ev['Fig_LU'].append(Event(
@@ -84,9 +110,14 @@ def process_events(event_log, TR, in_nvols):
                             split_ev['Fig_RD'].append(Event(
                                 fig_start_time, dur_s=fig_dur))
                 elif FigOn is False and GndOn is True:
-                    if event.event == 'Ground' and event.info is 'stop':
+                    if event.event == 'Ground' and event.info == 'stop':
                         gnd_stop_time = event.time_s
                         last_block_end = gnd_stop_time
+                        GndOn = False
+                    elif event.event == 'Figure' and event.info == 'start':
+                        fig_start_time = event.time_s
+                        FigOn = True
+                        GndOn = False
             elif event.task == 'Fixate':
                 if event.info == 'start':
                     fix_start_time = event.time_s
