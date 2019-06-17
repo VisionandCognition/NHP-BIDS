@@ -673,7 +673,7 @@ if __name__ == '__main__':
                         'for valid names (e.g. "ctcheckerboard" for '
                         'curve-tracing checkerboard localizer or '
                         '"curvetracing" or curve tracing experiment).')
-    parser.add_argument('--result', dest='res_fld', default='use_cvs',
+    parser.add_argument('--resultfld', dest='res_fld', default='use_cvs',
                         help='Define the name for output and workingdir '
                         'folders. If not unique it will append.'
                         'Default is the stem of the csv filename')
