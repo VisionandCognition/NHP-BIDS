@@ -39,10 +39,10 @@ def get_csv_stem(csv_file):
     return csv_stem
 
 
-def create_workflow(contrasts, csv_stem, hrf, combine_runs=True):
+def create_workflow(contrasts, out_label, hrf, combine_runs=True):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
-        './workingdirs/level1flow/' + csv_stem)
+        './workingdirs/level1flow/' + out_label)
     # ===================================================================
     #                  _____                   _
     #                 |_   _|                 | |
@@ -201,8 +201,7 @@ def create_workflow(contrasts, csv_stem, hrf, combine_runs=True):
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
                 base_directory=ds_root,
-                # container='derivatives/modelfit', << original
-                container='derivatives/modelfit/' + csv_stem,
+                container='derivatives/modelfit/' + out_label,
                 parameterization=True),
                 name="output_files")
 
@@ -401,7 +400,7 @@ def create_workflow(contrasts, csv_stem, hrf, combine_runs=True):
         currpath = os.getcwd()
         hrftxt = currpath + hrf[1:]
         modelfit.inputs.inputspec.bases = {'custom': {'bfcustompath': hrftxt}}
-        
+
     modelfit.inputs.inputspec.interscan_interval = TR
     modelfit.inputs.inputspec.contrasts = contrasts
     modelfit.inputs.inputspec.model_serial_correlations = True
@@ -463,11 +462,18 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow(csv_file, hrf, use_pbs, use_slurm, contrasts_name, template):
-    # get a unique label, derived from csv name
-    csv_stem = get_csv_stem(csv_file)
-    csv_stem_us = csv_stem.replace('-', '_')  # replace - with _
-    workflow = pe.Workflow(name='run_level1flow_' + csv_stem_us)
+
+def run_workflow(csv_file, hrf, res_fld, use_pbs,
+                 use_slurm, contrasts_name, template):
+
+    # Define outputfolder
+    if res_fld == 'use_cvs':
+        # get a unique label, derived from csv name
+        csv_stem = get_csv_stem(csv_file)
+        out_label = csv_stem.replace('-', '_')  # replace - with _
+    else:
+        out_label = res_fld
+    workflow = pe.Workflow(name='run_level1flow_' + out_label)
     workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config, logging
@@ -507,7 +513,7 @@ def run_workflow(csv_file, hrf, use_pbs, use_slurm, contrasts_name, template):
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, csv_stem)
+    modelfit = create_workflow(contrasts, out_label)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -646,11 +652,11 @@ def run_workflow(csv_file, hrf, use_pbs, use_slurm, contrasts_name, template):
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
 
     if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={'template':
-                                                os.path.expanduser(template)})
+        workflow.run(plugin='PBS',
+                     plugin_args={'template': os.path.expanduser(template)})
     elif use_slurm:
-        workflow.run(plugin='SLURM', plugin_args={'template':
-                                                os.path.expanduser(template)})    
+        workflow.run(plugin='SLURM',
+                     plugin_args={'template': os.path.expanduser(template)})
     else:
         workflow.run()
 
@@ -667,6 +673,10 @@ if __name__ == '__main__':
                         'for valid names (e.g. "ctcheckerboard" for '
                         'curve-tracing checkerboard localizer or '
                         '"curvetracing" or curve tracing experiment).')
+    parser.add_argument('--result', dest='res_fld', default='use_cvs',
+                        help='Define the name for output and workingdir '
+                        'folders. If not unique it will append.'
+                        'Default is the stem of the csv filename')
     parser.add_argument('--hrf', dest='hrf', default='fsl_doublegamma',
                         help='Custom HRF file in fsl format to be used in GLM')
     parser.add_argument('--pbs', dest='use_pbs', action='store_true',
