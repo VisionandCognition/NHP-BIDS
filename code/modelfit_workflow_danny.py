@@ -23,10 +23,7 @@ import nipype.pipeline.engine as pe           # pypeline engine
 import nipype.algorithms.modelgen as model    # model generation
 
 import nipype.workflows.fmri.fsl as fslflows
-
-# from filter_numbers import FilterNumsTask
 from subcode.filter_numbers import FilterNumsTask
-
 from nipype import config, logging
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -472,7 +469,7 @@ def run_workflow(csv_file, hrf, res_fld, use_pbs,
         csv_stem = get_csv_stem(csv_file)
         out_label = csv_stem.replace('-', '_')  # replace - with _
     else:
-        out_label = res_fld
+        out_label = res_fld.replace('-', '_')  # replace - with _
     workflow = pe.Workflow(name='run_level1flow_' + out_label)
     workflow.base_dir = os.path.abspath('./workingdirs')
 
