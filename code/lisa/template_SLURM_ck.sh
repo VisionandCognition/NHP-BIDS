@@ -10,6 +10,11 @@ echo submitted by $SLURM_JOB_ACCOUNT
 echo from $SLURM_SUBMIT_DIR
 echo the allocated nodes are: $SLURM_JOB_NODELIST
 
+# ==== the module environment on LISA changes between 07/2019 and 10/2019 ====
+module load 2019 # use the new environment and modules
+# module load pre2019 # use old environment (only do this if you need software not in 2019)
+# ============================================================================
+
 module load eb
 module load freesurfer
 module load fsl/5.08
