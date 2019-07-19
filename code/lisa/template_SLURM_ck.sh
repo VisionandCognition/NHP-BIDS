@@ -10,9 +10,10 @@ echo submitted by $SLURM_JOB_ACCOUNT
 echo from $SLURM_SUBMIT_DIR
 echo the allocated nodes are: $SLURM_JOB_NODELIST
 
-# ==== the module environment on LISA changes between 07/2019 and 10/2019 ====
-module load 2019 # use the new environment and modules
-# module load pre2019 # use old environment (only do this if you need software not in 2019)
+# ==== the module environment on LISA changes on 1 October 2019 ====
+# more info: https://userinfo.surfsara.nl/documentation/new-module-environment-lisa-cartesius
+# module load 2019 # use the new environment and modules
+# module load pre2019 # use old environment (only do this if you need software modules that aren't present in 2019)
 # ============================================================================
 
 module load eb
