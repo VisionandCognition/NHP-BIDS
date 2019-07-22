@@ -1,4 +1,4 @@
-This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http://bids.neuroimaging.io).
+This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http://bids.neuroimaging.io). For questions and comments, please contact Chris Klink: c.klink@nin.knaw.nl
 
 Installation
 ============
