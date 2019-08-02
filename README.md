@@ -25,14 +25,14 @@ export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
 
 **Only on LISA** (`lisa.surfsara.nl`) you also need to create links to the data directories:
 
-    $ ln -s /nfs/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
-    $ ln -s /nfs/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
-    $ ln -s /nfs/cortalg/NHP-BIDS/workingdirs ~/NHP-BIDS/
-    $ ln -s /nfs/cortalg/NHP-BIDS/manual-masks ~/NHP-BIDS/
-    $ ln -s /nfs/cortalg/NHP-BIDS/scratch ~/NHP-BIDS/
-    $ ln -s /nfs/cortalg/NHP-BIDS/sub-eddy ~/NHP-BIDS/
-    $ ln -s /nfs/cortalg/NHP-BIDS/sub-danny ~/NHP-BIDS/
-    $ ln -s /nfs/cortalg/NHP-BIDS/sub-<MONKEY> ~/NHP-BIDS/ # add more monkeys when necessary
+    $ ln -s /project/cortalg/NHP-BIDS/sourcedata ~/NHP-BIDS/sourcedata
+    $ ln -s /project/cortalg/NHP-BIDS/derivatives/ ~/NHP-BIDS/derivatives
+    $ ln -s /project/cortalg/NHP-BIDS/workingdirs ~/NHP-BIDS/
+    $ ln -s /project/cortalg/NHP-BIDS/manual-masks ~/NHP-BIDS/
+    $ ln -s /project/cortalg/NHP-BIDS/scratch ~/NHP-BIDS/
+    $ ln -s /project/cortalg/NHP-BIDS/sub-eddy ~/NHP-BIDS/
+    $ ln -s /project/cortalg/NHP-BIDS/sub-danny ~/NHP-BIDS/
+    $ ln -s /project/cortalg/NHP-BIDS/sub-<MONKEY> ~/NHP-BIDS/ # add more monkeys when necessary
     
 and make new files accessible to all 'cortalg' group members by adding this to ``~.bashrc`` :
 
