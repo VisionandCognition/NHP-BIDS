@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -N 1 --ntasks-per-node=16
-#SBATCH -t 72:00:00
+#SBATCH -t 32:00:00
 #SBATCH --mail-type=END
 #SBATCH --mail-user=p.c.klink@gmail.com
 
@@ -24,7 +24,7 @@ export FSLOUTPUTTYPE=NIFTI_GZ
 cd ~/NHP-BIDS
 
 # minimal processing
-./code/bids_minimal_processing.py --csv ./csv/multi/Danny_20190801.csv --types func,anat,fmap --ignore_events |& \
+./code/bids_minimal_processing.py --csv ./csv/multi/Danny_20190801.csv --types func,anat,fmap |& \
     tee ./logs/minproc/log-minproc-danny-20190801.txt
 wait
 
