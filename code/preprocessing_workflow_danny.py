@@ -70,6 +70,7 @@ def create_workflow():
     templates = {
 
         # FIELDMAP ========
+        # currently not used!
         'ref_manual_fmapmask':  # was: manual_fmapmask
         'manual-masks/final/sub-danny/ses-20180117/fmap/'
         'sub-danny_ses-20180117_fmap_brainmask.nii.gz',
@@ -82,16 +83,16 @@ def create_workflow():
         'manual-masks/final/sub-danny/ses-20180117/fmap/'
         'sub-danny_ses-20180117_phasediff_res-1x1x1_preproc.nii.gz',
 
-        'fmap_phasediff':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
+        #'fmap_phasediff':
+        #'derivatives/resampled-isotropic-1mm/'
+        #'sub-{subject_id}/ses-{session_id}/fmap/'
+        #'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
 
-        'fmap_magnitude':
-        'derivatives/resampled-isotropic-1mm/'
-        'sub-{subject_id}/ses-{session_id}/fmap/'
-        'sub-{subject_id}_ses-{session_id}_magnitude1_'
-        'res-1x1x1_preproc.nii.gz',
+        #'fmap_magnitude':
+        #'derivatives/resampled-isotropic-1mm/'
+        #'sub-{subject_id}/ses-{session_id}/fmap/'
+        #'sub-{subject_id}_ses-{session_id}_magnitude1_'
+        #'res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
