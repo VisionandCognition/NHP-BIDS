@@ -36,7 +36,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     data_dir = ds_root
-    output_dir = 'derivatives/resampled-isotropic-1mm'
+    output_dir = 'derivatives/resampled-isotropic-06mm'
     working_dir = 'workingdirs'
 
     # ------------------ Input Files
@@ -72,8 +72,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
 
     # SelectFiles
     templates = {
-        # 'image': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
-        'image': 'sub-{subject_id}/ses-{session_id}/*/'
+        'image': 'sub-{subject_id}/ses-{session_id}/anat/'
         'sub-{subject_id}_ses-{session_id}_*.nii.gz',
     }
     inputfiles = Node(
@@ -93,17 +92,17 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
         # BIDS Extension Proposal: BEP003
-        ('_resample.nii.gz', '_res-1x1x1_preproc.nii.gz'),
+        ('_resample.nii.gz', '_res-06x06x06_preproc.nii.gz'),
         # remove subdirectories:
-        ('resampled-isotropic-1mm/isoxfm-1mm', 'resampled-isotropic-1mm'),
-        ('resampled-isotropic-1mm/mriconv-1mm', 'resampled-isotropic-1mm'),
+        ('resampled-isotropic-06mm/isoxfm-06mm', 'resampled-isotropic-06mm'),
+        ('resampled-isotropic-06mm/mriconv-06mm', 'resampled-isotropic-06mm'),
     ]
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         # this works only if datatype is specified in input
         (r'_datatype_([a-z]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
          r'sub-\3/ses-\2/\1'),
-        (r'_fs_iso1mm[0-9]*/', r''),
+        (r'_fs_iso06mm[0-9]*/', r''),
         (r'/_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
          r'/sub-\2/ses-\1/'),
         # stupid hacks for when datatype is not specified
@@ -118,7 +117,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
 
     # -------------------------------------------- Create Pipeline
     isotropic_flow = Workflow(
-        name='resample_isotropic1mm',
+        name='resample_isotropic06mm',
         base_dir=os.path.join(ds_root, working_dir))
 
     isotropic_flow.connect([
@@ -130,25 +129,25 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
     # --- Convert to 1m isotropic voxels
 
     if method == 'fs':
-        fs_iso1mm = MapNode(
+        fs_iso06mm = MapNode(
             fs.Resample(
-                voxel_size=(1.0, 1.0, 1.0),
+                voxel_size=(0.6, 0.6, 0.6),
                 # suffix is not accepted by fs.Resample
                 # suffix='_res-1x1x1_preproc',
                 # BIDS Extension Proposal: BEP003
             ),
-            name='fs_iso1mm',
+            name='fs_iso06mm',
             iterfield=['in_file'],
         )
 
         isotropic_flow.connect(inputfiles, 'image',
-                               fs_iso1mm, 'in_file')
-        isotropic_flow.connect(fs_iso1mm, 'resampled_file',
-                               outputfiles, 'mriconv-1mm')
+                               fs_iso06mm, 'in_file')
+        isotropic_flow.connect(fs_iso06mm, 'resampled_file',
+                               outputfiles, 'mriconv-06mm')
     elif method == 'fsl':
         # in_file --> out_file
         isoxfm = Node(fsl.FLIRT(
-            apply_isoxfm=1.0,
+            apply_isoxfm=0.6,
         ),
             name='isoxfm')
 
@@ -157,7 +156,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
         isotropic_flow.connect(inputfiles, 'image',
                                isoxfm, 'reference')
         isotropic_flow.connect(isoxfm, 'out_file',
-                               outputfiles, 'isoxfm-1mm')
+                               outputfiles, 'isoxfm-06mm')
 
     isotropic_flow.stop_on_first_crash = False  # True
     isotropic_flow.keep_inputs = True
@@ -178,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--csv',
                         dest='csv_file',
                         default=None,
-                        help='CSV file with at least subjects and sessions columns.'
+                        help='CSV file with subjects, sessions, and runs.'
                         )
     parser.add_argument('--pbs',
                         dest='use_pbs',

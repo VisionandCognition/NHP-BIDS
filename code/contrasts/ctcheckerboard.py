@@ -34,7 +34,7 @@ contrasts = [
      [8.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]],
 
     ['CircleUR>L', 'T',  # t-test
-     ['CircleUR',  # >                      Contrast 3: Target - Up-Left
+     ['CircleUR',  # >                      Contrast 3: Target - Up-Right
       'GapL', 'GapDL', 'GapUL', 'CurveSegL',
       'CurveSegDL', 'CurveSegUL', 'CircleDL', 'CircleUL',
       ],

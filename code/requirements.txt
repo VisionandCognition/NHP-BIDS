@@ -16,7 +16,7 @@ ipython==6.1.0
 ipython-genutils==0.2.0
 isodate==0.5.4
 jedi==0.10.2
-Jinja2==2.10
+Jinja2>=2.10.1  # was Jinja2==2.10
 lxml==3.8.0
 MarkupSafe==1.0
 matplotlib==2.0.2
@@ -54,6 +54,6 @@ sphinxcontrib-websupport==1.0.1
 traitlets==4.3.2
 traits==4.6.0
 typing==3.6.2
-urllib3==1.22
+urllib3==1.24.2  # was urllib3==1.23
 wcwidth==0.1.7
 yapf==0.20.1

@@ -132,3 +132,6 @@ manual-masks/sub-eddy/ses-20170607/func/sub-eddy_ses-20170607_task-RestingPRF_ru
 sub-eddy
 
 *.ffs_db
+
+manual-masks/final/sub-danny/ses-20180117/func/fix_LR/.DS_Store
+*_

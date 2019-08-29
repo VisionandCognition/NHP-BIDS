@@ -70,29 +70,32 @@ def create_workflow():
     templates = {
 
         # FIELDMAP ========
-        # currently not used!
-        'ref_manual_fmapmask':  # was: manual_fmapmask
-        'manual-masks/final/sub-danny/ses-20180117/fmap/'
-        'sub-danny_ses-20180117_fmap_brainmask.nii.gz',
+        # fieldmaps are currently not used by this workflow
+        # instead, everything is nonlinearly alligned to a reference
+        # you should probably 'just' undistort this reference func
+
+        'ref_manual_fmapmask':
+        'manual-masks/final/sub-eddy/ses-20170607b/fmap/'
+        'fmap_brainmask.nii.gz',
 
         'ref_fmap_magnitude':
-        'manual-masks/final/sub-danny/ses-20180117/fmap/'
-        'sub-danny_ses-20180117_magnitude1_res-1x1x1_preproc.nii.gz',
+        'manual-masks/final/sub-eddy/ses-20170607b/fmap/'
+        'sub-eddy_ses-20170607_magnitude1_res-1x1x1_preproc.nii.gz',
 
         'ref_fmap_phasediff':
-        'manual-masks/final/sub-danny/ses-20180117/fmap/'
-        'sub-danny_ses-20180117_phasediff_res-1x1x1_preproc.nii.gz',
+        'manual-masks/final/sub-eddy/ses-20170607b/fmap/'
+        'sub-eddy_ses-20170607_phasediff_res-1x1x1_preproc.nii.gz',
 
-        #'fmap_phasediff':
-        #'derivatives/resampled-isotropic-1mm/'
-        #'sub-{subject_id}/ses-{session_id}/fmap/'
-        #'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
+        # 'fmap_phasediff':
+        # 'derivatives/resampled-isotropic-1mm/'
+        # 'sub-{subject_id}/ses-{session_id}/fmap/'
+        # 'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
 
-        #'fmap_magnitude':
-        #'derivatives/resampled-isotropic-1mm/'
-        #'sub-{subject_id}/ses-{session_id}/fmap/'
-        #'sub-{subject_id}_ses-{session_id}_magnitude1_'
-        #'res-1x1x1_preproc.nii.gz',
+        # 'fmap_magnitude':
+        # 'derivatives/resampled-isotropic-1mm/'
+        # 'sub-{subject_id}/ses-{session_id}/fmap/'
+        # 'sub-{subject_id}_ses-{session_id}_magnitude1_'
+        # 'res-1x1x1_preproc.nii.gz',
 
         # 'fmap_mask':
         # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
@@ -101,40 +104,25 @@ def create_workflow():
 
 
         # FUNCTIONALS ========
-        'ref_func':  # was: manualmask_func_ref
-        'manual-masks/final/sub-danny/ses-20180117/func/'
-        'fix_LR/sub-danny_ses-20180117_task-prf_'
-        'run-01_frame-10_bold_res-1x1x1_reference_zcrop.nii.gz',
+        # >> These func references are undistorted with FUGUE <<
+        # see the undistort.sh script in:
+        # manual-masks/sub-eddy/ses-20170607b/func/
+        'ref_func':
+        'manual-masks/final/sub-eddy/ses-20170607b/func/'
+        'ref_func_undist_inData_al_fnirt.nii.gz',
 
-        'ref_funcmask':  # was: manualmask
-        'manual-masks/final/sub-danny/ses-20180117/func/'
-        'fix_LR/T1_to_func_brainmask_zcrop.nii.gz',
-
-        # 'funcs':
-        # 'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
-        # # 'sub-{subject_id}_ses-{session_id}*_bold_res-1x1x1_preproc'
-        # 'sub-{subject_id}_ses-{session_id}*run-01_bold_res-1x1x1_preproc'
-        # # '.nii.gz',
-        # '_nvol10.nii.gz',
-
-        # T1 ========
-        # 1 mm iso ---
-        # 'ref_t1':
-        # 'manual-masks/sub-danny/ses-20180117/anat/'
-        # 'HiRes-1x1x1.nii.gz',
-
-        # 'ref_t1mask':
-        # 'manual-masks/sub-danny/ses-20180117/anat/'
-        # 'HiRes_brainmask-1x1x1.nii.gz',
+        'ref_funcmask':
+        'manual-masks/final/sub-eddy/ses-20170607b/anat/'
+        'HiRes_to_T1_mean.nii_shadowreg_Eddy_brainmask.nii.gz',
 
         # 0.6 mm iso ---
         'ref_t1':
-        'manual-masks/final/sub-danny/ses-20180117/anat/'
-        'HiRes.nii.gz',
+        'manual-masks/final/sub-eddy/HiRes/'
+        'Eddy.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/final/sub-danny/ses-20180117/anat/'
-        'HiRes_brainmask.nii.gz',
+        'manual-masks/final/sub-eddy/HiRes/'
+        'Eddy_brainmask.nii.gz',
 
         # WEIGHTS ========
         # 'manualweights':
@@ -164,7 +152,6 @@ def create_workflow():
     #                                  |_|
     # ===================================================================
 
-    # ------------------ Output Files
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
@@ -417,7 +404,7 @@ def create_workflow():
                ]),
              ])
 
-    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _ 
+    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _
     # |~\(/_(_||_\ | (/_|    | (_)  |~\(/_~|~(/_| (/_| |(_(/_
     #        _|
     # Register all functionals to common reference
@@ -902,10 +889,10 @@ def run_workflow(run_num=None, csv_file=None):
 
     featpreproc.inputs.inputspec.fwhm = 2.0     # spatial smoothing
     featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
+    # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
-    
     '''
     if use_pbs:
         workflow.run(plugin='PBS', plugin_args={
@@ -917,14 +904,15 @@ def run_workflow(run_num=None, csv_file=None):
         workflow.run()
     '''
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-            description='Perform pre-processing for NHP fMRI.')
+            description='Perform pre-processing step for NHP fMRI.')
+    '''
     parser.add_argument('-r', '--run',
                         dest='run_num',
                         type=int,
                         help='Run number, e.g. 1.')
-    '''
     parser.add_argument('-s', '--session',
                         type=str,
                         help='Session ID, e.g. 20170511.')

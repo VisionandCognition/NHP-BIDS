@@ -1,0 +1,25 @@
+#PBS -lwalltime=24:00:00  
+#PBS -lnodes=1:ppn=16
+#PBS -S /bin/bash
+
+n=`wc -l < $PBS_NODEFILE`
+echo start of job in directory $PBS_O_WORKDIR
+echo number of nodes is $n
+echo the allocated nodes are:
+cat $PBS_NODEFILE
+
+module load eb
+module load freesurfer
+module load fsl/5.08
+module load afni
+
+source ~/.bash_profile 
+source ~/.bashrc
+
+export FSLOUTPUTTYPE=NIFTI_GZ # is this not the default?
+
+cd ~/NHP-BIDS
+
+./code/modelfit_workflow_danny.py --csv ./csv/ct-danny/ck-ctcheckerboard-201812-modelfit.csv --contrast ctcheckerboard |& tee ./logs/modelfit/log-ck-ctcheckerboard-201812_modelfit.txt
+
+echo "Job $PBS_JOBID ended at `date`." | mail $USER -s "Job $PBS_JOBID ended"
