@@ -13,14 +13,9 @@ After this, you should run:
 
 import glob
 import os
-import sys
-import errno
 
 import nipype.interfaces.io as nio           # Data i/o
 import nipype.interfaces.utility as niu      # utility
-import nipype.pipeline.engine as pe          # pypeline engine
-import nipype.algorithms.modelgen as model   # model generation
-import nipype.algorithms.rapidart as ra      # artifact detection
 from nipype.interfaces.utility import IdentityInterface
 
 from nipype.pipeline.engine import Workflow, Node, MapNode
@@ -28,13 +23,11 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.freesurfer as fs    # freesurfer
 
-# from bids_convert_csv_eventlog import ConvertCSVEventLog
 from subcode.bids_convert_csv_eventlog import ConvertCSVEventLog
 
 
 def create_images_workflow():
-    """ Correct for the sphinx position and use reorient to standard.
-    """
+    # Correct for the sphinx position and use reorient to standard.
     workflow = Workflow(
         name='minimal_proc')
 
@@ -84,15 +77,8 @@ def process_functionals(raw_dir, glob_pat):
 def run_workflow(session, csv_file, stop_on_first_crash,
                  ignore_events, types):
     
-
-    #REPLACE THIS WITH A BETTER CSV-BASED SOLUTION --------
-    # import bids_templates as bt
-    #------------------------------------------------------
-
-
-
-
     from nipype import config
+    
     config.enable_debug_mode()
 
     # ------------------ Specify variables
@@ -127,26 +113,38 @@ def run_workflow(session, csv_file, stop_on_first_crash,
 
 
     if 'run' in out.outputs.traits().keys():
-        print('Ignoring the "run" field of %s for the image files.' % csv_file)
+        print('Ignoring the "run" field of %s for image files.' % csv_file)
 
 
     process_images = True
     if process_images:
-        datatype_list = types.split(',')
+        # datatype_list = types.split(',')
 
         imgsource = Node(IdentityInterface(fields=[
             'subject_id', 'session_id', 'datatype',
         ]), name="imgsource")
         imgsource.iterables = [
             ('session_id', session_list), ('subject_id', subject_list),
+        ]
+        '''
+        imgsource.iterables = [
+            ('session_id', session_list), ('subject_id', subject_list),
             ('datatype', datatype_list),
         ]
-
+        '''
+        ''' use the data-type argument
         img_templates = {
             'image': 'sourcedata/sub-{subject_id}/ses-{session_id}/{datatype}/'
                      'sub-{subject_id}_ses-{session_id}_*.nii.gz'
             }
+		'''
 
+		# In this variant it will simply select all available datatypes for a given session
+        img_templates = {
+            'image': 'sourcedata/sub-{subject_id}/ses-{session_id}/*/'
+                     'sub-{subject_id}_ses-{session_id}_*.nii.gz'
+            }
+        
         # SelectFiles
         imgfiles = Node(
             nio.SelectFiles(img_templates, 
@@ -259,12 +257,12 @@ if __name__ == '__main__':
                         default=None,
                         help='Session ID, e.g. 20170511.'
                         )
-    '''
     parser.add_argument('--types',
                         type=str,
                         default='func,anat,fmap',
                         help='Image datatypes, e.g. func,anat,fmap,dwi.'
                         )
+    '''
     parser.add_argument('--csv',
                         dest='csv_file',
                         required=True,
