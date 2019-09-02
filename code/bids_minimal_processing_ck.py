@@ -74,8 +74,8 @@ def process_functionals(raw_dir, glob_pat):
         print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
 
 
-def run_workflow(session, csv_file, stop_on_first_crash,
-                 ignore_events, types):
+def run_workflow(csv_file, stop_on_first_crash,
+                 ignore_events):
     
     from nipype import config
     
@@ -92,6 +92,7 @@ def run_workflow(session, csv_file, stop_on_first_crash,
     infosource = Node(IdentityInterface(fields=[
         'subject_id',
         'session_id',
+        'run_id',
     ]), name="infosource")
 
     # Read the csv-file with processing info
@@ -108,12 +109,14 @@ def run_workflow(session, csv_file, stop_on_first_crash,
     infosource.iterables = [
         ('subject_id', subject_list),
         ('session_id', session_list),
+        ('run_id', run_list),
     ]
     infosource.synchronize = True
 
 
     if 'run' in out.outputs.traits().keys():
-        print('Ignoring the "run" field of %s for image files.' % csv_file)
+        print('Ignoring the "run" field of %s for image files.'
+               ' It will be used for eventlog processing.' % csv_file)
 
 
     process_images = True
@@ -121,7 +124,7 @@ def run_workflow(session, csv_file, stop_on_first_crash,
         # datatype_list = types.split(',')
 
         imgsource = Node(IdentityInterface(fields=[
-            'subject_id', 'session_id', 'datatype',
+            'subject_id', 'session_id', #'datatype',
         ]), name="imgsource")
         imgsource.iterables = [
             ('session_id', session_list), ('subject_id', subject_list),
@@ -140,15 +143,13 @@ def run_workflow(session, csv_file, stop_on_first_crash,
 		'''
 
 		# In this variant it will simply select all available datatypes for a given session
-        img_templates = {
-            'image': 'sourcedata/sub-{subject_id}/ses-{session_id}/*/'
-                     'sub-{subject_id}_ses-{session_id}_*.nii.gz'
-            }
-        
         # SelectFiles
         imgfiles = Node(
-            nio.SelectFiles(img_templates, 
-                base_directory=data_dir), name="img_files")
+            nio.SelectFiles({
+                'images':
+                'sourcedata/sub-{subject_id}/ses-{session_id}/*/'
+                'sub-{subject_id}_ses-{session_id}_*.nii.gz' 
+                }, base_directory=data_dir), name="img_files")
 
         '''OLD WAY
         # SelectFiles
@@ -175,7 +176,7 @@ def run_workflow(session, csv_file, stop_on_first_crash,
                 'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/Log_*_eventlog.csv',
                 'stim_dir':
                 'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*events/',
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/',
             }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
@@ -190,6 +191,7 @@ def run_workflow(session, csv_file, stop_on_first_crash,
     outputfiles.inputs.substitutions = [
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
+        ('run_id_', 'run-'),
         ('/minimal_processing/', '/'),
         ('_out_reoriented.nii.gz', '.nii.gz')
     ]
@@ -212,12 +214,13 @@ def run_workflow(session, csv_file, stop_on_first_crash,
         workflow.connect([(imgsource, imgfiles,
                            [('subject_id', 'subject_id'),
                             ('session_id', 'session_id'),
-                            ('datatype', 'datatype'),
+                            #('datatype', 'datatype'),
                             ])])
     if not ignore_events:
         workflow.connect([(evsource, evfiles,
                            [('subject_id', 'subject_id'),
                             ('session_id', 'session_id'),
+                            ('run_id', 'run_id'),
                             ]),
                           ])
 
