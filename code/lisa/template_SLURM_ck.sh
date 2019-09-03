@@ -33,7 +33,7 @@ cd NHP-BIDS
 wait
 # tasks to be executed 2
 wait
-# tasks to be executed 1
+# tasks to be executed 3
 wait
 
 # change group permissions on projectfolder
