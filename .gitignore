@@ -121,10 +121,12 @@ ENV/
 
 # OS generated files
 .gdb_history
-.DS_Store?
+*.DS_Store?
 ehthumbs.db
 Icon?
 Thumbs.db
+*_
+*.ffs_db
 
 # freefile sync database
 *.ffs_db
@@ -132,7 +134,7 @@ Thumbs.db
 # auto created index files
 *.DS_Store
 
-logs/
+code/Untitled.ipynb
 
 manual-masks/sub-eddy/ses-20170607/func/sub-eddy_ses-20170607_task-RestingPRF_run-02_bold_res-1x1x1_preproc\.nii\.gz
 

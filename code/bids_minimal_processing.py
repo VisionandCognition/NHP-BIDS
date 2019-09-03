@@ -1,64 +1,57 @@
 #!/usr/bin/env python3
 
-""" This is the first file to run (after copying the source files from
-DATA_raw).
+""" 
+This is the first script to run after copying the source files from
+DATA_raw to NHP-BIDS. It performs some minimal processing:
+- Image files are corrected for sphinx orientation
+- FSL orientation is corrected
+- Eventlog csv files are converted to tsv where possible
+- Files are moved to the correct folders
 
 After this, you should run:
+- bids_resample_isotropic_workflow.py
+  >> resamples *ALL* images files to 1 mm isotropic
+- bids_reample_hires_isotropic_workflow.py
+  >> resamples the high resolution anatomicals to 0.5 mm isotropis
+  >> only use this when these files are actually present
+- bids_preprocessing_workflow.py
+  >> performs preprocessing steps like normalisation and motion correction
+- bids_modelfit_workflow.py
+  >> Fits a GLM and outputs statistics
 
-1. resample_isotropic_workflow.py (to-do: incorporate with
-    preprocessing_workflow.py)
-2. preprocessing_workflow.py
-
+Questions & comments: c.klink@nin.knaw.nl
 """
 
-import glob
-import os
-import sys
-import errno
+#import glob                                # paths & filenames
+import os                                   # system functions
+import pandas as pd                         # data juggling
 
-import nipype.interfaces.io as nio           # Data i/o
-import nipype.interfaces.utility as niu      # utility
-import nipype.pipeline.engine as pe          # pypeline engine
-import nipype.algorithms.modelgen as model   # model generation
-import nipype.algorithms.rapidart as ra      # artifact detection
+# nipype
+import nipype.interfaces.io as nio          # data i/o
+import nipype.interfaces.fsl as fsl         # fsl
+import nipype.interfaces.freesurfer as fs   # freesurfer
 from nipype.interfaces.utility import IdentityInterface
-
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
-import nipype.interfaces.fsl as fsl          # fsl
-import nipype.interfaces.freesurfer as fs    # freesurfer
-
-# from bids_convert_csv_eventlog import ConvertCSVEventLog
+# custom library
 from subcode.bids_convert_csv_eventlog import ConvertCSVEventLog
 
 
 def create_images_workflow():
-    """ Correct for the sphinx position and use reorient to standard.
-    """
-    workflow = Workflow(
-        name='minimal_proc')
+    # Correct for the sphinx position and use reorient to standard.
+    workflow = Workflow(name='minimal_proc')
 
-    inputs = Node(IdentityInterface(fields=[
-        'images',
-    ]), name="in")
-    outputs = Node(IdentityInterface(fields=[
-        'images',
-    ]), name="out")
+    inputs = Node(IdentityInterface(fields=['images']), name="in")
+    outputs = Node(IdentityInterface(fields=['images']), name="out")
 
-    sphinx = MapNode(
-        fs.MRIConvert(
-            sphinx=True,
-        ),
-        iterfield=['in_file'],
-        name='sphinx')
+    sphinx = MapNode(fs.MRIConvert(sphinx=True),
+        iterfield=['in_file'], name='sphinx')
 
     workflow.connect(inputs, 'images',
                      sphinx, 'in_file')
 
-    ro = MapNode(
-        fsl.Reorient2Std(),
-        iterfield=['in_file'],
-        name='ro')
+    ro = MapNode(fsl.Reorient2Std(),
+        iterfield=['in_file'],name='ro')
 
     workflow.connect(sphinx, 'out_file',
                      ro, 'in_file')
@@ -68,26 +61,11 @@ def create_images_workflow():
     return workflow
 
 
-def print_run(cmd):
-    print('%s\n' % cmd)
-    return os.system(cmd)
-
-
-def process_functionals(raw_dir, glob_pat):
-    for fn in glob.glob("%s/%s" % (raw_dir, glob_pat)):
-        fn = os.path.basename(fn)
-        print("Processing %s" % fn)
-
-        print_run("mri_convert -i %s/%s -o /tmp/%s --sphinx" %
-                  (raw_dir, fn, fn))
-        print_run("fslreorient2std /tmp/%s %s" % (fn, fn))
-
-
-def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
-                 ignore_events, types):
-    import bids_templates as bt
-
+def run_workflow(csv_file, stop_on_first_crash,
+                 ignore_events):
+    
     from nipype import config
+    
     config.enable_debug_mode()
 
     # ------------------ Specify variables
@@ -98,61 +76,80 @@ def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
     working_dir = 'workingdirs/minimal_processing'
 
     # ------------------ Input Files
-    infosource = Node(IdentityInterface(fields=[
-        'subject_id',
-        'session_id',
-    ]), name="infosource")
+    # Read csv and use pandas to set-up image and ev-processing
+    df = pd.read_csv(csv_file)
+    # init lists
+    sub_img=[]; ses_img=[]; dt_img=[]
+    sub_ev=[]; ses_ev=[]; run_ev=[]
 
-    reader = niu.CSVReader()
-    reader.inputs.header = True
-    reader.inputs.in_file = csv_file
-    out = reader.run()
-    subject_list = out.outputs.subject
-    session_list = out.outputs.session
-    infosource.iterables = [
-        ('session_id', session_list),
-        ('subject_id', subject_list),
-    ]
-    if 'run' in out.outputs.traits().keys():
-        print('Ignoring the "run" field of %s.' % csv_file)
+    # fill lists to iterate mapnodes
+    for index, row in df.iterrows():
+        for dt in row.datatype.strip("[]").split(" "):
+            sub_img.append(row.subject)
+            ses_img.append(row.session)
+            dt_img.append(dt)
+        for r in row.run.strip("[]").split(" "):
+            sub_ev.append(row.subject)
+            ses_ev.append(row.session)
+            run_ev.append(r)
 
-    infosource.synchronize = True
+    # check if the file definitions are ok
+    if len(dt_img) > 0:
+        process_images = True
+    else:
+        process_images = False
+        print('NB! No data-types specified. Not processing any images.')
+        print('Check the csv-file if this is unexpected.')
 
-    process_images = True
+    if len(run_ev) > 0:
+        process_ev = True
+    else:
+        process_ev = False
+        print('NB! No runs spcfied. Not processing eventlog files.'
+            ' Images will still be processed.')
+        print('Check the csv-file if this is unexpected.')
 
     if process_images:
-        datatype_list = types.split(',')
-
         imgsource = Node(IdentityInterface(fields=[
-            'subject_id', 'session_id', 'datatype',
-        ]), name="imgsource")
+            'subject_id',
+            'session_id', 
+            'datatype',
+            ]), name="imgsource")
         imgsource.iterables = [
-            ('session_id', session_list), ('subject_id', subject_list),
-            ('datatype', datatype_list),
-        ]
+            ('session_id', ses_img), 
+            ('subject_id', sub_img), 
+            ('datatype', dt_img)
+            ]
+        imgsource.synchronize = True
 
         # SelectFiles
         imgfiles = Node(
             nio.SelectFiles({
                 'images':
-                'sourcedata/%s' % bt.templates['images'],
-            }, base_directory=data_dir), name="img_files")
+                'sourcedata/sub-{subject_id}/ses-{session_id}/{datatype}/'
+                'sub-{subject_id}_ses-{session_id}_*.nii.gz' 
+                }, base_directory=data_dir), name="img_files")
 
-    if not ignore_events:  # only create an event node when handling events
+    if not ignore_events and process_ev:  # only create an event node when handling events
         evsource = Node(IdentityInterface(fields=[
-            'subject_id', 'session_id',
-        ]), name="evsource")
+            'subject_id', 
+            'session_id',
+            'run_id',
+            ]), name="evsource")
         evsource.iterables = [
-            ('session_id', session_list), ('subject_id', subject_list),
-        ]
+            ('subject_id', sub_ev),
+            ('session_id', ses_ev), 
+            ('run_id', run_ev),
+            ]
+        evsource.synchronize = True
         evfiles = Node(
             nio.SelectFiles({
                 'csv_eventlogs':
                 'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*events/Log_*_eventlog.csv',
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/Log_*_eventlog.csv',
                 'stim_dir':
                 'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}_*events/',
+                'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/',
             }, base_directory=data_dir), name="evfiles")
 
     # ------------------ Output Files
@@ -170,8 +167,11 @@ def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
         ('/minimal_processing/', '/'),
         ('_out_reoriented.nii.gz', '.nii.gz')
     ]
+    
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
+        (r'_run_id_([a-zA-Z0-9]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
+            r'/sub-\3/ses-\2/'),
         (r'_datatype_([a-z]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
             r'sub-\3/ses-\2/\1'),
         (r'/_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
@@ -191,10 +191,12 @@ def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
                             ('session_id', 'session_id'),
                             ('datatype', 'datatype'),
                             ])])
-    if not ignore_events:
+
+    if not ignore_events and process_ev:
         workflow.connect([(evsource, evfiles,
                            [('subject_id', 'subject_id'),
                             ('session_id', 'session_id'),
+                            ('run_id', 'run_id'),
                             ]),
                           ])
 
@@ -205,11 +207,12 @@ def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
         workflow.connect(minproc, 'out.images',
                          outputfiles, 'minimal_processing.@images')
 
-    if not ignore_events:
+    if not ignore_events and process_ev:
         csv2tsv = MapNode(
             ConvertCSVEventLog(),
             iterfield=['in_file', 'stim_dir'],
             name='csv2tsv')
+
         workflow.connect(evfiles, 'csv_eventlogs',
                          csv2tsv, 'in_file')
         workflow.connect(evfiles, 'stim_dir',
@@ -219,40 +222,19 @@ def run_workflow(session, csv_file, use_pbs, use_slurm, stop_on_first_crash,
 
     workflow.stop_on_first_crash = stop_on_first_crash
     workflow.keep_inputs = True
-    workflow.remove_unnecessary_outputs = False
+    workflow.remove_unnecessary_outputs = True
     workflow.write_graph()
-    # workflow.run(plugin='MultiProc', plugin_args={'n_procs' : 10})
     workflow.run()
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description='Perform isotropic resampling for NHP fMRI.'
-        ' Run bids_minimal_processing first.')
-    parser.add_argument('-s', '--session',
-                        type=str,
-                        default=None,
-                        help='Session ID, e.g. 20170511.'
-                        )
-    parser.add_argument('--types',
-                        type=str,
-                        default='func,anat,fmap',
-                        help='Image datatypes, e.g. func,anat,fmap,dwi.'
-                        )
+        description='Perform minimal_processing for NHP fMRI.'
+        )
     parser.add_argument('--csv',
                         dest='csv_file',
                         required=True,
                         help='CSV file with subjects, sessions, and runs.'
-                        )
-    parser.add_argument('--pbs',
-                        dest='use_pbs',
-                        action='store_true',
-                        help='Whether to use pbs plugin.'
-                        )
-    parser.add_argument('--slurm',
-                        dest='use_slurm',
-                        action='store_true',
-                        help='Whether to use slurm plugin.'
                         )
     parser.add_argument('--stop_on_first_crash',
                         dest='stop_on_first_crash',
@@ -262,7 +244,9 @@ if __name__ == '__main__':
     parser.add_argument('--ignore_events',
                         dest='ignore_events',
                         action='store_true',
-                        help='Whether to ignore the csv event files'
+                        help='Whether to ignore all csv event files. '
+                        'By default csv event files are processed for specified runs '
+                        '(while imaging files are processed for all runs)'
                         )
 
     args = parser.parse_args()
