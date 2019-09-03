@@ -1,10 +1,13 @@
-This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http://bids.neuroimaging.io). For questions and comments, please contact Chris Klink: c.klink@nin.knaw.nl
+This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http://bids.neuroimaging.io). 
+For questions and comments, please contact Chris Klink: c.klink@nin.knaw.nl
 
 Installation
 ============
 
-The pipeline works with **python3** (if you use virtual environments: `mkvirtualenv --python=/usr/bin/python3 mri-py3`) and requires:
+The pipeline works with **python3** (we suggest using **(ana)conda** (https://www.anaconda.com/) to set-up a dedicated environment
+and requires:
 * **nipype** (>=1.0.1dev) (`pip install https://github.com/nipy/nipype/archive/master.zip`)
+* **pandas** 
 * **FSL** (>=5.0.1)
 * **Freesurfer** (>=5.3.0)
 * **AFNI** (>=??)
@@ -33,8 +36,10 @@ export PYTHONPATH="/home/<username>/NHP-BIDS/code:$PYTHONPATH"
     $ ln -s /project/cortalg/NHP-BIDS/sub-eddy ~/NHP-BIDS/
     $ ln -s /project/cortalg/NHP-BIDS/sub-danny ~/NHP-BIDS/
     $ ln -s /project/cortalg/NHP-BIDS/sub-<MONKEY> ~/NHP-BIDS/ # add more monkeys when necessary
-    
-and make new files accessible to all 'cortalg' group members by adding this to ``~.bashrc`` :
+
+(We suggest using a bash-script for clean initialization.)    
+
+You should also make new files accessible to all 'cortalg' group members by adding this to ``~.bashrc`` :
 
 ```
 umask u+rwx g+rwx
@@ -46,39 +51,37 @@ For a more comprehensive explanation of running analyses on LISA see https://git
 Running the Pipeline
 ====================
 
-You should change the `SubSesRun.csv` to a CSV script that actually exists. There should be some examples available in the NHP-BIDS/csv directory. All steps can in principle also be run on the SurfSara LISA cluster. If you want to do that you should create a job-file to work with the batch scheduler (see https://userinfo.surfsara.nl/systems/lisa/user-guide/creating-and-running-jobs). The precise names and subfolder location of job-files are optional, but it should be a bash script. A template can be found in `NHP-BIDS/code/lisa/template_SLURM_ck.sh`. For all steps below, we specify how you would run that single step on the cluster, but a single job-file can also contain all these steps in a sequence so that everything runs with the single job (if you this make sure you reserve enough computing time!)
+You specify what data to process with csv-files. See `NHP-BIDS/csv/SubSesRun.csv` for an example. All steps can in principle also be run on the SurfSara LISA cluster. If you want to do that, you should create a job-file to work with the batch scheduler (see https://userinfo.surfsara.nl/systems/lisa/user-guide/creating-and-running-jobs). The precise names and subfolder location of job-files are optional, but it should be a bash script. A template can be found in `NHP-BIDS/code/lisa/template_SLURM.sh`. For all steps below, we specify how you would run each processing step on the cluster, but a single job-file can also contain all these steps together in a sequence so that everything runs serially (make sure you reserve enough computing time in your jobs-script!)
 
 1. Create a `copy-to-bids.sh` script in the `Data_raw/SUBJ/YYYYMMDD` folder, and run it.
-   * Base script off of existing script. This script tends to improve each iteration. To find the most recent one, you can try calling `find -maxdepth 3 -name "copy-to-bids.sh" -exec ls -lt {} +` from the `Data_raw` directory. There is also a template version `NHP-BIDS/code/copy-to-bids_template.sh`
-   * In order to match the runs with the behavioral data, you either need to the notes that relate the run numbers with the behavioral timestamps, or you need to correspond the AcquisitionTime (in the json files, created by dcm2niix) with the behavioral timestamps. For example, the log `Behavior/Eddy_Curve_Tracing_StimSettings_CTShapedCheckerboard_Spinoza_3T_20180117T1207-T1215.49` matches with the run 8, which has an acquisition time of `12:08:54.410000`. If there are no json available you can (re)create them with `dcm2niix -b o -o <outputfolder> <location of dicom images>/*`. In addition, the json in the behavioral can tell you under what run number the behavioral session was logged. If you did everything correctly, did should match the run number in the scan's filename.
+   * Base this script on an already existing script or. This script tends to improve/change with time. To find the most recent one, you can try calling `find -maxdepth 3 -name "copy-to-bids.sh" -exec ls -lt {} +` from the `Data_raw` directory. There is also a template version `NHP-BIDS/code/copy-to-bids_template_ck.sh` but it may be outdated.
+   * If you have trouble matching imaging data to log-files (e.g., because something went wrong with the filenames) you can either check your written notes notes, or you need can try matching up the AcquisitionTime (in the json files, created by dcm2niix) with the behavioral timestamps. If there are no json available you can (re)create them with `dcm2niix -b y -o <outputfolder> <location of dicom images>/*`. In addition, the json in the behavioral log folder can tell you under what run number the behavioral session was logged. If you did everything correctly, this should match the run number in the scan's filename.
 
-2. Modify `code/bids_templates.py` to add the new session (and subject, if needed).
-   * May be replaced completely by csv list in the future. [CK: working on getting rid of this...]
+2. Create or modify a csv file that lists the *subject, session*, *run*, and *datatype* to process (see `SubSesRun.csv` for an example of how to format this). These csv files can be kept in the csv directory. NB! In all workflows except for `bids_minimal_processing`, the *run* column specifies which functional runs will be processed. In `bids_minimal_processing`, all image files are processed and the *run* column specifies which eventlog csv files will be processed.
 
-3. Create or modify a csv file that lists the *subject, session* and *runs* to process (see `SubSesRun.csv` for an example). These csv files can be kept in the csv directory. NB! *runs* are not used at this stage, so defining 1 run per session suffices.
-
-4. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
-   * NB! All sessions should have the same types of scans (specify which with `--types`, see `help` for details)
-   * If you are not processing standard curve-tracing data use the `--ignore_events` flag
+3. Run `./code/bids_minimal_preprocessing.py` from your BIDS root directory (this file also has instructions in the file header).
+   * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.    
+   * The `--ignore_events` flag causes the workflow to skip processing the eventlog csv files for all runs. If this flag is not used, the eventlogs will be processed for all runs specified in the csv file.
    * example: `clear && ./code/bids_minimal_processing.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-minproc.txt`
    * help: `./code/bids_minimal_processing.py --help`
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/minproc/minproc_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file. Make sure to load freesurfer, FSL using ``module load freesurfer``, ``module load fsl``.
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/minproc/minproc_SESSION.sh`, where SESSION defines which session or run to process. A command like the above should be part of the job-file. Make sure to load freesurfer, FSL using ``module load freesurfer``, ``module load fsl``.
 
-5. Run `./code/resample_isotropic_workflow.py` to resample all volumes to 1.0 mm isotropic voxels
-   * example: `clear && ./code/resample_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample.txt`
-   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/isoresample/isoresample_SESSION.sh`, where SESSION defines which session / run to process. Command like the above should be part of the job-file.
+4. Run `./code/bids_resample_isotropic_workflow.py` to resample all volumes to 1.0 mm isotropic voxels
+   * example: `clear && ./code/bids_resample_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample.txt`
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/isoresample/isoresample_SESSION.sh`, where SESSION defines which session or run to process. Command like the above should be part of the job-file.
    
-   Run `./code/resample_hiresanat_isotropic_workflow.py` if you also want the high-resolution 0.6 mm isotropic anatomical images
-   * example: `clear && ./code/resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
+5. Run `./code/bids_resample_hiresanat_isotropic_workflow.py` if you also want the high-resolution 0.6 mm isotropic anatomical images
+   * example: `clear && ./code/bids_resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/isoresample/isoresample_hires_SESSION.sh`, where SESSION defines which session / run to process. Command like the above should be part of the job-file.
 
-6. Run `./code/preprocessing_workflow.py`
-   * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you. For undistortion instructions check <TO_BE_WRITTEN> 
-   * example: `clear && ./code/preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
+6. Run `./code/bids_preprocessing_workflow.py`
+   * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>/`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you.
+   * It is no longer necessary to create separate workflows for subjects (because of different individual references). The generic workflow now looks for references in subject specific folders in `manual-masks`. If you work with a new subject, you should create such a folder. In that case you should follow the filename pattern of the existing references and only replace the subject name. The workflow should then also work for the new subject.
+   * example: `clear && ./code/bids_preprocessing_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-preproc.txt`
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
    * NB! It is possible that the workflow crashes with a messsage that starts with `RuntimeError: Command: convert_xfm -omat ....` This is an FSL bug in which a flirt operation creates a hexadecimal matrix file instead of a decimal one. You can fix this with the script `./helper_scripts/hex2dec.sh` and re-run the workflow.
 
-7. Run `./code/modelfit_workflow.py`
+7. Run `./code/bids_modelfit_workflow.py`
    * This script requires the `--contrasts` parameter. This depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes a python module name, you cannot use dashes or spaces.
    * The optional argument `--resultfld` allows you to define the name of the output folder and working directories for this analysis. Re-running something with the same name uses existing intermediate results from working directories and overwrites existing output directories. Using a unique folder name starts the analysis in a new working directory and creates a unique new output folder. If you do not include this argument, it will default to the stem of the specified csv-filename so if you use `checkerboard-ct-mapping.csv` this would put your results in `checkerboard-ct-mapping`. Again, if this folder exists the workflow will re-use intermediate results and overwriting the final result folder. 
    * The optional argument `--hrf` alows you to specify a custom hrf saved as `./code/hrf/CUSTOM-HRF.txt`. This should be a single column text file with a sample frequency of 0.05s/sample. For more complicated FLOBS-style multi-function HRF's you can also specify multiple columns. If this argument is omitted, FSL's default double-gamma canonical HRF is used. This is often not a bad approximation, but a specific monkey HRF can be a little faster (there is code in Tracker-MRI to run an experiment that allows estimating the HRF on an individual basis).
