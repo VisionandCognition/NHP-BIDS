@@ -33,9 +33,12 @@ def add_missing_stim_info(inp, events, stim_dir):
             df = pd.read_csv(csv)
             stim[task] = df[task_stim_col[task]]
         except:
+            print('No extra stim-info found in %s.' %csv)
+            '''
             print('Attempted to read %s. Copy stimulus csv to this '
                   'location if additional stimulus information is needed.' %
                   csv)
+            '''
             pass
 
     already_contains_stim_info = len(
