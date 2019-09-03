@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 
-# http://nipype.readthedocs.io/en/latest/users/examples/fmri_fsl.html
-# http://miykael.github.io/nipype-beginner-s-guide/firstSteps.html#input-output-stream
+""" 
+This script resamples MRI image files to isotropic voxels.
+It assumes that data is in BIDS format and that the script
+bids_minimal_processing_workflow.py has been run. 
+
+After this, you should/could run:
+- bids_reample_hires_isotropic_workflow.py
+  >> resamples the high resolution anatomicals to 0.6 mm isotropis
+  >> only use this when these files are actually present
+- bids_preprocessing_workflow.py
+  >> performs preprocessing steps like normalisation and motion correction
+- bids_modelfit_workflow.py
+  >> Fits a GLM and outputs statistics
+
+Questions & comments: c.klink@nin.knaw.nl
+"""
+
 import os                                    # system functions
-
+import pandas as pd                          # data juggling
 import nipype.interfaces.io as nio           # Data i/o
-import nipype.interfaces.utility as niu      # utility
-import nipype.pipeline.engine as pe          # pypeline engine
-import nipype.algorithms.modelgen as model   # model generation
-import nipype.algorithms.rapidart as ra      # artifact detection
 from nipype.interfaces.utility import IdentityInterface
-
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
 
-def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
-    inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id',
-        'session_id',
-    ]), name="input")
-    
-    #import bids_templates as bt
-
+def run_workflow(session=None, csv_file=None):
     from nipype import config
     config.enable_debug_mode()
 
@@ -43,37 +46,40 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
     infosource = Node(IdentityInterface(fields=[
         'subject_id',
         'session_id',
+        'datatype',
     ]), name="infosource")
 
     if csv_file is not None:
-        reader = niu.CSVReader()
-        reader.inputs.header = True
-        reader.inputs.in_file = csv_file
-        out = reader.run()
+        # Read csv and use pandas to set-up image and ev-processing
+        df = pd.read_csv(csv_file)
+        # init lists
+        sub_img=[]; ses_img=[]; dt_img=[]
 
-        infosource.iterables = [
-            ('session_id', out.outputs.session),
-            ('subject_id', out.outputs.subject),
-        ]
+        # fill lists to iterate mapnodes
+        for index, row in df.iterrows():
+            for dt in row.datatype.strip("[]").split(" "):
+                sub_img.append(row.subject)
+                ses_img.append(row.session)
+                dt_img.append(dt)
 
-        infosource.synchronize = True
-    '''SHOULD BE ABLE TO REMOVE THIS
-    else:  # neglected code
-        if session is not None:
-            session_list = [session]  # ['20170511']
+        # check if the file definitions are ok
+        if len(dt_img) > 0:
+            print('There are images to process. Will continue.')
         else:
-            session_list = bt.session_list  # ['20170511']
+            print('No images specified. Check your csv-file.')
 
         infosource.iterables = [
-            ('session_id', session_list),
-            ('subject_id', bt.subject_list),
-        ]
-    '''
+            ('session_id', ses_img), 
+            ('subject_id', sub_img), 
+            ('datatype', dt_img)
+            ]
+        infosource.synchronize = True
+    else:
+        print('No csv-file specified. Cannot continue.')
 
     # SelectFiles
     templates = {
-        # 'image': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
-        'image': 'sub-{subject_id}/ses-{session_id}/*/'
+        'image': 'sub-{subject_id}/ses-{session_id}/{datatype}/'
         'sub-{subject_id}_ses-{session_id}_*.nii.gz',
     }
     inputfiles = Node(
@@ -125,6 +131,7 @@ def run_workflow(session=None, csv_file=None, use_pbs=False, use_slurm=False):
         (infosource, inputfiles,
          [('subject_id', 'subject_id'),
           ('session_id', 'session_id'),
+          ('datatype', 'datatype'),
           ])])
 
     # --- Convert to 1m isotropic voxels
@@ -171,24 +178,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Perform isotropic resampling for NHP fMRI.'
             ' Run bids_minimal_processing first.')
-    parser.add_argument('-s', '--session',
-                        type=str,
-                        help='Session ID, e.g. 20170511.'
-                        )
     parser.add_argument('--csv',
                         dest='csv_file',
                         default=None,
                         help='CSV file with at least subjects and sessions columns.'
-                        )
-    parser.add_argument('--pbs',
-                        dest='use_pbs',
-                        action='store_true',
-                        help='Whether to use pbs plugin.'
-                        )
-    parser.add_argument('--slurm',
-                        dest='use_slurm',
-                        action='store_true',
-                        help='Whether to use slurm plugin.'
                         )
 
     args = parser.parse_args()

@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
 
-""" The following should be ran before this file:
+""" 
+This script performs preprocessing on fMRI data. It assumes 
+that data is in BIDS format and that the data has undergone 
+minimal processing and resampling.
 
-1. bids_minimal_processing.py
-2. resample_isotropic_workflow.py (to-do: should be included in this workflow)
+After this, you can run:
+- bids_modelfit_workflow.py
+  >> Fits a GLM and outputs statistics
 
-After this, modelfit_workflow.py should be ran (may be renamed).
-
+Questions & comments: c.klink@nin.knaw.nl
 """
-
-from builtins import range
 
 import nipype.interfaces.io as nio           # Data i/o
 import nipype.pipeline.engine as pe          # pypeline engine
-import nipype.algorithms.modelgen as model   # model specification
-from nipype.interfaces.base import Bunch
-from nipype.interfaces.base import Undefined # to disable use_norm
+
 import os                                    # system functions
 import argparse
+import pandas as pd
 
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.utility as util     # utility
 from nipype.workflows.fmri.fsl.preprocess import create_susan_smooth
 from nipype import LooseVersion
 
-# import transform_manualmask
-# import motioncorrection_workflow
-# import undistort_workflow
-import subcode.transform_manualmask as transform_manualmask
-import subcode.motioncorrection_workflow as motioncorrection_workflow
-import subcode.undistort_workflow as undistort_workflow
+import subcode.bids_transform_manualmask as transform_manualmask
+import subcode.bids_motioncorrection_workflow as motioncorrection_workflow
+import subcode.bids_undistort_workflow as undistort_workflow
 
 import nipype.interfaces.utility as niu
 
@@ -73,17 +70,17 @@ def create_workflow():
         # instead, everything is nonlinearly alligned to a reference
         # you should probably 'just' undistort this reference func
 
-        'ref_manual_fmapmask':
-        'manual-masks/sub-{subject_id}/fmap/'
-        'sub-{subject_id}_ref_fmap_mask_res-1x1x1.nii.gz',
+        # 'ref_manual_fmapmask':
+        # 'manual-masks/sub-{subject_id}/fmap/'
+        # 'sub-{subject_id}_ref_fmap_mask_res-1x1x1.nii.gz',
 
-        'ref_fmap_magnitude':
-        'manual-masks/sub-{subject_id}/fmap/'
-        'sub-{subject_id}_ref_fmap_magnitude1_res-1x1x1.nii.gz',
+        # 'ref_fmap_magnitude':
+        # 'manual-masks/sub-{subject_id}/fmap/'
+        # 'sub-{subject_id}_ref_fmap_magnitude1_res-1x1x1.nii.gz',
 
-        'ref_fmap_phasediff':
-        'manual-masks/sub-{subject_id}/fmap/'
-        'sub-{subject_id}_ref_fmap_phasediff_res-1x1x1.nii.gz',
+        # 'ref_fmap_phasediff':
+        # 'manual-masks/sub-{subject_id}/fmap/'
+        # 'sub-{subject_id}_ref_fmap_phasediff_res-1x1x1.nii.gz',
 
         # 'fmap_phasediff':
         # 'derivatives/resampled-isotropic-1mm/'
@@ -111,7 +108,7 @@ def create_workflow():
         'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':
-        'manual-masks/sub-{subject_id}/anat/'
+        'manual-masks/sub-{subject_id}/func/'
         'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         # T1 ========
@@ -350,7 +347,7 @@ def create_workflow():
     # --------------------------------------------------------
 
     # Performing motion correction to a reference that is undistorted,
-    # so b0_unwarp is currently not needed
+    # So b0_unwarp is currently not needed or used.
     if False:
         b0_unwarp = undistort_workflow.create_workflow()
 
@@ -413,118 +410,6 @@ def create_workflow():
                ]),
              ])
 
-    # |~) _  _ . __|_ _  _  _|_ _   |~) _  |` _  _ _  _  _ _
-    # |~\(/_(_||_\ | (/_|    | (_)  |~\(/_~|~(/_| (/_| |(_(/_
-    #        _|
-    # Register all functionals to common reference
-    # --------------------------------------------------------
-    if False:  # this is now done during motion correction
-        # FLIRT cost: intermodal: corratio, intramodal:
-        # least squares and normcorr
-        reg_to_ref = pe.MapNode(  # intra-modal
-            # some runs need scaling along the anterior-posterior direction
-            interface=fsl.FLIRT(dof=12, cost='normcorr'),
-            name='reg_to_ref',
-            iterfield=('in_file', 'in_weight'),
-        )
-        refEPI_to_refT1 = pe.Node(
-            # some runs need scaling along the anterior-posterior direction
-            interface=fsl.FLIRT(dof=12, cost='corratio'),
-            name='refEPI_to_refT1',
-        )
-        # combine func -> ref_func and ref_func -> ref_T1
-        reg_to_refT1 = pe.MapNode(
-            interface=fsl.ConvertXFM(concat_xfm=True),
-            name='reg_to_refT1',
-            iterfield=('in_file'),
-        )
-
-        reg_funcs = pe.MapNode(
-            interface=fsl.preprocess.ApplyXFM(),
-            name='reg_funcs',
-            iterfield=('in_file', 'in_matrix_file'),
-        )
-        reg_funcmasks = pe.MapNode(
-            interface=fsl.preprocess.ApplyXFM(),
-            name='reg_funcmasks',
-            iterfield=('in_file', 'in_matrix_file')
-        )
-
-        def deref_list(x):
-            assert len(x) == 1
-            return x[0]
-
-        featpreproc.connect(
-            [
-             (b0_unwarp, reg_to_ref,  # --> reg_to_ref, (A)
-              [
-               ('out.funcs', 'in_file'),
-               ('out.funcmasks', 'in_weight'),
-              ]),
-             (b0_unwarp_ref, reg_to_ref,
-              [
-               (('out.funcs', deref_list), 'reference'),
-               (('out.funcmasks', deref_list), 'ref_weight'),
-              ]),
-
-             (b0_unwarp_ref, refEPI_to_refT1,  # --> refEPI_to_refT1 (B)
-              [
-               (('out.funcs', deref_list), 'in_file'),
-               (('out.funcmasks', deref_list), 'in_weight'),
-              ]),
-             (inputfiles, refEPI_to_refT1,
-              [
-               ('ref_t1', 'reference'),
-               ('ref_t1mask', 'ref_weight'),
-              ]),
-
-             (reg_to_ref, reg_to_refT1,  # --> reg_to_refT1 (A*B)
-              [
-               ('out_matrix_file', 'in_file'),
-              ]),
-             (refEPI_to_refT1, reg_to_refT1,
-              [
-               ('out_matrix_file', 'in_file2'),
-              ]),
-
-             (reg_to_refT1, reg_funcs,  # --> reg_funcs
-              [
-               # ('out_matrix_file', 'in_matrix_file'),
-               ('out_file', 'in_matrix_file'),
-              ]),
-             (b0_unwarp, reg_funcs,
-              [
-               ('out.funcs', 'in_file'),
-              ]),
-             (b0_unwarp_ref, reg_funcs,
-              [
-               (('out.funcs', deref_list), 'reference'),
-              ]),
-
-             (reg_to_refT1, reg_funcmasks,  # --> reg_funcmasks
-              [
-               # ('out_matrix_file', 'in_matrix_file'),
-               ('out_file', 'in_matrix_file'),
-              ]),
-             (b0_unwarp, reg_funcmasks,
-              [
-               ('out.funcmasks', 'in_file'),
-              ]),
-             (b0_unwarp_ref, reg_funcmasks,
-              [
-               (('out.funcs', deref_list), 'reference'),
-              ]),
-
-             (reg_funcs, outputfiles,
-              [
-               ('out_file', 'common_ref.func'),
-              ]),
-             (reg_funcmasks, outputfiles,
-              [
-               ('out_file', 'common_ref.funcmask'),
-              ]),
-            ])
-
     #  |\/| _ _|_. _  _    _   _|_|. _  _ _
     #  |  |(_) | |(_)| |  (_)|_|| ||(/_| _\
     #
@@ -534,21 +419,10 @@ def create_workflow():
     # --------------------------------------------------------
 
     # Dilate mask
-    """
-    Dilate the mask
-    """
-    if False:
-        dilatemask = pe.MapNode(interface=fsl.ImageMaths(suffix='_dil',
-                                                         op_string='-dilF'),
-                                iterfield=['in_file'],
-                                name='dilatemask')
-        featpreproc.connect(reg_funcmasks, 'out_file', dilatemask, 'in_file')
-    else:
-        dilatemask = pe.Node(
+    dilatemask = pe.Node(
             interface=fsl.ImageMaths(suffix='_dil', op_string='-dilF'),
             name='dilatemask')
-        featpreproc.connect(inputfiles, 'ref_funcmask', dilatemask, 'in_file')
-
+    featpreproc.connect(inputfiles, 'ref_funcmask', dilatemask, 'in_file')
     featpreproc.connect(dilatemask, 'out_file', outputfiles, 'dilate_mask')
 
     funcbrains = pe.MapNode(
@@ -679,12 +553,7 @@ def create_workflow():
     smooth = create_susan_smooth(separate_masks=False)
     featpreproc.connect(inputnode, 'fwhm', smooth, 'inputnode.fwhm')
 
-    # featpreproc.connect(b0_unwarp, 'out.funcs', smooth, 'inputnode.in_files')
-    if False:
-        featpreproc.connect(reg_funcs, 'out_file',
-                            smooth, 'inputnode.in_files')
-    else:
-        featpreproc.connect(mc, 'mc.out_file',
+    featpreproc.connect(mc, 'mc.out_file',
                             smooth, 'inputnode.in_files')
 
     featpreproc.connect(dilatemask, 'out_file',
@@ -825,13 +694,14 @@ def create_workflow():
 #                      |_|    |_|_| |_|
 #
 # ===================================================================
-#def run_workflow(run_num=None, session=None, csv_file=None, use_pbs=False, use_slurm=False):
-def run_workflow(run_num=None, ref_subj=None, csv_file=None):
+
+
+def run_workflow(csv_file, fwhm, HighPass):
     # Using the name "level1flow" should allow the workingdirs file to be used
     #  by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
-
+    
     featpreproc = create_workflow()
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -840,36 +710,27 @@ def run_workflow(run_num=None, ref_subj=None, csv_file=None):
         'run_id',
     ]), name="input")
     
-    #import bids_templates as bt
-
     if csv_file is not None:
-        reader = niu.CSVReader()
-        reader.inputs.header = True
-        reader.inputs.in_file = csv_file
-        out = reader.run()
-        subject_list = out.outputs.subject
-        session_list = out.outputs.session
-        run_list = out.outputs.run
+      # Read csv and use pandas to set-up image and ev-processing
+      df = pd.read_csv(csv_file)
+      # init lists
+      sub_img=[]; ses_img=[]; run_img=[]
+      
+      # fill lists to iterate mapnodes
+      for index, row in df.iterrows():
+        for r in row.run.strip("[]").split(" "):
+            sub_img.append(row.subject)
+            ses_img.append(row.session)
+            run_img.append(r)
 
-        inputnode.iterables = [
-            ('subject_id', subject_list),
-            ('session_id', session_list),
-            ('run_id', run_list),
+      inputnode.iterables = [
+            ('subject_id', sub_img),
+            ('session_id', ses_img),
+            ('run_id', run_img),
         ]
-        inputnode.synchronize = True
-    '''SHOULD BE ABLE TO REMOVE THIS
+      inputnode.synchronize = True
     else:
-        subject_list = bt.subject_list
-        session_list = [session] if session is not None else bt.session_list
-        assert run_num is not None
-        run_list = ['%02d' % run_num]
-
-        inputnode.iterables = [
-            ('subject_id', subject_list),
-            ('session_id', session_list),
-            ('run_id', run_list),
-        ]
-    '''
+      print("No csv-file specified. Don't know what data to process.")
 
     templates = {
         'funcs':
@@ -896,48 +757,27 @@ def run_workflow(run_num=None, ref_subj=None, csv_file=None):
           ])
     ])
 
-    featpreproc.inputs.inputspec.fwhm = 2.0     # spatial smoothing
-    featpreproc.inputs.inputspec.highpass = 50  # FWHM in seconds
+    featpreproc.inputs.inputspec.fwhm = fwhm     # spatial smoothing (default=2)
+    featpreproc.inputs.inputspec.highpass = HighPass  # FWHM in seconds (default=50)
     # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph()
-    '''
-    if use_pbs:
-        workflow.run(plugin='PBS', plugin_args={
-                'template': '/home/pcklink/NHP-BIDS/code/pbs/template_ck.sh'})
-    elif use_slurm:
-        workflow.run(plugin='SLURM', plugin_args={
-                'template': '/home/pcklink/NHP-BIDS/code/lisa/template_ck.sh'})
-    else:
-        workflow.run()
-    '''
-
+    workflow.run()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Perform pre-processing step for NHP fMRI.')
-    '''
-    parser.add_argument('-r', '--run',
-                        dest='run_num',
-                        type=int,
-                        help='Run number, e.g. 1.')
-    parser.add_argument('-s', '--session',
-                        type=str,
-                        help='Session ID, e.g. 20170511.')
-    '''
     parser.add_argument('--csv',
                         dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
-    '''
-    parser.add_argument('--pbs',
-                        dest='use_pbs', action='store_true',
-                        help='Whether to use pbs plugin.')
-    parser.add_argument('--slurm',
-                        dest='use_slurm', action='store_true',
-                        help='Whether to use slurm plugin.')
-    '''
-
+    parser.add_argument('--fwhm',
+                        dest='fwhm', default=2.0,
+                        help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
+    parser.add_argument('--HighPass',
+                        dest='HighPass', default=50,
+                        help='Set high pass filter in seconds. (default = 50 s)')
+    
     args = parser.parse_args()
 
     run_workflow(**vars(args))
