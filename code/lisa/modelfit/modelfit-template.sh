@@ -27,5 +27,7 @@ cd ~/NHP-BIDS
 # modelfit
 ./code/bids_modelfit_workflow.py \
 	--csv ./csv/SUBJECT-curvetracing-modelfit-extra.csv \
-	--contrast curvetracing |& tee \
-	./logs/ct/sub-danny/log-SUBJECT-curvetracing-modelfit-YYYYMMDD.txt
+	--hrf ./code/hrf/HRF-Danny-fsl \
+	--resultfld RES_FLD \
+	--contrast curvetracing \
+	|& tee 	./logs/ct/sub-danny/log-SUBJECT-curvetracing-modelfit-YYYYMMDD.txt
