@@ -2,17 +2,17 @@
 .*.swp
 
 # Directories
-/workingdirs/
-/scratch/
-/job-logs/
-/logs/
-/manual-masks/sub*
+workingdirs/
+scratch/
+job-logs/
+logs/
+manual-masks/sub*
 
 # symlinks
-/derivatives
-/sourcedata
-/sub-danny
-/sub-eddy
+derivatives
+sourcedata
+sub-danny
+sub-eddy
 
 
 # Binary files
