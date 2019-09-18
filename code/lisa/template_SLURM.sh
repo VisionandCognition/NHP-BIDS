@@ -13,8 +13,14 @@ echo the allocated nodes are: $SLURM_JOB_NODELIST
 # ==== the module environment on LISA changes on 1 October 2019 ====
 # more info: https://userinfo.surfsara.nl/documentation/new-module-environment-lisa-cartesius
 # module load 2019 # use the new environment and modules
-# module load pre2019 # use old environment (only do this if you need software modules that aren't present in 2019)
+# module load pre2019 # use old environment 
+# >> only use pre2019 if you need software modules that aren't present in 2019
+# >> currently, none of the neuroimaging modules have been ported
+# >> stick with pre2019 for now
 # ============================================================================
+
+module load surf-devel
+module load pre2019
 
 module load eb
 module load freesurfer
