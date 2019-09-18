@@ -7,7 +7,7 @@ def process_events(event_log, TR, in_nvols):
 
     if tmat.group(1) == 'ctcheckerboard':  # task from filename
         from timeevents.ctcheckerboard import process_events as process_events_for_task
-    elif tmat.group(1) == 'curvetracing' or tmat.group(1) == 'ct-inccentral':
+    elif tmat.group(1) == 'curvetracing' or tmat.group(1) == 'curvetracinginccentral':
         from timeevents.curvetracing import process_events as process_events_for_task
     elif tmat.group(1) == 'figureground':
         from timeevents.figureground import process_events as process_events_for_task    

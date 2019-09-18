@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-"""
-=========================
-fMRI Workflow for NHP
-=========================
+""" 
+This script performs modelfits on preprocessed fMRI data. It assumes 
+that data is in BIDS format and that the data has undergone 
+minimal processing, resampling, and preprocessing.
 
-See:
-* https://github.com/nipy/nipype/blob/master/examples/fmri_fsl_reuse.py
-* http://nipype.readthedocs.io/en/latest/users/examples/fmri_fsl_reuse.html
+Questions & comments: c.klink@nin.knaw.nl
 """
 
 from __future__ import print_function
@@ -16,6 +14,8 @@ from builtins import str
 from builtins import range
 
 import os                                     # system functions
+import pandas as pd                           
+
 import nipype.interfaces.io as nio            # Data i/o
 import nipype.interfaces.fsl as fsl           # fsl
 from nipype.interfaces import utility as niu  # Utilities
@@ -24,7 +24,6 @@ import nipype.algorithms.modelgen as model    # model generation
 
 import nipype.workflows.fmri.fsl as fslflows
 from subcode.filter_numbers import FilterNumsTask
-from nipype import config, logging
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
@@ -36,10 +35,11 @@ def get_csv_stem(csv_file):
     return csv_stem
 
 
-def create_workflow(contrasts, out_label, hrf, combine_runs=True):
+def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
         './workingdirs/level1flow/' + out_label)
+
     # ===================================================================
     #                  _____                   _
     #                 |_   _|                 | |
@@ -70,8 +70,6 @@ def create_workflow(contrasts, out_label, hrf, combine_runs=True):
         import os
         import re
 
-        # if input.synchronize = True, then in_files and in_funcs will
-        #  be single strings
         assert not isinstance(in_files, str), "in_files must be list"
         assert not isinstance(in_funcs, str), "in_funcs must be list"
 
@@ -219,7 +217,6 @@ def create_workflow(contrasts, out_label, hrf, combine_runs=True):
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
-
         # (r'/_addmean[0-9]+/', r'/func/'),
         # (r'/_dilatemask[0-9]+/', r'/func/'),
         # (r'/_funcbrain[0-9]+/', r'/func/'),
@@ -260,10 +257,9 @@ def create_workflow(contrasts, out_label, hrf, combine_runs=True):
     """
 
     featinput = level1_workflow.get_node('modelfit.inputspec')
-    # featinput.iterables = ('fwhm', [5., 10.])
-    featinput.inputs.fwhm = 2.0
+    featinput.inputs.fwhm = fwhm
 
-    hpcutoff_s = 50.  # FWHM in seconds
+    hpcutoff_s = HighPass  # FWHM in seconds
     TR = 2.5
     hpcutoff_nvol = hpcutoff_s / 2.5  # FWHM in volumns
 
@@ -459,10 +455,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-
-#def run_workflow(csv_file, hrf, res_fld, use_pbs,
-#                 use_slurm, contrasts_name, template):
-def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
+def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -484,7 +477,6 @@ def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
           'interface_level': 'INFO',
           }})
     logging.update_logging(config)
-
     config.enable_debug_mode()
 
     # redundant with enable_debug_mode() ...
@@ -510,7 +502,7 @@ def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, out_label, hrf)
+    modelfit = create_workflow(contrasts, out_label, hrf, fwhm, HighPass)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -520,20 +512,27 @@ def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
 
     assert csv_file is not None, "--csv argument must be defined!"
 
-    reader = niu.CSVReader()
-    reader.inputs.header = True
-    reader.inputs.in_file = csv_file
-    out = reader.run()
-    subject_list = out.outputs.subject
-    session_list = out.outputs.session
-    run_list = out.outputs.run
+    if csv_file is not None:
+      # Read csv and use pandas to set-up image and ev-processing
+      df = pd.read_csv(csv_file)
+      # init lists
+      sub_img=[]; ses_img=[]; run_img=[]
+      
+      # fill lists to iterate mapnodes
+      for index, row in df.iterrows():
+        for r in row.run.strip("[]").split(" "):
+            sub_img.append(row.subject)
+            ses_img.append(row.session)
+            run_img.append(r)
 
-    inputnode.iterables = [
-        ('subject_id', subject_list),
-        ('session_id', session_list),
-        ('run_id', run_list),
-    ]
-    inputnode.synchronize = True
+      inputnode.iterables = [
+            ('subject_id', sub_img),
+            ('session_id', ses_img),
+            ('run_id', run_img),
+        ]
+      inputnode.synchronize = True
+    else:
+      print("No csv-file specified. Don't know what data to process.")
 
     templates = {
         'funcs':
@@ -589,9 +588,6 @@ def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
 
     join_input = pe.JoinNode(
         niu.IdentityInterface(fields=[
-            # 'subject_id',
-            # 'session_id',
-            # 'run_id',
             'funcs',
             'highpass',
             'motion_parameters',
@@ -635,37 +631,23 @@ def run_workflow(ref_subj, csv_file, hrf, res_fld, contrasts_name, template):
           ]),
     ])
 
-    modelfit.inputs.inputspec.fwhm = 2.0
-    modelfit.inputs.inputspec.highpass = 50
+    modelfit.inputs.inputspec.fwhm = fwhm     # spatial smoothing (default=2)
+    modelfit.inputs.inputspec.highpass = HighPass  # FWHM in seconds (default=50)
     modelfit.write_graph(simple_form=True)
     modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
 
-    workflow.stop_on_first_crash = True
+    # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
-
-    
-    '''
-    if use_pbs:
-        workflow.run(plugin='PBS',
-                     plugin_args={'template': os.path.expanduser(template)})
-    elif use_slurm:
-        workflow.run(plugin='SLURM',
-                     plugin_args={'template': os.path.expanduser(template)})
-    else:
-        workflow.run()
-    '''
+    workflow.run()
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(
             description='Analyze model fit.')
-    parser.add_argument('--ref_subj',
-                        dest='ref_subj', default=None,
-                        help='Specify which subject so the workflow can pick the correct references')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--contrasts', dest='contrasts_name', required=True,
@@ -679,13 +661,12 @@ if __name__ == '__main__':
                         'Default is the stem of the csv filename')
     parser.add_argument('--hrf', dest='hrf', default='fsl_doublegamma',
                         help='Custom HRF file in fsl format to be used in GLM')
-    '''
-    parser.add_argument('--pbs', dest='use_pbs', action='store_true',
-                        help='Whether to use pbs plugin.')
-    parser.add_argument('--slurm', dest='use_slurm', action='store_true',
-                        help='Whether to use slurm plugin.')
-    parser.add_argument('--template', default='~/NHP-BIDS/pbs-template.sh',
-                        help='PBS template')
-    '''
+    parser.add_argument('--fwhm',
+                        dest='fwhm', default=2.0,
+                        help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
+    parser.add_argument('--HighPass',
+                        dest='HighPass', default=50,
+                        help='Set high pass filter in seconds. (default = 50 s)')
+
     args = parser.parse_args()
     run_workflow(**vars(args))
