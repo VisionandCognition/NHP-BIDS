@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import nipype.interfaces.utility as niu
 
-
 def process_events(event_log, TR, in_nvols):
     # necessary for importing with NiPype
     import pandas as pd
