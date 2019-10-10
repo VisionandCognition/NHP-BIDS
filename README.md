@@ -45,7 +45,7 @@ You should also make new files accessible to all 'cortalg' group members by addi
 umask u+rwx g+rwx
 ```
 
-For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/BIDS-NHP-on-Lisa.md
+For a more comprehensive explanation of running analyses on LISA see https://github.com/VisionandCognition/Process-NHP-MRI/blob/master/docs/NHP-BIDS-on-Lisa.md
 
 
 Running the Pipeline
