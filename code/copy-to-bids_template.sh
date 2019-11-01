@@ -150,10 +150,10 @@ else
     for i in "${!T1s[@]}"; do
         runnr=$((runnr + 1))
         base=$(basename ${T1s[$i]} .nii.gz)
-        cp -n ${SF}/${base}.nii.gz "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr[$i]}_T1w.nii.gz"
+        cp -n ${SF}/${base}.nii.gz "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr}_T1w.nii.gz"
         # if there are json files copy them too
         if [ -f ${SF}/${base}.json ]; then
-            cp -n ${SF}/${base}.json "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr[$i]}_T1w.json"
+            cp -n ${SF}/${base}.json "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr}_T1w.json"
         fi
     done
 fi
@@ -167,10 +167,10 @@ else
     for i in "${!T2s[@]}"; do
         runnr=$((runnr + 1))
         base=$(basename ${T2s[$i]} .nii.gz)
-        cp -n ${SF}/${base}.nii.gz "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr[$i]}_T2w.nii.gz"
+        cp -n ${SF}/${base}.nii.gz "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr}_T2w.nii.gz"
         # if there are json files copy them too
         if [ -f ${SF}/${base}.json ]; then
-            cp -n  ${SF}/${base}.json "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr[$i]}_T2w.json"
+            cp -n  ${SF}/${base}.json "$BIDS_UNPROC_DEST/anat/${bsub}_${bses}_acq-nosense_run-${runnr}_T2w.json"
         fi
     done
 fi

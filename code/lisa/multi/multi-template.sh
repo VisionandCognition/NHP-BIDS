@@ -10,6 +10,9 @@ echo submitted by $SLURM_JOB_ACCOUNT
 echo from $SLURM_SUBMIT_DIR
 echo the allocated nodes are: $SLURM_JOB_NODELIST
 
+# module load surf-devel
+module load pre2019
+
 module load eb
 module load freesurfer
 module load fsl/5.08
