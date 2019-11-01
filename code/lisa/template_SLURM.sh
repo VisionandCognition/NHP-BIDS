@@ -19,7 +19,7 @@ echo the allocated nodes are: $SLURM_JOB_NODELIST
 # >> stick with pre2019 for now
 # ============================================================================
 
-module load surf-devel
+# module load surf-devel
 module load pre2019
 
 module load eb
