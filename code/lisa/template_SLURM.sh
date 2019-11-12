@@ -33,15 +33,30 @@ umask u+rwx,g+rwx
 
 export FSLOUTPUTTYPE=NIFTI_GZ
 
-cd NHP-BIDS
+SUB=MONKEY
+DATE=YYYYMMDD
 
-# tasks to be executed 1
-wait
-# tasks to be executed 2
-wait
-# tasks to be executed 3
+echo ${SUB}-${DATE}
+
+cd ~/NHP-BIDS
+
+# minimal processing
+./code/bids_minimal_processing.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/minproc/log-minproc-${SUB}-${DATE}.txt
 wait
 
-# change group permissions on projectfolder
-# to allow syncing with server and xs4all
-# chmod -R g+rwx /nfs/cortalg 
+# resample iso
+./code/bids_resample_isotropic_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/resample/sub-danny/log-resample_iso-${SUB}-${DATE}.txt
+./code/bids_resample_hires_isotropic_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/resample/sub-danny/log-resample_iso-hires-${SUB}-${DATE}.txt
+wait
+
+# preprocessing
+./code/bids_preprocessing_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/preproc/sub-danny/log-preproc-${SUB}-${DATE}.txt
+
+# modelfit
+# etc
+
+echo 'Reached the end of the job-file'
