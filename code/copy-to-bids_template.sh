@@ -53,7 +53,7 @@ declare -a DWI=(\
 declare -a func_runnr=( 01 02 03 )
 # tasks: 
 # curvetracing / curvetracinginccentral / ctcheckerboard 
-# prf /rest / figgnd / figgndloc / checkerHRF / naturalmovie
+# prf / rest / figgnd / figgndloc / checkerHRF / naturalmovie
 declare -a task=( \
     xxx 
     xxx 
