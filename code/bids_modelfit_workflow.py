@@ -508,6 +508,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
         'subject_id',
         'session_id',
         'run_id',
+        'refsubject_id',
     ]), name='input')
 
     assert csv_file is not None, "--csv argument must be defined!"
@@ -516,7 +517,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
       # Read csv and use pandas to set-up image and ev-processing
       df = pd.read_csv(csv_file)
       # init lists
-      sub_img=[]; ses_img=[]; run_img=[]
+      sub_img=[]; ses_img=[]; run_img=[]; ref_img=[]
       
       # fill lists to iterate mapnodes
       for index, row in df.iterrows():
@@ -524,11 +525,16 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
             sub_img.append(row.subject)
             ses_img.append(row.session)
             run_img.append(r)
+            if 'refsubject' in df.columns:
+              ref_img.append(row.refsubject)
+            else:
+              ref_img.append(row.subject)
 
       inputnode.iterables = [
             ('subject_id', sub_img),
             ('session_id', ses_img),
             ('run_id', run_img),
+            ('refsubject_id', ref_img),
         ]
       inputnode.synchronize = True
     else:
@@ -565,12 +571,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
             'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
         'ref_func':  # was: manualmask_func_ref
-        'manual-masks/sub-{subject_id}/func/'
-        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-{subject_id}/func/'
-        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
     }  
 
     inputfiles = pe.Node(
@@ -582,6 +588,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
         (inputnode, inputfiles,
          [('subject_id', 'subject_id'),
           ('session_id', 'session_id'),
+          ('refsubject_id', 'refsubject_id'),
           ('run_id', 'run_id'),
           ]),
     ])

@@ -59,6 +59,7 @@ def create_workflow():
         'funcs',
         'subject_id',
         'session_id',
+        'refsubject_id',
         'fwhm',  # smoothing
         'highpass'
     ]), name="inputspec")
@@ -104,12 +105,12 @@ def create_workflow():
         # see the undistort.sh script in:
         # manual-masks/sub-eddy/ses-20170607b/func/
         'ref_func':
-        'manual-masks/sub-{subject_id}/func/'
-        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':
-        'manual-masks/sub-{subject_id}/func/'
-        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         # T1 ========
         # 1 mm iso ---
@@ -123,12 +124,12 @@ def create_workflow():
 
         # 0.5 mm iso ---
         'ref_t1':
-        'manual-masks/sub-{subject_id}/anat/'
-        'sub-{subject_id}_ref_anat_res-0.5x0.5x0.5.nii.gz',
+        'manual-masks/sub-{refsubject_id}/anat/'
+        'sub-{refsubject_id}_ref_anat_res-0.5x0.5x0.5.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/sub-{subject_id}/anat/'
-        'sub-{subject_id}_ref_anat_mask_res-0.5x0.5x0.5.nii.gz',
+        'manual-masks/sub-{refsubject_id}/anat/'
+        'sub-{refsubject_id}_ref_anat_mask_res-0.5x0.5x0.5.nii.gz',
 
         # WEIGHTS ========
         # 'manualweights':
@@ -145,6 +146,7 @@ def create_workflow():
         [(inputnode, inputfiles,
          [('subject_id', 'subject_id'),
           ('session_id', 'session_id'),
+          ('refsubject_id', 'refsubject_id'),
           ])])
 
     # ===================================================================
@@ -229,6 +231,7 @@ def create_workflow():
         [(inputfiles, transmanmask_mc,
          [('subject_id', 'in.subject_id'),
           ('session_id', 'in.session_id'),
+          ('refsubject_id', 'in.refsubject_id'),
           ])])
 
     featpreproc.connect(inputfiles, 'ref_funcmask',
@@ -698,7 +701,7 @@ def create_workflow():
 
 def run_workflow(csv_file, fwhm, HighPass):
     # Using the name "level1flow" should allow the workingdirs file to be used
-    #  by the fmri_workflow pipeline.
+    # by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
     
@@ -708,13 +711,14 @@ def run_workflow(csv_file, fwhm, HighPass):
         'subject_id',
         'session_id',
         'run_id',
+        'refsubject_id',
     ]), name="input")
     
     if csv_file is not None:
       # Read csv and use pandas to set-up image and ev-processing
       df = pd.read_csv(csv_file)
       # init lists
-      sub_img=[]; ses_img=[]; run_img=[]
+      sub_img=[]; ses_img=[]; run_img=[]; ref_img=[]
       
       # fill lists to iterate mapnodes
       for index, row in df.iterrows():
@@ -722,11 +726,16 @@ def run_workflow(csv_file, fwhm, HighPass):
             sub_img.append(row.subject)
             ses_img.append(row.session)
             run_img.append(r)
+            if 'refsubject' in df.columns:
+              ref_img.append(row.refsubject)
+            else:
+              ref_img.append(row.subject)
 
       inputnode.iterables = [
             ('subject_id', sub_img),
             ('session_id', ses_img),
             ('run_id', run_img),
+            ('refsubject_id', ref_img),
         ]
       inputnode.synchronize = True
     else:
@@ -745,11 +754,13 @@ def run_workflow(csv_file, fwhm, HighPass):
     workflow.connect([
         (inputnode, inputfiles,
          [('subject_id', 'subject_id'),
+          ('refsubject_id', 'refsubject_id'),
           ('session_id', 'session_id'),
           ('run_id', 'run_id'),
           ]),
         (inputnode, featpreproc,
          [('subject_id', 'inputspec.subject_id'),
+          ('refsubject_id', 'inputspec.refsubject_id'),
           ('session_id', 'inputspec.session_id'),
           ]),
         (inputfiles, featpreproc,
@@ -777,7 +788,7 @@ if __name__ == '__main__':
     parser.add_argument('--HighPass',
                         dest='HighPass', default=50,
                         help='Set high pass filter in seconds. (default = 50 s)')
-    
+
     args = parser.parse_args()
 
     run_workflow(**vars(args))

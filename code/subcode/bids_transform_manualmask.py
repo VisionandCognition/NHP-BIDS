@@ -43,8 +43,9 @@ def create_workflow():
     inputs = Node(IdentityInterface(fields=[
         'subject_id',
         'session_id',
-        'manualmask',
-        'manualmask_func_ref',
+        'refsubject_id',
+        'ref_funcmask',
+        'ref_func',
         'funcs',
     ]), name='in')
 
@@ -86,6 +87,12 @@ def create_workflow():
 
 
 def run_workflow():
+    '''
+    WE ONLY IMPORT THE CREATE_WORKFLOW FUNCTION FROM THIS FILE.
+    THIS RUN_WORKFLOW FUNCTION IS NOT USED AT ALL
+    >> KEEP IT HERE FOR DEBUGGING PURPOSES
+    '''
+
     # ------------------ Specify variables
     subject_list = ['eddy']
     session_list = ['20170511']
@@ -102,15 +109,13 @@ def run_workflow():
     ]
     # SelectFiles
     templates = {
-        'manualmask':
-        'manual-masks/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-            '_res-1x1x1_manualmask.nii.gz',
+        'ref_func':
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
 
-        'manualmask_func_ref':
-        'manual-masks/sub-eddy/ses-20170511/func/'
-            'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-            '_res-1x1x1_reference.nii.gz',
+        'ref_funcmask':
+        'manual-masks/sub-{refsubject_id}/func/'
+        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
@@ -169,12 +174,12 @@ def run_workflow():
                        ('session_id', 'session_id'),
                        ])])
 
-    wrapper.connect(inputfiles, 'manualmask',
-                    workflow, 'in.manualmask')
+    wrapper.connect(inputfiles, 'ref_funcmask',
+                    workflow, 'in.ref_funcmask')
     wrapper.connect(inputfiles, 'funcs',
                     workflow, 'in.funcs')
-    wrapper.connect(inputfiles, 'manualmask_func_ref',
-                    workflow, 'in.manualmask_func_ref')
+    wrapper.connect(inputfiles, 'ref_func',
+                    workflow, 'in.ref_func')
 
     wrapper.stop_on_first_crash = True
     wrapper.keep_inputs = True
