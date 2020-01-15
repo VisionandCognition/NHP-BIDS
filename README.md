@@ -90,6 +90,7 @@ You specify what data to process with csv-files. See `NHP-BIDS/csv/SubSesRun.csv
    * **NB** It is possible (though rare) that the workflow crashes with a messsage that starts with `RuntimeError: Command: convert_xfm -omat ....` This is an FSL bug in which a flirt operation creates a hexadecimal matrix file instead of a decimal one. You can fix this with the script `./helper_scripts/hex2dec.sh` and re-run the workflow.
 
 7. Run `./code/bids_modelfit_workflow.py`
+**NB** All files in the modelfit are expected to be motion corrected and registered to the same reference space!! A better way to do this is to register motion corrected files to a standard space first. THis is work-in-progress. 
    * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.  
    * Here you can again specify a *refsubject* column in the csv.
    * This `--contrasts` is mandatory and depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes that this will be a python module name, you cannot use dashes or spaces in the name.
