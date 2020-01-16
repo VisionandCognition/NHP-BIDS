@@ -90,7 +90,7 @@ You specify what data to process with csv-files. See `NHP-BIDS/csv/SubSesRun.csv
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
    * NB! It is possible (though rare) that the workflow crashes with a messsage that starts with `RuntimeError: Command: convert_xfm -omat ....` This is an FSL bug in which a flirt operation creates a hexadecimal matrix file instead of a decimal one. You can fix this with the script `./helper_scripts/hex2dec.sh` and re-run the workflow.
 
-7. Run `./code/bids_modelfit_workflow.py`
+7. Run `./code/bids_modelfit_workflow.py`    
 **NB** All files in the modelfit are expected to be motion corrected and registered to the same reference space!! A better way to do this is to register motion corrected files to a standard space first. This is work-in-progress. 
 
    * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.  
