@@ -139,9 +139,11 @@ def register(**kwargs):
                     '-base', i_args['ref'],
                     '-source', i_args['func'],
                     '-prefix', i_args['destti']]
+
                 print(' '.join(cmd))
                 processes.append(
                     sp.Popen(cmd))
+
 
             if len(processes) > 10:  # limit parallelism
                 processes.popleft().wait()
@@ -160,7 +162,6 @@ def register(**kwargs):
         # rm ${dest_prefix}_slice_????.nii.gz
         print_run("rm %(dest_prefix)s_slice_????.nii.gz" % t_args)
 
-
     print_run("rm %(tmpdir)s/ref_slice_????.nii.gz", kwargs)
     print_run("rm %(tmpdir)s/func_time_????.nii.gz", kwargs)
     print_run("rm %(tmpdir)s/weights_slice_????.nii.gz", kwargs)
@@ -177,6 +178,14 @@ def register(**kwargs):
     if not os.path.isfile("%(out)s"):
         print_run("fslmaths %(dest_prefix)s.nii %(out)s", kwargs)
 
+    # slices can be missing. always resample to ref grid.
+    print_run("3dresample -input %(out)s -prefix %(out)s "
+              "-master %(ref)s -overwrite", kwargs)
+    print_run("3dresample -input %(dest_prefix)s.nii -prefix %(dest_prefix)s.nii "
+              "-master %(ref)s -overwrite", kwargs)
+    
+    # 3dresample -prefix REGFUNC -input REGFUNC -master REFFUNC -overwrite 
+
 #    rm $DEST/*.BRIK
 #    rm $DEST/*.HEAD
 #
@@ -188,7 +197,7 @@ def register(**kwargs):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Performs non-linear slice-by-slice registration '
-        '(base on mc-afni-v4.2.2.sh).')
+        '(based on mc-afni-v4.2.2.sh).')
 
     parser.add_argument(
         '--func', '-i', required=True, type=str,

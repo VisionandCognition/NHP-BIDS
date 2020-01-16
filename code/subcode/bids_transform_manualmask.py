@@ -51,6 +51,18 @@ def create_workflow():
 
     # Find the transformation matrix func_ref -> func
     # First find transform from func to manualmask's ref func
+
+
+    ## THIS NO LONGER WORKS IN FSL/FLIRT 6 ##
+    # FLIRT USED TO TAKE SIMPLY THE FIRST VOLUME OF A 4D NIFTI
+    # NOW IT ERRORS ON DIMENSIONALITY MISMATCH
+
+    median_func = MapNode(
+                    interface=fsl.maths.MedianImage(dimension="T"),
+                    name='median_func',
+                    iterfield=('in_file'),
+                    )
+
     findtrans = MapNode(fsl.FLIRT(),
                         iterfield=['in_file'],
                         name='findtrans'
@@ -70,18 +82,39 @@ def create_workflow():
                       iterfield=['in_matrix_file', 'reference'],
                       )
 
+
     workflow.connect(inputs, 'funcs',
+                     median_func, 'in_file')
+
+    workflow.connect(median_func, 'out_file',
                      findtrans, 'in_file')
-    workflow.connect(inputs, 'manualmask_func_ref',
+    workflow.connect(inputs, 'ref_func',
                      findtrans, 'reference')
 
     workflow.connect(invert, 'out_file',
                      funcreg, 'in_matrix_file')
 
-    workflow.connect(inputs, 'manualmask',
+    workflow.connect(inputs, 'ref_func',
                      funcreg, 'in_file')
     workflow.connect(inputs, 'funcs',
                      funcreg, 'reference')
+
+
+    """ OLD CODE - REMOVE IF NEW WORKS
+    workflow.connect(inputs, 'funcs',
+                     findtrans, 'in_file')
+    workflow.connect(inputs, 'ref_funcmask',
+                     findtrans, 'reference')
+
+    workflow.connect(invert, 'out_file',
+                     funcreg, 'in_matrix_file')
+
+    workflow.connect(inputs, 'ref_func',
+                     funcreg, 'in_file')
+    workflow.connect(inputs, 'funcs',
+                     funcreg, 'reference')
+    
+    """
 
     return workflow
 
@@ -111,11 +144,11 @@ def run_workflow():
     templates = {
         'ref_func':
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         'funcs':
         'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'

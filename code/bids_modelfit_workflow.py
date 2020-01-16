@@ -572,11 +572,11 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
 
         'ref_func':  # was: manualmask_func_ref
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':  # was: manualmask
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
     }  
 
     inputfiles = pe.Node(

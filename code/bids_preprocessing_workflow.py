@@ -106,11 +106,11 @@ def create_workflow():
         # manual-masks/sub-eddy/ses-20170607b/func/
         'ref_func':
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         # T1 ========
         # 1 mm iso ---
@@ -125,11 +125,11 @@ def create_workflow():
         # 0.5 mm iso ---
         'ref_t1':
         'manual-masks/sub-{refsubject_id}/anat/'
-        'sub-{refsubject_id}_ref_anat_res-0.5x0.5x0.5.nii.gz',
+        'sub-{subject_id}_ref_anat_res-0.5x0.5x0.5.nii.gz',
 
         'ref_t1mask':
         'manual-masks/sub-{refsubject_id}/anat/'
-        'sub-{refsubject_id}_ref_anat_mask_res-0.5x0.5x0.5.nii.gz',
+        'sub-{subject_id}_ref_anat_mask_res-0.5x0.5x0.5.nii.gz',
 
         # WEIGHTS ========
         # 'manualweights':
@@ -234,12 +234,15 @@ def create_workflow():
           ('refsubject_id', 'in.refsubject_id'),
           ])])
 
+    #featpreproc.connect(inputfiles, 'ref_funcmask',
+    #                    transmanmask_mc, 'in.manualmask')
     featpreproc.connect(inputfiles, 'ref_funcmask',
-                        transmanmask_mc, 'in.manualmask')
+                        transmanmask_mc, 'in.ref_funcmask')
     featpreproc.connect(inputnode, 'funcs',
                         transmanmask_mc, 'in.funcs')
+
     featpreproc.connect(inputfiles, 'ref_func',
-                        transmanmask_mc, 'in.manualmask_func_ref')
+                        transmanmask_mc, 'in.ref_func')
 
     # fieldmaps not being used
     if False:
@@ -285,7 +288,7 @@ def create_workflow():
           ]),
          (transmanmask_mc, pre_mc,
           [
-           ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights
+           ('funcreg.out_file', 'in.funcs_masks'),  # use mask as weights >>>> are we sure this is correct?
           ]),
          (pre_mc, outputnode,
           [
@@ -704,7 +707,7 @@ def run_workflow(csv_file, fwhm, HighPass):
     # by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
-    
+
     featpreproc = create_workflow()
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -715,6 +718,7 @@ def run_workflow(csv_file, fwhm, HighPass):
     ]), name="input")
     
     if csv_file is not None:
+      print('=== reading csv ===')
       # Read csv and use pandas to set-up image and ev-processing
       df = pd.read_csv(csv_file)
       # init lists
@@ -738,6 +742,8 @@ def run_workflow(csv_file, fwhm, HighPass):
             ('refsubject_id', ref_img),
         ]
       inputnode.synchronize = True
+      print(sub_img)
+      print(ref_img)
     else:
       print("No csv-file specified. Don't know what data to process.")
 
