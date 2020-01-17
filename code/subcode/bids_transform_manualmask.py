@@ -52,17 +52,12 @@ def create_workflow():
     # Find the transformation matrix func_ref -> func
     # First find transform from func to manualmask's ref func
 
-
-    ## THIS NO LONGER WORKS IN FSL/FLIRT 6 ##
-    # FLIRT USED TO TAKE SIMPLY THE FIRST VOLUME OF A 4D NIFTI
-    # NOW IT ERRORS ON DIMENSIONALITY MISMATCH
-
+    # first take the median (flirt functionality has changed and no longer automatically takes the first volume when given 4D files)
     median_func = MapNode(
                     interface=fsl.maths.MedianImage(dimension="T"),
                     name='median_func',
                     iterfield=('in_file'),
                     )
-
     findtrans = MapNode(fsl.FLIRT(),
                         iterfield=['in_file'],
                         name='findtrans'
@@ -99,23 +94,7 @@ def create_workflow():
     workflow.connect(inputs, 'funcs',
                      funcreg, 'reference')
 
-
-    """ OLD CODE - REMOVE IF NEW WORKS
-    workflow.connect(inputs, 'funcs',
-                     findtrans, 'in_file')
-    workflow.connect(inputs, 'ref_funcmask',
-                     findtrans, 'reference')
-
-    workflow.connect(invert, 'out_file',
-                     funcreg, 'in_matrix_file')
-
-    workflow.connect(inputs, 'ref_func',
-                     funcreg, 'in_file')
-    workflow.connect(inputs, 'funcs',
-                     funcreg, 'reference')
     
-    """
-
     return workflow
 
 

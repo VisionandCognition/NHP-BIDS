@@ -188,6 +188,7 @@ def create_workflow():
         (r'/_meanfunc[0-9]+/', r'/func/'),
         (r'/_outliers[0-9]+/', r'/func/'),
         (r'_run_id_[0-9][0-9]', r''),
+        (r'_refsub([a-zA-Z0-9]+)', r''),
     ]
     outputnode = pe.Node(interface=util.IdentityInterface(
         fields=['motion_parameters',
