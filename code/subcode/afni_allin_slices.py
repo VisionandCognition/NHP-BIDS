@@ -184,8 +184,6 @@ def register(**kwargs):
     print_run("3dresample -input %(dest_prefix)s.nii -prefix %(dest_prefix)s.nii "
               "-master %(ref)s -overwrite", kwargs)
     
-    # 3dresample -prefix REGFUNC -input REGFUNC -master REFFUNC -overwrite 
-
 #    rm $DEST/*.BRIK
 #    rm $DEST/*.HEAD
 #

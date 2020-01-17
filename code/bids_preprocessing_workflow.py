@@ -777,6 +777,8 @@ def run_workflow(csv_file, fwhm, HighPass):
 
     featpreproc.inputs.inputspec.fwhm = fwhm     # spatial smoothing (default=2)
     featpreproc.inputs.inputspec.highpass = HighPass  # FWHM in seconds (default=50)
+    
+    workflow.workflow_level = 'INFO'    # INFO/DEBUG
     # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
