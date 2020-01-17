@@ -675,6 +675,8 @@ if __name__ == '__main__':
     parser.add_argument('--HighPass',
                         dest='HighPass', default=50,
                         help='Set high pass filter in seconds. (default = 50 s)')
-
+    parser.add_argument('--RegSpace',
+                        dest='RegSpace', default='func',
+                        help='What space should the results be in ([func]/anat/nmt)')
     args = parser.parse_args()
     run_workflow(**vars(args))
