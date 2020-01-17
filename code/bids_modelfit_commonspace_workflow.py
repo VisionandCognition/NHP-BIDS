@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 
 """ 
-CONVERT THIS
-
-
-
-
 This script performs modelfits on preprocessed fMRI data. It assumes 
 that data is in BIDS format and that the data has undergone 
 minimal processing, resampling, and preprocessing.
@@ -222,6 +217,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
+        (r'_refsub([a-zA-Z0-9]+)', r''),
         # (r'/_addmean[0-9]+/', r'/func/'),
         # (r'/_dilatemask[0-9]+/', r'/func/'),
         # (r'/_funcbrain[0-9]+/', r'/func/'),
@@ -577,11 +573,11 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
 
         'ref_func':  # was: manualmask_func_ref
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
 
         'ref_funcmask':  # was: manualmask
         'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{refsubject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
     }  
 
     inputfiles = pe.Node(

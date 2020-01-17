@@ -217,6 +217,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
+        (r'_refsub([a-zA-Z0-9]+)', r''),
         # (r'/_addmean[0-9]+/', r'/func/'),
         # (r'/_dilatemask[0-9]+/', r'/func/'),
         # (r'/_funcbrain[0-9]+/', r'/func/'),
