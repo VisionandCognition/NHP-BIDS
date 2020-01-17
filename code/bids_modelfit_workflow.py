@@ -644,6 +644,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
     modelfit.write_graph(simple_form=True)
     modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
 
+    workflow.workflow_level = 'INFO'    # INFO/DEBUG
     # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
     workflow.remove_unnecessary_outputs = False
