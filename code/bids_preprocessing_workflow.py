@@ -175,6 +175,7 @@ def create_workflow():
         ('/oned_file/', '/'),
         ('/out_file/', '/'),
         ('/oned_matrix_save/', '/'),
+        ('refsubject_id_', 'ref-'),
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
     ]
@@ -187,8 +188,7 @@ def create_workflow():
         (r'/_mc[0-9]+/', r'/func/'),
         (r'/_meanfunc[0-9]+/', r'/func/'),
         (r'/_outliers[0-9]+/', r'/func/'),
-        (r'_run_id_[0-9][0-9]', r''),
-        (r'_refsub([a-zA-Z0-9]+)', r''),
+        (r'_ref-([a-zA-Z0-9]+)_run_id_[0-9][0-9]', r''),
     ]
     outputnode = pe.Node(interface=util.IdentityInterface(
         fields=['motion_parameters',
