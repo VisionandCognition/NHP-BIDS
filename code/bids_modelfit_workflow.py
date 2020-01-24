@@ -456,7 +456,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
+def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpace):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -541,44 +541,80 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
     else:
       print("No csv-file specified. Don't know what data to process.")
 
-    templates = {
-        'funcs':
-        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
-        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
+   
+    # Registration space determines which files to use
+    if RegSpace == 'nmt':
+        # use the warped files
+        templates = {
+            'funcs':
+            'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
-        # 'funcmasks':
-        # 'featpreproc/func_unwarp/sub-{subject_id}/ses-{session_id}/func/'
-        #     'sub-{subject_id}_ses-{session_id}_*_run-{run_id}*_bold_res-1x1x1_preproc'
-        #     '_mc_unwarped.nii.gz',
+            'highpass':
+            'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
-        'highpass':
-        'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
-        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
+            'motion_parameters':
+            'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
 
-        'motion_parameters':
-        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
-        'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
+            'motion_outlier_files':
+            'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+            'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
 
-        'motion_outlier_files':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
-        'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
+            'event_log':
+            'sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
-        'event_log':
-        'sub-{subject_id}/ses-{session_id}/func/'
-            'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
+            'ref_func':  # was: manualmask_func_ref
+            'manual-masks/sub-{refsubject_id}/warp/'
+            'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
 
-        'ref_func':  # was: manualmask_func_ref
-        'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
+            'ref_funcmask':  # was: manualmask
+            'manual-masks/sub-{refsubject_id}/warp/'
+            'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
+        }  
+    elif RegSpace == 'native':
+        # use the functional files
+        templates = {
+            'funcs':
+            'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
-        'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
-    }  
+            'highpass':
+            'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
+
+            'motion_parameters':
+            'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
+
+            'motion_outlier_files':
+            'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+            'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
+
+            'event_log':
+            'sub-{subject_id}/ses-{session_id}/func/'
+                'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
+
+            'ref_func':  # was: manualmask_func_ref
+            'manual-masks/sub-{refsubject_id}/func/'
+            'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
+
+            'ref_funcmask':  # was: manualmask
+            'manual-masks/sub-{refsubject_id}/func/'
+            'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
+        }  
+    else:
+        raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
 
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
@@ -676,6 +712,9 @@ if __name__ == '__main__':
     parser.add_argument('--HighPass',
                         dest='HighPass', default=50,
                         help='Set high pass filter in seconds. (default = 50 s)')
+    parser.add_argument('--RegSpace',
+                        dest='RegSpace', default='nmt',
+                        help='Set space to perform modelfit in. ([nmt]/native)')
 
     args = parser.parse_args()
     run_workflow(**vars(args))
