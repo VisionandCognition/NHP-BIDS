@@ -34,8 +34,19 @@ def get_csv_stem(csv_file):
     csv_stem = csv_filename.split('.')[0]
     return csv_stem
 
+''' ==============================================
+==================================================
 
-def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True):
+def apply_jip_align(jip_in,jip_reg,jip_out):
+    # create a function that applies jip alignments
+    # templates for these files should also be generated
+
+==================================================
+=============================================='''
+
+def create_workflow(
+    contrasts,out_label,hrf,fwhm,HighPass,RegSpace,combine_runs=True):
+    
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
         './workingdirs/level1flow/' + out_label)
@@ -56,6 +67,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
         # 'funcmasks',
         'fwhm',  # smoothing
         'highpass',
+        'regspace',
 
         'funcs',
         'event_log',
@@ -457,6 +469,7 @@ generate any output. To actually run the analysis on the data the
 """
 
 def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
+    
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -503,7 +516,14 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, out_label, hrf, fwhm, HighPass)
+    modelfit = create_workflow(
+        contrasts, 
+        out_label, 
+        hrf, 
+        fwhm, 
+        HighPass,
+        RegSpace
+        )
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -578,12 +598,27 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass):
         'ref_funcmask':  # was: manualmask
         'manual-masks/sub-{refsubject_id}/func/'
         'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
+
+        # ADD WARPS HERE??
+        # ===================================
+        # ===================================
+
+        'warp_func2anat': 
+        'manual-masks/sub-{refsubject_id}/warps/'
+        'sub-{refsubject_id}_func2anat.mat',
+
+        'warp_func2nmt':  
+        'manual-masks/sub-{refsubject_id}/warps/'
+        'sub-{refsubject_id}_func2anat.mat',
+
+        # ===================================
+        # ===================================
     }  
 
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir),
-        name='in_files')
+                        name='in_files')
 
     workflow.connect([
         (inputnode, inputfiles,
