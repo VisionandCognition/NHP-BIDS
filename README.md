@@ -79,7 +79,8 @@ You specify what data to process with csv-files. See `NHP-BIDS/csv/SubSesRun.csv
    * example: `clear && ./code/bids_resample_hiresanat_isotropic_workflow.py --csv ./csv/<SubSesRun.csv> |& tee ./logs/log-resample_hiresanat.txt`
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/isoresample/isoresample_hires_SESSION.sh`, where SESSION defines which session / run to process. Command like the above should be part of the job-file.
 
-6. Run `./code/bids_preprocessing_workflow.py`
+6. Run `./code/bids_preprocessing_workflow.py`    
+This workflow does non-linear slice-by-slice alignment to a functional reference and performs motion correction.    
    * Motion correction will be performed slice-by-slice and as a volume. Data is nonlinearly registered to reference volumes that are located in `NHP-BIDS/manual-masks/sub-<subject>/`. NB! If you undistort (fieldmap) the reference images in `manual-masks`, the nonlinear registration will essentially do the undistortion on all the other volumes for you.
    * It is no longer necessary to create separate workflows for subjects (because of different individual references). The generic workflow now looks for references in subject specific folders in `manual-masks`. If you work with a new subject, you should create such a folder. In that case you should follow the filename pattern of the existing references and only replace the subject name. The workflow should then also work for the new subject.
    * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.  
@@ -90,12 +91,21 @@ You specify what data to process with csv-files. See `NHP-BIDS/csv/SubSesRun.csv
    * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/preproc/preprocess_SESSION.sh`, where SESSION defines which session / run to process. A command like the above should be part of the job-file.
    * NB! It is possible (though rare) that the workflow crashes with a messsage that starts with `RuntimeError: Command: convert_xfm -omat ....` This is an FSL bug in which a flirt operation creates a hexadecimal matrix file instead of a decimal one. You can fix this with the script `./helper_scripts/hex2dec.sh` and re-run the workflow.
 
-7. Run `./code/bids_modelfit_workflow.py`    
+7. Run `./code/bids_warp2nmt_workflow.py`    
+This workflow warps the preprocessed `highpassed_files` to the common `NMT` space to facilitate statistical inferences in a common space. The relevant warps are pre-calculated and stored in the `manual-masks` folder. 
+   * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.  
+   * Here you can again specify a *refsubject* column in the csv.
+   * example: `clear && ./code/bids_warp2nmt_workflow.py --csv ./csv/warp2nmt/<SubSesRun.csv> |& tee ./logs/log-warp2nmt.txt`
+   * LISA: on `lisa.surfsara.nl` go to `NHP-BIDS` directory and run `sbatch ./code/lisa/warp2nmt/<SCRIPTNAME>.sh`. A command like the above should be part of the job-file.     
+   
+8. Run `./code/bids_modelfit_workflow.py`    
+This workflow performs a GLM analysis on the preprocessed data and outputs statistical results. 
 **NB** All files in the modelfit are expected to be motion corrected and registered to the same reference space!! A better way to do this is to register motion corrected files to a standard space first. This is work-in-progress. 
 
    * The `--csv` flag is mandatory and should point to the csv-file that is formatted as explained above.  
    * Here you can again specify a *refsubject* column in the csv.
    * This `--contrasts` is mandatory and depends on the experiment. In `code/contrasts/` there are python modules for each set of contrasts. If you want to use the contrasts defined in `ctcheckerboard.py`, for example, pass `ctcheckerboard` as the value for the `--contrasts` parameter. If you create your own contrasts, you just need your function to define the variable named `contrasts`. Since the code assumes that this will be a python module name, you cannot use dashes or spaces in the name.
+   * The optional argument `--RegSpace` allows us to specify in which space the GLM is performed. The default is `nmt`, which means that the workflow will use the highpassed files that were aligned to the `NMT` template space as input to the GLM. This puts all subjects in a common reference space, but it only works if `bids_warp2nmt_workflow.py` has been executed already. The alternative option `native` will use the preprocessed functional timeseries in their functional space. Be careful with this as there is no explicit check for mismatching functional spaces with multiple entries and statistics will be meaningless if not calculated in a common space for all functional runs.    
    * The optional argument `--resultfld` allows you to define the name of the output folder and working directories for this analysis. Re-running something with the same name uses existing intermediate results from working directories and overwrites existing output directories. Using a unique folder name starts the analysis in a new working directory and creates a unique new output folder. If you do not include this argument, it will default to the stem of the specified csv-filename so if you use `checkerboard-ct-mapping.csv` this would put your results in `checkerboard-ct-mapping`. Again, if this folder exists the workflow will re-use intermediate results and overwriting the final result folder. 
    * The optional argument `--hrf` alows you to specify a custom hrf saved as `./code/hrf/CUSTOM-HRF.txt`. This should be a single column text file with a sample frequency of 0.05s/sample. For more complicated FLOBS-style multi-function HRF's you can also specify multiple columns. If this argument is omitted, FSL's default double-gamma canonical HRF is used. This is often not a bad approximation, but a specific monkey HRF can be a little faster (there is code in Tracker-MRI to run an experiment that allows estimating the HRF on an individual basis).
    * The `--fwhm` and `--HighPass` flags are optional to specify spatial smoothing (mm) and a high-pass filter (s). If not specified, they will be 2.0 mm and 50 s respectively.     
