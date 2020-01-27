@@ -10,8 +10,10 @@ and requires:
 * **pandas** 
 * **FSL** (>=5.0.1)
 * **Freesurfer** (>=5.3.0)
-* **AFNI** (>=??)
-* **ANTS** (>=??)
+* **AFNI** (>=2011_12_21_1014)
+* **ANTS** (>=??) *Not sure this is still needed*     
+
+Older versions may also work but are not tested.
 
 For the installation, clone [this](https://github.com/VisionandCognition/NHP-BIDS/) repository:
 
