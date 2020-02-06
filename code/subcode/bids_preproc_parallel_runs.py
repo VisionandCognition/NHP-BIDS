@@ -5,7 +5,7 @@ import argparse
 import pandas as pd
 import csv
 
-def run_splitpreproc(csv_file, subses,warp):
+def run_splitpreproc(csv_file, subses, no_warp):
     
     # define log and job folders =========================================
     job_path = './code/lisa/preproc'
@@ -78,7 +78,9 @@ def run_splitpreproc(csv_file, subses,warp):
         f.write('./code/bids_preprocessing_workflow.py ' + 
                 '--csv ' + csv_run + ' |& \\\n' + '     tee ' + logpp_run + '\n')
         
-        if warp is True:
+        if no_warp is True:
+            print('Not doing the warping to NMT')
+        else:
             f.write('wait\n\n')
             logwarp_run = logwarp_path + '/run' + run[idx] + '.txt'
             f.write('./code/bids_warp2nmt_workflow.py ' + 
@@ -91,7 +93,7 @@ def run_splitpreproc(csv_file, subses,warp):
         os.system(mkexec_str)
         
         submit_str = 'sbatch ' + job_path_ses + '/job_run' + run[idx] + '.sh'
-        os.system(submit_str)
+        #os.system(submit_str)
         # print(submit_str) # here for debugging
 
 
@@ -105,9 +107,9 @@ if __name__ == '__main__':
     parser.add_argument('--subses',
                         dest='subses', default=None,
                         help='string identifying subject and session')
-    parser.add_argument('--warp',
-                        dest='warp', default=True,
-                        help='immediately warp to NMT ([True] / Faalse)')
+    parser.add_argument('--no-warp',
+                        dest='no_warp',  action='store_true',
+                        help='add this flag if you do not want to warp to NMT')
 
     args = parser.parse_args()
 

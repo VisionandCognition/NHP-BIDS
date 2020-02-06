@@ -65,10 +65,28 @@ wait
     tee ./logs/resample/sub-${SUB,}/log-resample_iso-hires-${SUB,}-${DATE}.txt
 wait
 
+
+# There are 2 ways of doing preprocessing & warping: 
+# 1) semi parallel (parallel slices, serial runs)
+# 2) fully parallel (parallel slices and parallel runs) 
+# The second method is faster but requires extra nodes on the cluster
+
+# METHOD 1 =====
 # preprocessing
 ./code/bids_preprocessing_workflow.py \
     --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
     tee ./logs/preproc/sub-${SUB,}/log-preproc-${SUB,}-${DATE}.txt
+
+# warp to NMT
+./code/bids_warp2nmt_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/warp2nmt/log-warp2nmt-${SUB}-${DATE}.txt
+
+# METHOD 2
+./code/subcode/bids_preproc_parallel_runs \
+    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv \
+    --subses ${SUB}${DATE} \
+ #   --no-warp 
+
 
 # modelfit
 # etc
