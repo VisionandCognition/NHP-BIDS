@@ -171,6 +171,12 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
         return len(files)
 
     if fixed_fx is not None:
+        ## ========================
+        # Here we put the 1st level results into a 2nd level fixed effects analysis
+        # Seems like a good place to check if copes should be included or not 
+        # If thry'tr empty they should not be included.
+        ## ========================
+
         level1_workflow.connect([
             (inputnode, fixed_fx,
              [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use ref mask!!!
@@ -266,7 +272,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
 
     # Use Python3 for processing. See code/requirements.txt for pip packages.
     featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in vols
-    # (REMEMBER to run with Python 3)
 
     """
     Setup a function that returns subject-specific information about the
