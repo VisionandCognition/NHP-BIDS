@@ -93,7 +93,7 @@ def run_splitpreproc(csv_file, subses, no_warp):
         os.system(mkexec_str)
         
         submit_str = 'sbatch ' + job_path_ses + '/job_run' + run[idx] + '.sh'
-        #os.system(submit_str)
+        os.system(submit_str)
         # print(submit_str) # here for debugging
 
 
