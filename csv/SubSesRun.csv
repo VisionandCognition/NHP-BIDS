@@ -1,2 +1,2 @@
-subject,session,run,datatype
-SUBJECT,YYYYMMDD,[XX XX XX XX],[anat fmap func]
+subject,session,run,datatype,refsubject
+SUBJECT,YYYYMMDD,[XX XX XX XX],[anat fmap func],REFSUBJECT
