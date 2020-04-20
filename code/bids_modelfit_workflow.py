@@ -494,8 +494,8 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     """
     Setup the contrast structure that needs to be evaluated. This is a list of
     lists. The inner list specifies the contrasts and has the following format:
-    [Name,Stat,[list of condition names],[weights on those conditions]. The
-    condition names must match the `names` listed in the `evt_info` function
+    [Name,Stat,[list of condition names],[weights on those conditions]. 
+    The condition names must match the `names` listed in the `evt_info` function
     described above.
     """
 
