@@ -732,7 +732,10 @@ def run_workflow(csv_file, fwhm, HighPass):
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              ref_img.append(row.refsubject)
+              if row.refsubject == 'nan': # empty field
+              	ref_img.append(row.subject)
+              else:
+              	ref_img.append(row.refsubject) # non-empty field
             else:
               ref_img.append(row.subject)
 
@@ -781,7 +784,7 @@ def run_workflow(csv_file, fwhm, HighPass):
     workflow.workflow_level = 'INFO'    # INFO/DEBUG
     # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
-    workflow.remove_unnecessary_outputs = False
+    workflow.remove_unnecessary_outputs = True
     workflow.write_graph()
     workflow.run()
 
