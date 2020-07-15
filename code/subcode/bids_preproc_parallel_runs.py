@@ -23,12 +23,14 @@ def run_splitpreproc(csv_file, subses, no_warp):
                 ses.append(row.session)
                 run.append(r)
                 if 'refsubject' in df.columns:
-              		if row.refsubject == 'nan': # empty field
-              			ref_img.append(row.subject)
-              		else:
-              			ref_img.append(row.refsubject) # non-empty field
-            	else:
-              		ref_img.append(row.subject)
+                    if row.refsubject == 'nan':
+                        # empty field
+                        ref.append(row.subject)
+                    else:
+                        # non-empty field
+                        ref.append(row.refsubject) 
+                else:
+                     ref.append(row.subject)
     else:
         print("No csv-file specified. Don't know what data to process.")
 
@@ -65,16 +67,16 @@ def run_splitpreproc(csv_file, subses, no_warp):
         f.write('echo from $SLURM_SUBMIT_DIR\n')
         f.write('echo the allocated nodes are: $SLURM_JOB_NODELIST\n\n')
         
-        #f.write('module load pre2019\n')
-        #f.write('module load eb\n')
-        #f.write('module load freesurfer\n')
-        #f.write('module load fsl/5.08\n')
-        #f.write('module load afni\n\n')
+        f.write('module load pre2019\n')
+        f.write('module load eb\n')
+        f.write('module load freesurfer\n')
+        f.write('module load fsl/5.08\n')
+        f.write('module load afni\n\n')
 
-        f.write('module load 2019\n')
-        f.write('module load FSL\n')
-        f.write('module load FreeSurfer\n\n')
-
+        #f.write('module load 2019\n')
+        #f.write('module load FSL\n')
+        #f.write('module load FreeSurfer\n\n')
+        
         f.write('source ~/.bash_profile\n')
         f.write('source ~/.bashrc\n')
         f.write('umask u+rwx,g+rwx\n')
