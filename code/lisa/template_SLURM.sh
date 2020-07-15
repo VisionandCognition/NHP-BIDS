@@ -12,20 +12,30 @@ echo the allocated nodes are: $SLURM_JOB_NODELIST
 
 # ==== the module environment on LISA changes on 1 October 2019 ====
 # more info: https://userinfo.surfsara.nl/documentation/new-module-environment-lisa-cartesius
-# module load 2019 # use the new environment and modules
+# module load 2019 # use the new environment and modules (default, so not explicitly necessary)
 # module load pre2019 # use old environment 
 # >> only use pre2019 if you need software modules that aren't present in 2019
-# >> currently, none of the neuroimaging modules have been ported
+# >> [2019] currently, none of the neuroimaging modules have been ported
 # >> stick with pre2019 for now
+
+# >> [20200715] The 2019 environment now has FSL and FreeSurfer
+# >> I applied for afni and ANTS to get installed as well.
+# >> We can run 2019 but need to run afni from home folder for now
 # ============================================================================
 
+##  This is the pre2019 setup
 # module load surf-devel
-module load pre2019
+# module load pre2019
+# module load eb
+# module load freesurfer
+# module load fsl/5.08
+# module load afni
 
-module load eb
-module load freesurfer
-module load fsl/5.08
-module load afni
+## This is the 2019/default setup
+module load 2019
+module load FreeSurfer
+module load FSL
+# recent afni binaries need to be manually installed in home folder for now
 
 source ~/.bash_profile 
 source ~/.bashrc

@@ -71,6 +71,7 @@ def run_splitpreproc(csv_file, subses, no_warp):
         #f.write('module load fsl/5.08\n')
         #f.write('module load afni\n\n')
 
+        f.write('module load 2019\n')
         f.write('module load FSL\n')
         f.write('module load FreeSurfer\n\n')
 
