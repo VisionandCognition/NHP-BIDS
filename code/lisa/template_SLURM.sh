@@ -35,6 +35,7 @@ echo the allocated nodes are: $SLURM_JOB_NODELIST
 module load 2019
 module load FreeSurfer
 module load FSL
+module load AFNI
 # recent afni binaries need to be manually installed in home folder for now
 
 source ~/.bash_profile 
