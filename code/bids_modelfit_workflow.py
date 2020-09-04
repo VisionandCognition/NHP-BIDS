@@ -558,12 +558,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         templates = {
             'funcs':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
             'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
             'highpass':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
             'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
             'motion_parameters':
