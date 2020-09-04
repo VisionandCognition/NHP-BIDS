@@ -581,11 +581,11 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
                 'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
             'ref_func':  # was: manualmask_func_ref
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
 
             'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
         }  
     elif RegSpace == 'native':
