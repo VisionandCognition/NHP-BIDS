@@ -6,15 +6,21 @@ def process_events(event_log, TR, in_nvols):
                 'Required for processing time events.' % event_log)
 
     if tmat.group(1) == 'ctcheckerboard':  # task from filename
+        print('Using ctcheckerboard to calculate regressors')
         from timeevents.ctcheckerboard import process_events as process_events_for_task
     elif tmat.group(1) == 'curvetracing' or tmat.group(1) == 'curvetracinginccentral':
+        print('Using curvetracing to calculate regressors')
         from timeevents.curvetracing import process_events as process_events_for_task
     elif tmat.group(1) == 'figureground' or tmat.group(1) == 'figgnd':
-        from timeevents.figureground import process_events as process_events_for_task   
-    elif tmat.group(1) == 'figureground_NU' or tmat.group(1) == 'figureground_NU_ev':
+        # print('Using figureground to calculate regressors')
+        # from timeevents.figureground import process_events as process_events_for_task 
+        print('Using figureground_NU to calculate regressors')
         from timeevents.figureground_NU import process_events as process_events_for_task        
     elif tmat.group(1) == 'figureground_localizer' or tmat.group(1) == 'figgndloc':
-        from timeevents.figureground import process_events as process_events_for_task     
+        #print('Using figureground to calculate regressors')
+        #from timeevents.figureground import process_events as process_events_for_task  
+        print('Using figureground_NU to calculate regressors')
+        from timeevents.figureground_NU import process_events as process_events_for_task     
     else:
         raise RuntimeError('Unknown experimental task %s. '
                 'Needed for ' % tmat.group(1))
