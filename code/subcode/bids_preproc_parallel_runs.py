@@ -67,11 +67,11 @@ def run_splitpreproc(csv_file, subses, no_warp):
         f.write('echo from $SLURM_SUBMIT_DIR\n')
         f.write('echo the allocated nodes are: $SLURM_JOB_NODELIST\n\n')
         
-        f.write('module load pre2019\n')
-        f.write('module load eb\n')
-        f.write('module load freesurfer\n')
-        f.write('module load fsl/5.08\n')
-        f.write('module load afni\n\n')
+        f.write('module load 2019\n')
+        #f.write('module load eb\n')
+        f.write('module load FreeSurfer\n')
+        #f.write('module load fsl/5.08\n')
+        #f.write('module load afni\n\n')
 
         #f.write('module load 2019\n')
         #f.write('module load FSL\n')
