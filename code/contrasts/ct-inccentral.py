@@ -61,10 +61,10 @@ contrasts = [
 7   Hand Left > Hand Right
 8   Hand Right > Hand Left
 9   Reward > baseline
-10	All Curves > Center
-11  UL > Central
+10	Attend curves > Attend center
+11  UL > Central 
 12  DL > Central
 13  UR > Central
 14  DR > Central
-15  Correct > Incorrect
+15	Correct > Incorrect
 '''

@@ -732,10 +732,12 @@ def run_workflow(csv_file, fwhm, HighPass):
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              if row.refsubject == 'nan': # empty field
+              if row.refsubject == 'nan':
+                # empty field
               	ref_img.append(row.subject)
               else:
-              	ref_img.append(row.refsubject) # non-empty field
+              	# non-empty field
+              	ref_img.append(row.refsubject) 
             else:
               ref_img.append(row.subject)
 

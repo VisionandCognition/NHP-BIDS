@@ -532,12 +532,14 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              if row.refsubject == 'nan': # empty field
-                ref_img.append(row.subject)
-              else:
-                ref_img.append(row.refsubject) # non-empty field
+                if row.refsubject == 'nan':
+                    # empty field
+                    ref_img.append(row.subject)
+                else:
+                    # non-empty field
+                    ref_img.append(row.refsubject) 
             else:
-              ref_img.append(row.subject)
+                ref_img.append(row.subject)
 
       inputnode.iterables = [
             ('subject_id', sub_img),
@@ -556,12 +558,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         templates = {
             'funcs':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
             'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
 
             'highpass':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
             'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
             'motion_parameters':
@@ -579,11 +581,11 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
                 'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
             'ref_func':  # was: manualmask_func_ref
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
 
             'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
         }  
     elif RegSpace == 'native':
