@@ -170,12 +170,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
     def num_copes(files):
         return len(files)
 
-    
-
-
-
-
-
     if fixed_fx is not None:
         ## ========================
         # Here we put the 1st level results into a 2nd level fixed effects analysis
@@ -194,12 +188,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
                  ])
         ])
 
-
-
-
-
-
-
     # ===================================================================
     #                   ____        _               _
     #                  / __ \      | |             | |
@@ -210,7 +198,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
     #                                  | |
     #                                  |_|
     # ===================================================================
-
+    # --- ORG ---
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
                 base_directory=ds_root,
@@ -253,10 +241,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
           (('outputspec.varcopes', sort_copes), 'varcopes'),
           ]),
     ])
-
-
-
-
     if fixed_fx is not None:
         level1_workflow.connect([
             (fixed_fx, outputfiles,
@@ -267,6 +251,35 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
               ('outputspec.tstats', 'fx.tstats'),
               ]),
         ])
+    # --- STOP ORG ---
+
+
+    # --- LEV1 ---
+    # Datasink
+    outputfiles_lev1 = pe.Node(nio.DataSink(
+                base_directory=ds_root,
+                container='derivatives/modelfit/contrasts_name/' + out_label + ,
+                parameterization=True),
+                name="output_files")
+
+    # Use the following DataSink output substitutions
+    outputfiles_lev1.inputs.substitutions = [
+        ('subject_id_', 'sub-'),
+        ('session_id_', 'ses-'),
+        ('/_mc_method_afni3dAllinSlices/', '/'),
+    ]
+    # Put result into a BIDS-like format
+    outputfiles_lev1.inputs.regexp_substitutions = [
+        (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
+        (r'_refsub([a-zA-Z0-9]+)', r''),
+    ]
+    level1_workflow.connect([
+        (modelfit, outputfiles_lev1,
+         [(('outputspec.copes', sort_copes), 'copes'),
+          ('outputspec.dof_file', 'dof_files'),
+          (('outputspec.varcopes', sort_copes), 'varcopes'),
+          ]),
+    ])
 
 
 
@@ -552,9 +565,14 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              ref_img.append(row.refsubject)
+              if row.refsubject == 'nan':
+                    # empty field
+                    ref_img.append(row.subject)
+                else:
+                    # non-empty field
+                    ref_img.append(row.refsubject) 
             else:
-              ref_img.append(row.subject)
+                ref_img.append(row.subject)
 
       inputnode.iterables = [
             ('subject_id', sub_img),
