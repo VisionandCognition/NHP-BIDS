@@ -578,7 +578,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
 
             'event_log':
             'sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
+            'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
             'ref_func':  # was: manualmask_func_ref
             'manual-masks/sub-{refsubject_id}/warp/'

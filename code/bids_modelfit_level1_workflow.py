@@ -5,6 +5,8 @@ This script performs modelfits on preprocessed fMRI data. It assumes
 that data is in BIDS format and that the data has undergone 
 minimal processing, resampling, and preprocessing.
 
+Level1 analysis only
+
 Questions & comments: c.klink@nin.knaw.nl
 """
 
@@ -13,7 +15,7 @@ from __future__ import division
 from builtins import str
 from builtins import range
 
-import os                                     # system functions
+import os, shutil                             # system functions
 import pandas as pd                           
 
 import nipype.interfaces.io as nio            # Data i/o
@@ -22,7 +24,8 @@ from nipype.interfaces import utility as niu  # Utilities
 import nipype.pipeline.engine as pe           # pypeline engine
 import nipype.algorithms.modelgen as model    # model generation
 
-import nipype.workflows.fmri.fsl as fslflows
+#import nipype.workflows.fmri.fsl as fslflows
+import niflow.nipype1.workflows.fmri.fsl as fslflows
 from subcode.filter_numbers import FilterNumsTask
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -34,11 +37,10 @@ def get_csv_stem(csv_file):
     csv_stem = csv_filename.split('.')[0]
     return csv_stem
 
-def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=False): # no fx effects
-#def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True):
+def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, RegSpace):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
-        './workingdirs/level1flow/' + out_label)
+        './workingdirs/level1flow/' + contrasts_name + '/' + RegSpace + '/level1')
 
     # ===================================================================
     #                  _____                   _
@@ -134,16 +136,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
     fsl.FSLCommand.set_default_output_type('NIFTI_GZ')
 
     modelfit = fslflows.create_modelfit_workflow()
-
-    if combine_runs:
-        fixed_fx = fslflows.create_fixed_effects_flow()
-    else:
-        fixed_fx = None
-
-    """
-    Add model specification nodes between the preprocessing and modelfitting
-    workflows.
-    """
     modelspec = pe.Node(model.SpecifyModel(), name="modelspec")
 
     """
@@ -170,23 +162,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
     def num_copes(files):
         return len(files)
 
-    if fixed_fx is not None:
-        ## ========================
-        # Here we put the 1st level results into a 2nd level fixed effects analysis
-        # Seems like a good place to check if copes should be included or not 
-        # If they're empty they should not be included.
-        ## ========================
-
-        level1_workflow.connect([
-            (inputnode, fixed_fx,
-             [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use ref mask!!!
-            (modelfit, fixed_fx,
-                [(('outputspec.copes', sort_copes), 'inputspec.copes'),
-                 ('outputspec.dof_file', 'inputspec.dof_files'),
-                 (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
-                 (('outputspec.copes', num_copes), 'l2model.num_copes'),
-                 ])
-        ])
 
     # ===================================================================
     #                   ____        _               _
@@ -198,67 +173,11 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
     #                                  | |
     #                                  |_|
     # ===================================================================
-    # --- ORG ---
-    # Datasink
-    outputfiles = pe.Node(nio.DataSink(
-                base_directory=ds_root,
-                container='derivatives/modelfit/' + out_label,
-                parameterization=True),
-                name="output_files")
-
-    # Use the following DataSink output substitutions
-    outputfiles.inputs.substitutions = [
-        ('subject_id_', 'sub-'),
-        ('session_id_', 'ses-'),
-        # ('/mask/', '/'),
-        # ('_preproc_flirt_thresh.nii.gz', '_transformedmask.nii.gz'),
-        # ('_preproc_volreg_unwarped.nii.gz', '_preproc.nii.gz'),
-        # ('_preproc_flirt_unwarped.nii.gz', '_preproc-mask.nii.gz'),
-        # ('/_mc_method_afni3dvolreg/', '/'),
-        # ('/funcs/', '/'),
-        # ('/funcmasks/', '/'),
-        # ('preproc_volreg.nii.gz', 'preproc.nii.gz'),
-        ('/_mc_method_afni3dAllinSlices/', '/'),
-    ]
-    # Put result into a BIDS-like format
-    outputfiles.inputs.regexp_substitutions = [
-        (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
-        (r'_refsub([a-zA-Z0-9]+)', r''),
-        # (r'/_addmean[0-9]+/', r'/func/'),
-        # (r'/_dilatemask[0-9]+/', r'/func/'),
-        # (r'/_funcbrain[0-9]+/', r'/func/'),
-        # (r'/_maskfunc[0-9]+/', r'/func/'),
-        # (r'/_mc[0-9]+/', r'/func/'),
-        # (r'/_meanfunc[0-9]+/', r'/func/'),
-        # (r'/_outliers[0-9]+/', r'/func/'),
-        # (r'/_undistort_masks[0-9]+/', r'/func/'),
-        # (r'/_undistort[0-9]+/', r'/func/'),
-    ]
-    level1_workflow.connect([
-        (modelfit, outputfiles,
-         [(('outputspec.copes', sort_copes), 'copes'),
-          ('outputspec.dof_file', 'dof_files'),
-          (('outputspec.varcopes', sort_copes), 'varcopes'),
-          ]),
-    ])
-    if fixed_fx is not None:
-        level1_workflow.connect([
-            (fixed_fx, outputfiles,
-             [('outputspec.res4d', 'fx.res4d'),
-              ('outputspec.copes', 'fx.copes'),
-              ('outputspec.varcopes', 'fx.varcopes'),
-              ('outputspec.zstats', 'fx.zstats'),
-              ('outputspec.tstats', 'fx.tstats'),
-              ]),
-        ])
-    # --- STOP ORG ---
-
-
     # --- LEV1 ---
     # Datasink
     outputfiles_lev1 = pe.Node(nio.DataSink(
                 base_directory=ds_root,
-                container='derivatives/modelfit/contrasts_name/' + out_label + ,
+                container='derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level1',
                 parameterization=True),
                 name="output_files")
 
@@ -280,10 +199,6 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
           (('outputspec.varcopes', sort_copes), 'varcopes'),
           ]),
     ])
-
-
-
-
 
     # -------------------------------------------------------------------
     #          (~   _  _  _. _ _  _  _ _|_   _ _  _  _. |`. _
@@ -463,7 +378,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=Fals
         (beh_roi, modelfit,
          [('roi_file', 'inputspec.functional_data'),
           ]),
-        (beh_roi, outputfiles,
+        (beh_roi, outputfiles_lev1,
          [('roi_file', 'roi_file'),
           ]),
         # (inputnode, datasource, [('in_data', 'base_directory')]),
@@ -541,7 +456,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, out_label, hrf, fwhm, HighPass)
+    modelfit = create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, RegSpace)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -565,7 +480,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              if row.refsubject == 'nan':
+                if row.refsubject == 'nan':
                     # empty field
                     ref_img.append(row.subject)
                 else:
@@ -591,12 +506,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         templates = {
             'funcs':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
+            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
             'highpass':
             'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
+            'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
             'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
             'motion_parameters':
@@ -614,11 +529,11 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
                 'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
 
             'ref_func':  # was: manualmask_func_ref
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
 
             'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
         }  
     elif RegSpace == 'native':
@@ -627,7 +542,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
             'funcs':
             'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
             'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
+            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
             'highpass':
             'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
@@ -730,6 +645,21 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
     workflow.run()
+
+    # rename level1 output files to identify by sub-ses-run
+    basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level1'
+    outflds=['copes','dof_files','roi_file','varcopes']
+    for fld in outflds:
+        resfld = basedir + '/' + fld
+        for i,runfld in enumerate(sorted(os.listdir(resfld))):
+        	srcname=resfld + '/' + runfld
+        	destname=resfld + '/' + 'sub-' + sub_img[i] + '_ses-' + str(ses_img[i]) + '_run-' + run_img[i]
+        	os.rename(srcname,destname)    
+    # copy contrast file for convenience
+    basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace
+    contrfile='./code/contrasts/' + contrasts_name + '.py'
+    shutil.copyfile(contrfile, basedir + '/' + contrasts_name + '.py')
+
 
 if __name__ == '__main__':
     import argparse
