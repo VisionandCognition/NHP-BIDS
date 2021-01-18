@@ -24,8 +24,11 @@ from nipype.interfaces import utility as niu  # Utilities
 import nipype.pipeline.engine as pe           # pypeline engine
 import nipype.algorithms.modelgen as model    # model generation
 
-#import nipype.workflows.fmri.fsl as fslflows
-import niflow.nipype1.workflows.fmri.fsl as fslflows
+try: # facilitate different nipype versions
+    import nipype.workflows.fmri.fsl as fslflows
+except:
+    import niflow.nipype1.workflows.fmri.fsl as fslflows
+
 from subcode.filter_numbers import FilterNumsTask
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -55,7 +58,6 @@ def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, R
 
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        # 'funcmasks',
         'fwhm',  # smoothing
         'highpass',
 
@@ -381,11 +383,6 @@ def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, R
         (beh_roi, outputfiles_lev1,
          [('roi_file', 'roi_file'),
           ]),
-        # (inputnode, datasource, [('in_data', 'base_directory')]),
-        # (infosource, datasource, [('subject_id', 'subject_id')]),
-        # (infosource, modelspec, [(('subject_id', subjectinfo),
-        # 'subject_info')]),
-        # (datasource, preproc, [('func', 'inputspec.func')]),
     ])
     return(level1_workflow)
 

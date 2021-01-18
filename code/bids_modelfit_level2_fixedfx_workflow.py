@@ -15,18 +15,18 @@ from __future__ import division
 from builtins import str
 from builtins import range
 
-import os, shutil                             # system functions
+import os                                     # system functions
 import pandas as pd                           
 
 import nipype.interfaces.io as nio            # Data i/o
 import nipype.interfaces.fsl as fsl           # fsl
 from nipype.interfaces import utility as niu  # Utilities
 import nipype.pipeline.engine as pe           # pypeline engine
-import nipype.algorithms.modelgen as model    # model generation
 
-#import nipype.workflows.fmri.fsl as fslflows
-import niflow.nipype1.workflows.fmri.fsl as fslflows
-from subcode.filter_numbers import FilterNumsTask
+try: # facilitate different nipype versions
+    import nipype.workflows.fmri.fsl as fslflows
+except:
+    import niflow.nipype1.workflows.fmri.fsl as fslflows
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
