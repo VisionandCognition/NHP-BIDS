@@ -35,7 +35,7 @@ def combine_outlier_files(fslmat,rafile):
 
 def run_workflow(session=None, csv_file=None):
     from nipype import config
-    config.enable_debug_mode()
+    #config.enable_debug_mode()
 
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
