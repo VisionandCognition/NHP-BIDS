@@ -16,16 +16,22 @@ import nipype.interfaces.io as nio           # Data i/o
 import nipype.interfaces.fsl as fsl          # fsl
 
 from nipype.interfaces.utility import IdentityInterface
+from nipype.interfaces.utility import Function
 from nipype.pipeline.engine import Workflow, Node
 
 
-def combine_outlier_files(org_file,new_mat)
-	fsl_mat = np.loadtxt('new_mat.txt')
-	ra_list = np.loadtxt('org_file')
-	fsl_mat=np.nonzero(fsl_mat.sum(axis=1))[0]
-	new_list=np.sort(np.append(fsl_mat, ra_list, axis=0)).astype(int)
-	np.savetxt('newoutliers.txt',new_list,fmt="%i")
-
+def combine_outlier_files(fslmat,rafile):
+    import numpy as np
+    import os
+    fsl_mat = np.loadtxt(fslmat)
+    ra_list = np.loadtxt(rafile)
+    fsl_mat = np.nonzero(fsl_mat.sum(axis=1))[0]
+    mergedoutliers_list = np.sort(np.append(fsl_mat, ra_list, axis=0)).astype(int)  
+    fn = fslmat.split('/')[-1].split('_')
+    mergedoutliers_file = fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_mergedoutliers.txt'
+    np.savetxt(mergedoutliers_file, mergedoutliers_list,fmt="%i")
+    mergedoutliers_file = os.path.abspath(mergedoutliers_file)
+    return mergedoutliers_file
 
 def run_workflow(session=None, csv_file=None):
     from nipype import config
@@ -35,7 +41,7 @@ def run_workflow(session=None, csv_file=None):
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     data_dir = ds_root
-    output_dir = 'derivatives/featpreproc/fslmotionoutliers'
+    output_dir = 'derivatives/featpreproc/motion_outliers'
     working_dir = 'workingdirs'
 
     # ------------------ Input Files
@@ -92,7 +98,6 @@ def run_workflow(session=None, csv_file=None):
                         base_directory=data_dir), 
                         name="input_files")
 
-
     # ------------------ Output Files
     # Datasink
     outputfiles = Node(nio.DataSink(
@@ -103,18 +108,22 @@ def run_workflow(session=None, csv_file=None):
 
     # Use the following DataSink output substitutions
     outputfiles.inputs.substitutions = [
-        ('refsubject_id_', 'ref-'),
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
-        # remove subdirectories:
-        ('fslmotionoutlier_file', 'fslmotionoutliers'),
+        ('run_id_', 'run-'),
+        ('/merged_outliers/', '/'),
+        ('/fslmotionoutlier_file/', '/'),
+        ('bold_res-1x1x1_preproc_mc_outliers', 'fslmotionoutliers'),
     ]
 
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
-        (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
-        (r'_ref-([a-zA-Z0-9]+)_run_id_[0-9][0-9]', r''),
+        (r'_run-([a-zA-Z0-9]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
+            r'/sub-\3/ses-\2/func/'),
+        # (r'/_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
+        #     r'/sub-\2/ses-\1/'),
     ]
+
 
     # -------------------------------------------- Create Pipeline
     fslmotionoutliers = Workflow(
@@ -135,18 +144,24 @@ def run_workflow(session=None, csv_file=None):
 
     fslmotionoutliers.connect(inputfiles, 'motion_corrected',
                         GetOutliers, 'in_file')
-    fslmotionoutliers.connect(inputfiles, 'mask',
+    fslmotionoutliers.connect(inputfiles, 'masks',
                         GetOutliers, 'mask')
     fslmotionoutliers.connect(GetOutliers, 'out_file',
                         outputfiles, 'fslmotionoutlier_file')
 
-# outliers2 = MotionOutliers(
-#     in_file='/*_preproc_mc.nii.gz',
-#     no_motion_correction=True,
-#     mask='/*_mask_res-1x1x1_dil.nii.gz',    
-#     out_file='outliers2.txt',
-#     out_metric_plot='outliers2.png'
-# )
+    
+    # convert the fsl style design matrix to AFNI style volume indeces
+    ConvToAFNI = Node(name='ConvtoAFNI',
+                        interface=Function(input_names=['fslmat','rafile'],
+                                           output_names=['mergedoutliers_file'],
+                                           function=combine_outlier_files))
+
+    fslmotionoutliers.connect(GetOutliers, 'out_file',
+                        ConvToAFNI,'fslmat')
+    fslmotionoutliers.connect(inputfiles, 'motion_outlier_files',
+                        ConvToAFNI,'rafile')
+    fslmotionoutliers.connect(ConvToAFNI, 'mergedoutliers_file',
+                        outputfiles,'merged_outliers')
 
     fslmotionoutliers.stop_on_first_crash = False  # True
     fslmotionoutliers.keep_inputs = True
@@ -154,7 +169,6 @@ def run_workflow(session=None, csv_file=None):
     fslmotionoutliers.write_graph()
     fslmotionoutliers.run()
 
-    #
 
 if __name__ == '__main__':
     import argparse
