@@ -5,6 +5,8 @@ This script performs modelfits on preprocessed fMRI data. It assumes
 that data is in BIDS format and that the data has undergone 
 minimal processing, resampling, and preprocessing.
 
+Level2 fixed effects analysis
+
 Questions & comments: c.klink@nin.knaw.nl
 """
 
@@ -20,10 +22,11 @@ import nipype.interfaces.io as nio            # Data i/o
 import nipype.interfaces.fsl as fsl           # fsl
 from nipype.interfaces import utility as niu  # Utilities
 import nipype.pipeline.engine as pe           # pypeline engine
-import nipype.algorithms.modelgen as model    # model generation
 
-import nipype.workflows.fmri.fsl as fslflows
-from subcode.filter_numbers import FilterNumsTask
+try: # facilitate different nipype versions
+    import nipype.workflows.fmri.fsl as fslflows
+except:
+    import niflow.nipype1.workflows.fmri.fsl as fslflows
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir = ds_root
@@ -35,10 +38,10 @@ def get_csv_stem(csv_file):
     return csv_stem
 
 
-def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True):
-    level1_workflow = pe.Workflow(name='level1flow')
-    level1_workflow.base_dir = os.path.abspath(
-        './workingdirs/level1flow/' + out_label)
+def create_workflow(out_label, contrasts_name, RegSpace):
+    level2_workflow = pe.Workflow(name='level2flow')
+    level2_workflow.base_dir = os.path.abspath(
+        './workingdirs/level2flow/' + contrasts_name + '/' + RegSpace + '/level1')
 
     # ===================================================================
     #                  _____                   _
@@ -53,71 +56,12 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
 
     # ------------------ Specify variables
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        # 'funcmasks',
-        'fwhm',  # smoothing
-        'highpass',
-
-        'funcs',
-        'event_log',
-        'motion_parameters',
-        'motion_outlier_files',
-
-        'ref_func',
         'ref_funcmask',
+        'copes',
+        'dof_file',
+        'varcopes',
     ]), name="inputspec")
 
-    def remove_runs_missing_funcs(in_files, in_funcs):
-        import os
-        import re
-
-        assert not isinstance(in_files, str), "in_files must be list"
-        assert not isinstance(in_funcs, str), "in_funcs must be list"
-
-        if isinstance(in_files, str):
-            in_files = [in_files]
-
-        if isinstance(in_funcs, str):
-            in_funcs = [in_funcs]
-
-        has_func = set()
-        for f in in_funcs:
-            base = os.path.basename(f)
-            try:
-                sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
-                ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
-                run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
-            except AttributeError as e:
-                raise RuntimeError('Could not process "sub-*_", "ses-*_", " \
-                    "or "run-*_" from func "%s"' % f)
-            has_func.add((sub, ses, run))
-
-        files = []
-        for f in in_files:
-            base = os.path.basename(f)
-            try:
-                sub = re.search(r'sub-([a-zA-Z0-9]+)_', base).group(1)
-                ses = re.search(r'ses-([a-zA-Z0-9]+)_', base).group(1)
-                run = re.search(r'run-([a-zA-Z0-9]+)_', base).group(1)
-            except AttributeError as e:
-                raise RuntimeError('Could not process "sub-*_", "ses-*_", " \
-                    "or "run-*_" from event file "%s"' % f)
-            if (sub, ses, run) in has_func:
-                files.append(f)
-        return files
-
-    input_events = pe.Node(
-        interface=niu.Function(input_names=['in_files', 'in_funcs'],
-                               output_names=['out_files'],
-                               function=remove_runs_missing_funcs),
-        name='input_events',
-    )
-
-    level1_workflow.connect([
-        (inputnode, input_events,
-         [('funcs', 'in_funcs'),
-          ('event_log', 'in_files'),
-          ]),
-    ])
 
     # -------------------------------------------------------------------
     #            /~_ _  _  _  _. _   _ . _  _ |. _  _
@@ -132,24 +76,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     """
 
     fsl.FSLCommand.set_default_output_type('NIFTI_GZ')
-
-    modelfit = fslflows.create_modelfit_workflow()
-
-    if combine_runs:
-        fixed_fx = fslflows.create_fixed_effects_flow()
-    else:
-        fixed_fx = None
-
-    """
-    Add model specification nodes between the preprocessing and modelfitting
-    workflows.
-    """
-    modelspec = pe.Node(model.SpecifyModel(), name="modelspec")
-
-    """
-    Set up first-level workflow
-    ---------------------------
-    """
+    fixed_fx = fslflows.create_fixed_effects_flow()
 
     def sort_copes(files):
         """ Sort by copes and the runs, ie.
@@ -170,23 +97,17 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     def num_copes(files):
         return len(files)
 
-    if fixed_fx is not None:
-        ## ========================
-        # Here we put the 1st level results into a 2nd level fixed effects analysis
-        # Seems like a good place to check if copes should be included or not 
-        # If thry'tr empty they should not be included.
-        ## ========================
-
-        level1_workflow.connect([
-            (inputnode, fixed_fx,
-             [('ref_funcmask', 'flameo.mask_file')]),  # To-do: use ref mask!!!
-            (modelfit, fixed_fx,
-                [(('outputspec.copes', sort_copes), 'inputspec.copes'),
-                 ('outputspec.dof_file', 'inputspec.dof_files'),
-                 (('outputspec.varcopes', sort_copes), 'inputspec.varcopes'),
-                 (('outputspec.copes', num_copes), 'l2model.num_copes'),
-                 ])
+    # Level2 fixed effects
+    level2_workflow.connect([
+        (inputnode, fixed_fx,
+        [('ref_funcmask', 'flameo.mask_file'),
+         (('copes', sort_copes), 'inputspec.copes'),
+         ('dof_file', 'inputspec.dof_files'),
+         (('varcopes', sort_copes), 'inputspec.varcopes'),
+         (('copes', num_copes), 'l2model.num_copes'),
         ])
+    ])
+
 
     # ===================================================================
     #                   ____        _               _
@@ -202,7 +123,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
                 base_directory=ds_root,
-                container='derivatives/modelfit/' + out_label,
+                container='derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level2',
                 parameterization=True),
                 name="output_files")
 
@@ -210,236 +131,25 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
     outputfiles.inputs.substitutions = [
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
-        # ('/mask/', '/'),
-        # ('_preproc_flirt_thresh.nii.gz', '_transformedmask.nii.gz'),
-        # ('_preproc_volreg_unwarped.nii.gz', '_preproc.nii.gz'),
-        # ('_preproc_flirt_unwarped.nii.gz', '_preproc-mask.nii.gz'),
-        # ('/_mc_method_afni3dvolreg/', '/'),
-        # ('/funcs/', '/'),
-        # ('/funcmasks/', '/'),
-        # ('preproc_volreg.nii.gz', 'preproc.nii.gz'),
         ('/_mc_method_afni3dAllinSlices/', '/'),
     ]
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
         (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
         (r'_refsub([a-zA-Z0-9]+)', r''),
-        # (r'/_addmean[0-9]+/', r'/func/'),
-        # (r'/_dilatemask[0-9]+/', r'/func/'),
-        # (r'/_funcbrain[0-9]+/', r'/func/'),
-        # (r'/_maskfunc[0-9]+/', r'/func/'),
-        # (r'/_mc[0-9]+/', r'/func/'),
-        # (r'/_meanfunc[0-9]+/', r'/func/'),
-        # (r'/_outliers[0-9]+/', r'/func/'),
-        # (r'/_undistort_masks[0-9]+/', r'/func/'),
-        # (r'/_undistort[0-9]+/', r'/func/'),
     ]
-    level1_workflow.connect([
-        (modelfit, outputfiles,
-         [(('outputspec.copes', sort_copes), 'copes'),
-          ('outputspec.dof_file', 'dof_files'),
-          (('outputspec.varcopes', sort_copes), 'varcopes'),
+    
+    level2_workflow.connect([
+        (fixed_fx, outputfiles,
+         [('outputspec.res4d', 'fx.res4d'),
+          ('outputspec.copes', 'fx.copes'),
+          ('outputspec.varcopes', 'fx.varcopes'),
+          ('outputspec.zstats', 'fx.zstats'),
+          ('outputspec.tstats', 'fx.tstats'),
           ]),
-    ])
-    if fixed_fx is not None:
-        level1_workflow.connect([
-            (fixed_fx, outputfiles,
-             [('outputspec.res4d', 'fx.res4d'),
-              ('outputspec.copes', 'fx.copes'),
-              ('outputspec.varcopes', 'fx.varcopes'),
-              ('outputspec.zstats', 'fx.zstats'),
-              ('outputspec.tstats', 'fx.tstats'),
-              ]),
         ])
 
-    # -------------------------------------------------------------------
-    #          (~   _  _  _. _ _  _  _ _|_   _ _  _  _. |`. _
-    #          (_><|_)(/_| || | |(/_| | |   _\|_)(/_(_|~|~|(_
-    #              |                          |
-    # -------------------------------------------------------------------
-
-    """
-    Use the get_node function to retrieve an internal node by name. Then set
-    iterables on this node to perform two different extents of smoothing.
-    """
-
-    featinput = level1_workflow.get_node('modelfit.inputspec')
-    featinput.inputs.fwhm = fwhm
-
-    hpcutoff_s = HighPass  # FWHM in seconds
-    TR = 2.5
-    hpcutoff_nvol = hpcutoff_s / 2.5  # FWHM in volumns
-
-    # Use Python3 for processing. See code/requirements.txt for pip packages.
-    featinput.inputs.highpass = hpcutoff_nvol / 2.355  # Gaussian: σ in vols
-
-    """
-    Setup a function that returns subject-specific information about the
-    experimental paradigm. This is used by the
-    :class:`nipype.modelgen.SpecifyModel` to create the information necessary
-    to generate an SPM design matrix. In this tutorial, the same paradigm was
-    used for every participant. Other examples of this function are available
-    in the `doc/examples` folder. Note: Python knowledge required here.
-    """
-
-    # from timeevents.curvetracing import calc_curvetracing_events
-    from timeevents import process_time_events
-
-    timeevents = pe.MapNode(
-        interface=process_time_events,  # calc_curvetracing_events,
-        iterfield=('event_log', 'in_nvols', 'TR'),
-        name='timeevents')
-
-    def get_nvols(funcs):
-        import nibabel as nib
-        nvols = []
-
-        if isinstance(funcs, str):
-            funcs = [funcs]
-
-        for func in funcs:
-            func_img = nib.load(func)
-            header = func_img.header
-            try:
-                nvols.append(func_img.get_data().shape[3])
-            except IndexError as e:
-                # if shape only has 3 dimensions, then it is only 1 volume
-                nvols.append(1)
-        return(nvols)
-
-    def get_TR(funcs):
-        import nibabel as nib
-        TRs = []
-
-        if isinstance(funcs, str):
-            funcs = [funcs]
-
-        for func in funcs:
-            func_img = nib.load(func)
-            header = func_img.header
-            try:
-                TR = round(header.get_zooms()[3], 5)
-            except IndexError as e:
-                TR = 2.5
-                print("Warning: %s did not have TR defined in the header. "
-                      "Using default TR of %0.2f" %
-                      (func, TR))
-
-            assert TR > 1
-            TRs.append(TR)
-        return(TRs)
-
-    level1_workflow.connect([
-        (inputnode, timeevents,
-         [(('funcs', get_nvols), 'in_nvols'),
-          (('funcs', get_TR), 'TR'),
-          ]),
-        (input_events, timeevents,
-         [('out_files', 'event_log')]),
-        (inputnode, modelspec,
-         [('motion_parameters', 'realignment_parameters')]),
-        (modelspec, modelfit,
-         [('session_info', 'inputspec.session_info')]),
-    ])
-
-    # Ignore volumes after last good response
-    filter_outliers = pe.MapNode(
-        interface=FilterNumsTask(),
-        name='filter_outliers',
-        iterfield=('in_file', 'max_number')
-    )
-
-    level1_workflow.connect([
-        (inputnode, filter_outliers,
-         [('motion_outlier_files', 'in_file')]),
-        (filter_outliers, modelspec,
-         [('out_file', 'outlier_files')]),
-        (timeevents, filter_outliers,
-         [('out_nvols', 'max_number')]),
-    ])
-
-    def evt_info(cond_events):
-        output = []
-
-        # for each run
-        for ev in cond_events:
-            from nipype.interfaces.base import Bunch
-            from copy import deepcopy
-            names = []
-
-            for name in ev.keys():
-                if ev[name].shape[0] > 0:
-                    names.append(name)
-
-            onsets = [deepcopy(ev[name].time)
-                      if ev[name].shape[0] > 0 else [] for name in names]
-            durations = [deepcopy(ev[name].dur)
-                         if ev[name].shape[0] > 0 else [] for name in names]
-            amplitudes = [deepcopy(ev[name].amplitude)
-                          if ev[name].shape[0] > 0 else [] for name in names]
-
-            run_results = Bunch(
-                conditions=names,
-                onsets=[deepcopy(ev[name].time) for name in names],
-                durations=[deepcopy(ev[name].dur) for name in names],
-                amplitudes=[deepcopy(ev[name].amplitude) for name in names])
-
-            output.append(run_results)
-        return output
-
-    modelspec.inputs.input_units = 'secs'
-    modelspec.inputs.time_repetition = TR  # to-do: specify per func
-    modelspec.inputs.high_pass_filter_cutoff = hpcutoff_s
-
-    # Find out which HRF function we want to use
-    if hrf == 'fsl_doublegamma':  # this is the default
-        modelfit.inputs.inputspec.bases = {'dgamma': {'derivs': True}}
-    else:
-        # use a custom hrf as defined in arguments
-        currpath = os.getcwd()
-        hrftxt = currpath + hrf[1:]
-        modelfit.inputs.inputspec.bases = {'custom': {'bfcustompath': hrftxt}}
-        
-    modelfit.inputs.inputspec.interscan_interval = TR
-    modelfit.inputs.inputspec.contrasts = contrasts
-    modelfit.inputs.inputspec.model_serial_correlations = True
-    modelfit.inputs.inputspec.film_threshold = 1000
-
-    modelfit.config['execution'] = dict(
-        crashdump_dir=os.path.abspath('.'))
-
-    # Ignore volumes after subject has finished working for the run
-    beh_roi = pe.MapNode(
-        fsl.ExtractROI(t_min=0),
-        name='beh_roi',
-        iterfield=['in_file', 't_size'])
-
-    level1_workflow.connect([
-        (timeevents, modelspec,
-         [(('out_events', evt_info), 'subject_info'),
-          ]),
-        (inputnode, beh_roi,
-         [('funcs', 'in_file'),
-          ]),
-        (timeevents, beh_roi,
-         [('out_nvols', 't_size'),
-          ]),
-        (beh_roi, modelspec,
-         [('roi_file', 'functional_runs'),
-          ]),
-        (beh_roi, modelfit,
-         [('roi_file', 'inputspec.functional_data'),
-          ]),
-        (beh_roi, outputfiles,
-         [('roi_file', 'roi_file'),
-          ]),
-        # (inputnode, datasource, [('in_data', 'base_directory')]),
-        # (infosource, datasource, [('subject_id', 'subject_id')]),
-        # (infosource, modelspec, [(('subject_id', subjectinfo),
-        # 'subject_info')]),
-        # (datasource, preproc, [('func', 'inputspec.func')]),
-    ])
-    return(level1_workflow)
+    return(level2_workflow)
 
 
 # ===================================================================
@@ -452,16 +162,7 @@ def create_workflow(contrasts, out_label, hrf, fwhm, HighPass, combine_runs=True
 #
 # ===================================================================
 
-"""
-Execute the pipeline
---------------------
-The code discussed above sets up all the necessary data structures with
-appropriate parameters and the connectivity between the processes, but does not
-generate any output. To actually run the analysis on the data the
-``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
-"""
-
-def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpace):
+def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -469,7 +170,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         out_label = csv_stem.replace('-', '_')  # replace - with _
     else:
         out_label = res_fld.replace('-', '_')  # replace - with _
-    workflow = pe.Workflow(name='run_level1flow_' + out_label)
+    workflow = pe.Workflow(name='run_level2flow_' + out_label)
     workflow.base_dir = os.path.abspath('./workingdirs')
 
     from nipype import config, logging
@@ -491,24 +192,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     workflow.keep_inputs = True
     workflow.hash_method = 'content'
 
-    """
-    Setup the contrast structure that needs to be evaluated. This is a list of
-    lists. The inner list specifies the contrasts and has the following format:
-    [Name,Stat,[list of condition names],[weights on those conditions]. 
-    The condition names must match the `names` listed in the `evt_info` function
-    described above.
-    """
-
-    try:
-        import importlib
-        mod = importlib.import_module('contrasts.' + contrasts_name)
-        contrasts = mod.contrasts
-        # event_names = mod.event_names
-    except ImportError:
-        raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
-                           ' module in contrasts directory!' % contrasts_name)
-
-    modelfit = create_workflow(contrasts, out_label, hrf, fwhm, HighPass)
+    modelfit = create_workflow(out_label, contrasts_name, RegSpace)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -532,9 +216,14 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
             ses_img.append(row.session)
             run_img.append(r)
             if 'refsubject' in df.columns:
-              ref_img.append(row.refsubject)
+                if row.refsubject == 'nan':
+                    # empty field
+                    ref_img.append(row.subject)
+                else:
+                    # non-empty field
+                    ref_img.append(row.refsubject) 
             else:
-              ref_img.append(row.subject)
+                ref_img.append(row.subject)
 
       inputnode.iterables = [
             ('subject_id', sub_img),
@@ -551,72 +240,40 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     if RegSpace == 'nmt':
         # use the warped files
         templates = {
-            'funcs':
-            'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
-
-            'highpass':
-            'derivatives/featpreproc/warp2nmt/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
-
-            'motion_parameters':
-            'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
-
-            'motion_outlier_files':
-            'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
-            'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
-
-            'event_log':
-            'sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
-
-            'ref_func':  # was: manualmask_func_ref
-            'manual-masks/sub-{refsubject_id}/warp/'
-            'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
-
             'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/warp/'
+            'manual-masks/sub-{refsubject_id}/warps/'
             'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
+            'copes':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
+            'dof_file':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
+            'roi_file':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
+            'varcopes':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
         }  
     elif RegSpace == 'native':
         # use the functional files
         templates = {
-            'funcs':
-            'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}*_bold_res-1x1x1_preproc_*.nii.gz',
-
-            'highpass':
-            'derivatives/featpreproc/highpassed_files/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
-
-            'motion_parameters':
-            'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
-            'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc.param.1D',
-
-            'motion_outlier_files':
-            'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
-            'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
-            'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
-
-            'event_log':
-            'sub-{subject_id}/ses-{session_id}/func/'
-                'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',
-
-            'ref_func':  # was: manualmask_func_ref
-            'manual-masks/sub-{refsubject_id}/func/'
-            'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
-
             'ref_funcmask':  # was: manualmask
             'manual-masks/sub-{refsubject_id}/func/'
             'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
+            'copes':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
+            'dof_file':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
+            'roi_file':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
+            'varcopes':
+            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+            'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
         }  
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
@@ -637,22 +294,17 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
 
     join_input = pe.JoinNode(
         niu.IdentityInterface(fields=[
-            'funcs',
-            'highpass',
-            'motion_parameters',
-            'motion_outlier_files',
-            'event_log',
-            'ref_func',
+            'copes',
+            'dof_file',
+            'varcopes',
             'ref_funcmask',
             ]
             ),
         joinsource='input',
         joinfield=[
-            'funcs',
-            'highpass',
-            'motion_parameters',
-            'motion_outlier_files',
-            'event_log',
+            'copes',
+            'dof_file',
+            'varcopes',
             ],
         # unique=True,
         name='join_input')
@@ -660,30 +312,19 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     workflow.connect([
         (inputfiles, join_input,
          [
-          ('funcs', 'funcs'),
-          ('highpass', 'highpass'),
-          ('motion_parameters', 'motion_parameters'),
-          ('motion_outlier_files', 'motion_outlier_files'),
-          ('event_log', 'event_log'),
-          ('ref_func', 'ref_func'),
+          ('copes', 'copes'),
+          ('dof_file', 'dof_file'),
+          ('varcopes', 'varcopes'),
           ('ref_funcmask', 'ref_funcmask'),
           ]),
         (join_input, modelfit,
          [
-          ('funcs', 'inputspec.funcs'),
-          ('highpass', 'inputspec.highpass'),
-          ('motion_parameters', 'inputspec.motion_parameters'),
-          ('motion_outlier_files', 'inputspec.motion_outlier_files'),
-          ('event_log', 'inputspec.event_log'),
-          ('ref_func', 'inputspec.ref_func'),
+          ('copes', 'inputspec.copes'),
+          ('dof_file', 'inputspec.dof_file'),
+          ('varcopes', 'inputspec.varcopes'),
           ('ref_funcmask', 'inputspec.ref_funcmask'),
           ]),
     ])
-
-    modelfit.inputs.inputspec.fwhm = fwhm     # spatial smoothing (default=2)
-    modelfit.inputs.inputspec.highpass = HighPass  # FWHM in seconds (default=50)
-    modelfit.write_graph(simple_form=True)
-    modelfit.write_graph(graph2use='orig', format='png', simple_form=True)
 
     workflow.workflow_level = 'INFO'    # INFO/DEBUG
     # workflow.stop_on_first_crash = True
@@ -709,14 +350,6 @@ if __name__ == '__main__':
                         help='Define the name for output and workingdir '
                         'folders. If not unique it will append.'
                         'Default is the stem of the csv filename')
-    parser.add_argument('--hrf', dest='hrf', default='fsl_doublegamma',
-                        help='Custom HRF file in fsl format to be used in GLM')
-    parser.add_argument('--fwhm',
-                        dest='fwhm', default=2.0,
-                        help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
-    parser.add_argument('--HighPass',
-                        dest='HighPass', default=50,
-                        help='Set high pass filter in seconds. (default = 50 s)')
     parser.add_argument('--RegSpace',
                         dest='RegSpace', default='nmt',
                         help='Set space to perform modelfit in. ([nmt]/native)')
