@@ -632,7 +632,9 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         resfld = basedir + '/' + fld
         for i,runfld in enumerate(sorted(os.listdir(resfld))):
         	srcname=resfld + '/' + runfld
-        	destname=resfld + '/' + 'sub-' + sub_img[i] + '_ses-' + str(ses_img[i]) + '_run-' + run_img[i]
+        	destname=basedir + '/sub-' + sub_img[i] + '/ses-' + str(ses_img[i]) + '/run-' 
+                     + run_img[i] '/' + fld
+            # destname=resfld + '/' + 'sub-' + sub_img[i] + '_ses-' + str(ses_img[i]) + '_run-' + run_img[i]
         	os.rename(srcname,destname)    
     # copy contrast file for convenience
     basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace

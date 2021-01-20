@@ -41,7 +41,8 @@ def get_csv_stem(csv_file):
 def create_workflow(out_label, contrasts_name, RegSpace):
     level2_workflow = pe.Workflow(name='level2flow')
     level2_workflow.base_dir = os.path.abspath(
-        './workingdirs/level2flow/' + contrasts_name + '/' + RegSpace + '/level1')
+        './workingdirs/level2flow/' + contrasts_name + '/' 
+        + RegSpace + '/level2/' + out_label)
 
     # ===================================================================
     #                  _____                   _
@@ -123,7 +124,8 @@ def create_workflow(out_label, contrasts_name, RegSpace):
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
                 base_directory=ds_root,
-                container='derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level2',
+                container='derivatives/modelfit/' +  contrasts_name + '/' 
+                          + RegSpace + '/level2/' + out_label,
                 parameterization=True),
                 name="output_files")
 
@@ -131,7 +133,6 @@ def create_workflow(out_label, contrasts_name, RegSpace):
     outputfiles.inputs.substitutions = [
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
-        ('/_mc_method_afni3dAllinSlices/', '/'),
     ]
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
@@ -236,47 +237,54 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
       print("No csv-file specified. Don't know what data to process.")
 
    
+    
     # Registration space determines which files to use
     if RegSpace == 'nmt':
         # use the warped files
-        templates = {
-            'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/warps/'
-            'sub-{subject_id}_func2nmt_mask_res-1x1x1.nii.gz',
-            'copes':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
-            'dof_file':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
-            'roi_file':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
-            'varcopes':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
-        }  
+        maskfld = 'warps'
+        maskfn = 'func2nmt_res-1x1x1.nii.gz'
     elif RegSpace == 'native':
         # use the functional files
-        templates = {
-            'ref_funcmask':  # was: manualmask
-            'manual-masks/sub-{refsubject_id}/func/'
-            'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
-            'copes':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
-            'dof_file':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
-            'roi_file':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
-            'varcopes':
-            'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-            'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
-        }  
+        maskfld = 'func'
+        maskfn = 'ref_func_mask_res-1x1x1.nii.gz'
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
+
+    # templates = {
+    #     'ref_funcmask':  # was: manualmask
+    #     'manual-masks/sub-{refsubject_id}/' + maskfld +
+    #     '/sub-{subject_id}_' + maskfn,
+    #     'copes':
+    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+    #     'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
+    #     'dof_file':
+    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+    #     'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
+    #     'roi_file':
+    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+    #     'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
+    #     'varcopes':
+    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+    #     'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
+    # }  
+    
+    templates = {
+        'ref_funcmask':  # was: manualmask
+        'manual-masks/sub-{refsubject_id}/' + maskfld +
+        '/sub-{subject_id}_' + maskfn,
+        'copes':
+        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'sub-{subject_id}/ses-{session_id}/run-{run_id}/copes/cope*.nii.gz',
+        'dof_file':
+        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'sub-{subject_id}/ses-{session_id}/run-{run_id}/dof_files/dof',
+        'roi_file':
+        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'sub-{subject_id}/ses-{session_id}/run-{run_id}/roi_file/*.nii.gz',
+        'varcopes':
+        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'sub-{subject_id}/ses-{session_id}/run-{run_id}/varcopes/varcope*.nii.gz',
+    }  
 
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
