@@ -25,8 +25,13 @@ def combine_outlier_files(fslmat,rafile):
     import os
     fsl_mat = np.loadtxt(fslmat)
     ra_list = np.loadtxt(rafile)
-    fsl_mat = np.nonzero(fsl_mat.sum(axis=1))[0]
-    mergedoutliers_list = np.sort(np.append(fsl_mat, ra_list, axis=0)).astype(int)  
+    
+    if fsl_mat.size == 0: # only merge outlier files if additional outliers are detected
+        mergedoutliers_list = ra_list
+    else:
+        fsl_mat = np.nonzero(fsl_mat.sum(axis=1))[0]
+        mergedoutliers_list = np.sort(np.append(fsl_mat, ra_list, axis=0)).astype(int)  
+    
     fn = fslmat.split('/')[-1].split('_')
     mergedoutliers_file = fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_mergedoutliers.txt'
     np.savetxt(mergedoutliers_file, mergedoutliers_list,fmt="%i")

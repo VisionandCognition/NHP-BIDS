@@ -15,7 +15,7 @@ from __future__ import division
 from builtins import str
 from builtins import range
 
-import os                                     # system functions
+import os, shutil                             # system functions
 import pandas as pd                           
 
 import nipype.interfaces.io as nio            # Data i/o
@@ -185,7 +185,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
           'interface_level': 'INFO',
           }})
     logging.update_logging(config)
-    config.enable_debug_mode()
+    #config.enable_debug_mode()
 
     # redundant with enable_debug_mode() ...
     workflow.stop_on_first_crash = True
@@ -249,24 +249,6 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
         maskfn = 'ref_func_mask_res-1x1x1.nii.gz'
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
-
-    # templates = {
-    #     'ref_funcmask':  # was: manualmask
-    #     'manual-masks/sub-{refsubject_id}/' + maskfld +
-    #     '/sub-{subject_id}_' + maskfn,
-    #     'copes':
-    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-    #     'copes/sub-{subject_id}_ses-{session_id}_run-{run_id}/cope*.nii.gz',
-    #     'dof_file':
-    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-    #     'dof_files/sub-{subject_id}_ses-{session_id}_run-{run_id}/dof',
-    #     'roi_file':
-    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-    #     'roi_file/sub-{subject_id}_ses-{session_id}_run-{run_id}/*.nii.gz',
-    #     'varcopes':
-    #     'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-    #     'varcopes/sub-{subject_id}_ses-{session_id}_run-{run_id}/varcope*.nii.gz',
-    # }  
     
     templates = {
         'ref_funcmask':  # was: manualmask
@@ -341,6 +323,10 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
     workflow.write_graph(simple_form=True)
     workflow.write_graph(graph2use='colored', format='png', simple_form=True)
     workflow.run()
+
+    # copy csv file for convenience
+    basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level2/'  + out_label 
+    shutil.copyfile(csv_file, basedir + '/included_files.csv')
 
 if __name__ == '__main__':
     import argparse

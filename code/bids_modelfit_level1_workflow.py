@@ -43,7 +43,7 @@ def get_csv_stem(csv_file):
 def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, RegSpace):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
-        './workingdirs/level1flow/' + contrasts_name + '/' + RegSpace + '/level1')
+        './workingdirs/level1flow/' + contrasts_name + '/' + RegSpace)
 
     # ===================================================================
     #                  _____                   _
@@ -428,7 +428,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
           'interface_level': 'INFO',
           }})
     logging.update_logging(config)
-    config.enable_debug_mode()
+    #config.enable_debug_mode() << uncomment for massive output of info
 
     # redundant with enable_debug_mode() ...
     workflow.stop_on_first_crash = True
@@ -632,12 +632,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         resfld = basedir + '/' + fld
         for i,runfld in enumerate(sorted(os.listdir(resfld))):
         	srcname=resfld + '/' + runfld
-        	destname=basedir + '/sub-' + sub_img[i] + '/ses-' + str(ses_img[i]) + '/run-' 
-                     + run_img[i] '/' + fld
-            # destname=resfld + '/' + 'sub-' + sub_img[i] + '_ses-' + str(ses_img[i]) + '_run-' + run_img[i]
-        	os.rename(srcname,destname)    
+        	destname=(basedir + '/sub-' + sub_img[i] + '/ses-' + 
+                str(ses_img[i]) + '/run-' + run_img[i] + '/' + fld)
+        	shutil.move(srcname,destname)  
+        shutil.rmtree(resfld)  
     # copy contrast file for convenience
-    basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace
+    basedir='./derivatives/modelfit/' +  contrasts_name
     contrfile='./code/contrasts/' + contrasts_name + '.py'
     shutil.copyfile(contrfile, basedir + '/' + contrasts_name + '.py')
 
