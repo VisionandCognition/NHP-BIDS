@@ -26,7 +26,7 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 
 def run_workflow(session=None, csv_file=None):
     from nipype import config
-    config.enable_debug_mode()
+    #config.enable_debug_mode()
 
     method = 'fs'  # freesurfer's mri_convert is faster
     if method == 'fs':

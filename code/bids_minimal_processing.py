@@ -65,8 +65,7 @@ def run_workflow(csv_file, stop_on_first_crash,
                  ignore_events):
     
     from nipype import config
-    
-    config.enable_debug_mode()
+    #config.enable_debug_mode()
 
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

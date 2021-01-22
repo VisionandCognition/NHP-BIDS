@@ -21,7 +21,11 @@ import pandas as pd
 
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.utility as util     # utility
-from nipype.workflows.fmri.fsl.preprocess import create_susan_smooth
+
+try: ## replace this with the new utilities
+  from nipype.workflows.fmri.fsl.preprocess import create_susan_smooth
+except:
+  from niflow.nipype1.workflows.fmri.fsl.preprocess import create_susan_smooth
 from nipype import LooseVersion
 
 import subcode.bids_transform_manualmask as transform_manualmask
@@ -558,6 +562,7 @@ def create_workflow():
     # create_susan_smooth takes care of calculating the mean and median
     #   functional, applying mask to functional, and running the smoothing
     smooth = create_susan_smooth(separate_masks=False)
+
     featpreproc.connect(inputnode, 'fwhm', smooth, 'inputnode.fwhm')
 
     featpreproc.connect(mc, 'mc.out_file',

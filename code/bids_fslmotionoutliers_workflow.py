@@ -8,9 +8,8 @@ minimal processing, resampling, and preprocessing.
 Questions & comments: c.klink@nin.knaw.nl
 """
 
-import os, shutil                             # system functions
+import os                                    # system functions
 import pandas as pd                          # data juggling
-import numpy as np
 
 import nipype.interfaces.io as nio           # Data i/o
 import nipype.interfaces.fsl as fsl          # fsl
@@ -23,16 +22,32 @@ from nipype.pipeline.engine import Workflow, Node
 def combine_outlier_files(fslmat,rafile):
     import numpy as np
     import os
-    fsl_mat = np.loadtxt(fslmat)
-    ra_list = np.loadtxt(rafile)
+    
+    try:
+        fsl_mat = np.loadtxt(fslmat)
+        fsl_outliers_present = True
+    except:
+        fsl_outliers_present = False
+    ra_list = np.loadtxt(rafile) 
     
     if fsl_mat.size == 0: # only merge outlier files if additional outliers are detected
         mergedoutliers_list = ra_list
+    elif ra_list.size == 0:
+        if fsl_mat.ndim > 1:
+            mergedoutliers_list = np.nonzero(fsl_mat.sum(axis=1))[0]
+        else:
+            mergedoutliers_list = np.nonzero(fsl_mat)[0]
     else:
-        fsl_mat = np.nonzero(fsl_mat.sum(axis=1))[0]
-        mergedoutliers_list = np.sort(np.append(fsl_mat, ra_list, axis=0)).astype(int)  
+        if fsl_mat.ndim > 1:
+            fsl_ind = np.nonzero(fsl_mat.sum(axis=1))[0]
+        else:
+            fsl_ind = np.nonzero(fsl_mat)[0]
+        mergedoutliers_list = np.unique(np.append(fsl_ind[:,None], 
+            ra_list[:,None], axis=0)).astype(int)  
     
-    fn = fslmat.split('/')[-1].split('_')
+    fn = rafile.split('/')[-1].split('_')
+    #fn = fslmat.split('/')[-1].split('_')
+
     mergedoutliers_file = fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_mergedoutliers.txt'
     np.savetxt(mergedoutliers_file, mergedoutliers_list,fmt="%i")
     mergedoutliers_file = os.path.abspath(mergedoutliers_file)
@@ -125,8 +140,6 @@ def run_workflow(session=None, csv_file=None):
     outputfiles.inputs.regexp_substitutions = [
         (r'_run-([a-zA-Z0-9]*)_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
             r'/sub-\3/ses-\2/func/'),
-        # (r'/_ses-([a-zA-Z0-9]*)_sub-([a-zA-Z0-9]*)',
-        #     r'/sub-\2/ses-\1/'),
     ]
 
 
