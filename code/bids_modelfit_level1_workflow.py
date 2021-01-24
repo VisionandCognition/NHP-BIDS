@@ -40,7 +40,8 @@ def get_csv_stem(csv_file):
     csv_stem = csv_filename.split('.')[0]
     return csv_stem
 
-def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, RegSpace):
+def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, 
+                    HighPass, RegSpace, motion_outliers_type):
     level1_workflow = pe.Workflow(name='level1flow')
     level1_workflow.base_dir = os.path.abspath(
         './workingdirs/level1flow/' + contrasts_name + '/' + RegSpace)
@@ -179,9 +180,10 @@ def create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, R
     # Datasink
     outputfiles_lev1 = pe.Node(nio.DataSink(
                 base_directory=ds_root,
-                container='derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level1',
+                container=('derivatives/modelfit/' +  contrasts_name + '/' 
+                    + RegSpace + '/level1/mo-' + motion_outliers_type),
                 parameterization=True),
-                name="output_files")
+                name="output_files")  
 
     # Use the following DataSink output substitutions
     outputfiles_lev1.inputs.substitutions = [
@@ -453,7 +455,8 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         raise RuntimeError('Unknown contrasts: %s. Must exist as a Python'
                            ' module in contrasts directory!' % contrasts_name)
 
-    modelfit = create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm, HighPass, RegSpace)
+    modelfit = create_workflow(contrasts, out_label, contrasts_name, hrf, fwhm,
+                               HighPass, RegSpace, motion_outliers_type)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -626,7 +629,9 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     workflow.run()
 
     # rename level1 output files to identify by sub-ses-run
-    basedir='./derivatives/modelfit/' +  contrasts_name + '/' + RegSpace + '/level1'
+    basedir=(
+        './derivatives/modelfit/' +  contrasts_name + '/' 
+        + RegSpace + '/level1/mo-' + motion_outliers_type) 
     outflds=['copes','dof_files','roi_file','varcopes']
     for fld in outflds:
         resfld = basedir + '/' + fld

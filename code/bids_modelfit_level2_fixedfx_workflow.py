@@ -163,14 +163,14 @@ def create_workflow(out_label, contrasts_name, RegSpace):
 #
 # ===================================================================
 
-def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
+def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_type):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
         csv_stem = get_csv_stem(csv_file)
         out_label = csv_stem.replace('-', '_')  # replace - with _
     else:
-        out_label = res_fld.replace('-', '_')  # replace - with _
+        out_label = res_fld
     workflow = pe.Workflow(name='run_level2flow_' + out_label)
     workflow.base_dir = os.path.abspath('./workingdirs')
 
@@ -250,22 +250,31 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace):
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
     
+    if motion_outliers_type == 'None':
+        mofmod =''
+    elif motion_outliers_type == 'single' or motion_outliers_type == 'merged':
+        mofmod = 'mo-' + motion_outliers_type + '/'
+    else:
+        raise RuntimeError(
+            'ERROR - Unknown motion_outliers_type "%s"' % motion_outliers_type)
+
+
     templates = {
         'ref_funcmask':  # was: manualmask
         'manual-masks/sub-{refsubject_id}/' + maskfld +
         '/sub-{subject_id}_' + maskfn,
         'copes':
         'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-        'sub-{subject_id}/ses-{session_id}/run-{run_id}/copes/cope*.nii.gz',
+        + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/copes/cope*.nii.gz',
         'dof_file':
         'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-        'sub-{subject_id}/ses-{session_id}/run-{run_id}/dof_files/dof',
+        + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/dof_files/dof',
         'roi_file':
         'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-        'sub-{subject_id}/ses-{session_id}/run-{run_id}/roi_file/*.nii.gz',
+        + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/roi_file/*.nii.gz',
         'varcopes':
         'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
-        'sub-{subject_id}/ses-{session_id}/run-{run_id}/varcopes/varcope*.nii.gz',
+        + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/varcopes/varcope*.nii.gz',
     }  
 
     inputfiles = pe.Node(
@@ -347,6 +356,9 @@ if __name__ == '__main__':
     parser.add_argument('--RegSpace',
                         dest='RegSpace', default='nmt',
                         help='Set space to perform modelfit in. ([nmt]/native)')
+    parser.add_argument('--MotionOutliers',
+                        dest='motion_outliers_type', default='None',
+                        help='Set which motion outliers file to us. ([None]/single/merged)') 
 
     args = parser.parse_args()
     run_workflow(**vars(args))
