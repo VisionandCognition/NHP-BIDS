@@ -506,11 +506,13 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         fbase = 'derivatives/featpreproc/warp2nmt'
         maskfld = 'warps'
         maskfn = 'func2nmt_res-1x1x1.nii.gz'
+        funcsub = ''
     elif RegSpace == 'native':
         # use the functional files
         fbase = 'derivatives/featpreproc'
         maskfld = 'func'
         maskfn = 'ref_func_mask_res-1x1x1.nii.gz'
+        funcsub = 'func/'
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
 
@@ -525,12 +527,14 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     templates = {
         'funcs':
         fbase + '/highpassed_files/sub-{subject_id}/'
-        'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
+        'ses-{session_id}/' + funcsub + 
+        'sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
         'highpass':
         fbase + '/highpassed_files/sub-{subject_id}/'
-        'ses-{session_id}/sub-{subject_id}_ses-{session_id}_*_'
+        'ses-{session_id}/' + funcsub + 
+        'sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_preproc_*.nii.gz',
 
         'motion_parameters':
