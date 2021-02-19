@@ -250,8 +250,8 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_ty
     else:
         raise RuntimeError('ERROR - Unknown reg-space "%s"' % RegSpace)
     
-    if motion_outliers_type == 'None':
-        mofmod =''
+    if motion_outliers_type == 'selected':
+        mofmod ='selected/'
     elif motion_outliers_type == 'single' or motion_outliers_type == 'merged':
         mofmod = 'mo-' + motion_outliers_type + '/'
     else:
@@ -357,7 +357,7 @@ if __name__ == '__main__':
                         dest='RegSpace', default='nmt',
                         help='Set space to perform modelfit in. ([nmt]/native)')
     parser.add_argument('--MotionOutliers',
-                        dest='motion_outliers_type', default='None',
+                        dest='motion_outliers_type', default='selected',
                         help='Set which motion outliers file to us. ([None]/single/merged)') 
 
     args = parser.parse_args()
