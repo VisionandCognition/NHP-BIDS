@@ -17,7 +17,7 @@ ipython-genutils==0.2.0
 isodate==0.5.4
 jedi==0.10.2
 Jinja2>=2.10.1  # was Jinja2==2.10
-lxml==4.6.2
+lxml==4.6.3
 MarkupSafe==1.0
 matplotlib==2.0.2
 mock==2.0.0
