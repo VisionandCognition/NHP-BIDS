@@ -33,7 +33,7 @@ pickleshare==0.7.4
 prompt-toolkit==1.0.15
 prov==1.5.0
 ptyprocess==0.5.2
-py==1.4.34
+py==1.10.0
 pydicom==0.9.9
 pydot==1.2.4
 pydotplus==2.0.2
