@@ -801,6 +801,9 @@ if __name__ == '__main__':
     parser.add_argument('--csv',
                         dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--undist',
+                        dest='undist', default=True,
+                        help='Boolean indicating whether to use undistorted epis (default is True)')
     parser.add_argument('--fwhm',
                         dest='fwhm', default=2.0,
                         help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
