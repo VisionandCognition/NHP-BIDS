@@ -6,8 +6,8 @@ workingdirs/
 scratch/
 job-logs/
 logs/
-manual-masks/sub*
-reference-vols/sub*
+manual-masks/*
+reference-vols/*
 
 # symlinks
 derivatives
