@@ -135,3 +135,5 @@ Thumbs.db
 
 # auto created index files
 *.DS_Store
+
+reference-vols/README.md
