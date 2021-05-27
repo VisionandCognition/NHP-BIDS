@@ -10,13 +10,13 @@ import os                                    # system functions
 import pandas as pd                          # data juggling
 
 import nipype.interfaces.io as nio           # Data i/o
-import nipype.interfaces.fsl as fsl          # fsl
+import nipype.interfaces.afni as afni        # afni
 
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
 
 
-def run_workflow(session=None, csv_file=None):
+def run_workflow(session=None, csv_file=None, undist=True):
     from nipype import config
     #config.enable_debug_mode()
 
@@ -68,20 +68,25 @@ def run_workflow(session=None, csv_file=None):
     else:
       print("No csv-file specified. Don't know what data to process.")
 
-
+    # use undistorted epi's if these are requested (need to be generated with undistort workflow)
+    if undist:
+        func_flag = 'preproc_undistort'
+    else:
+        func_flag = 'preproc'    
+    
     # SelectFiles
     templates = {
         'image': 
         'derivatives/featpreproc/highpassed_files/'
         'sub-{subject_id}/ses-{session_id}/func/'
-        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc_mc_smooth_mask_gms_tempfilt_maths.nii.gz',
+        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_smooth_mask_gms_tempfilt_maths.nii.gz',
 
         'imagewarp': 
-        'manual-masks/sub-{refsubject_id}/warps/'
-        'sub-{subject_id}_func2nmt_res-1x1x1.mat',
+        'reference-vols/sub-{refsubject_id}/transforms/'
+        'sub-{subject_id}_func2nmt_WARP.nii.gz',
 
         'ref_image': 
-        'manual-masks/sub-{refsubject_id}/warps/'
+        'reference-vols/sub-{refsubject_id}/transforms/'
         'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
     }
 
@@ -104,14 +109,14 @@ def run_workflow(session=None, csv_file=None):
         ('refsubject_id_', 'ref-'),
         ('subject_id_', 'sub-'),
         ('session_id_', 'ses-'),
-        ('_flirt.nii.gz', '_nmt.nii.gz'),
+        ('_Nwarp.nii.gz', '_NMTv2.nii.gz'),
         # remove subdirectories:
         ('highpassed_files/reg_func', 'highpassed_files'),
-    ]
-
+    ]  
+       
     # Put result into a BIDS-like format
     outputfiles.inputs.regexp_substitutions = [
-        (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1'),
+        (r'_ses-([a-zA-Z0-9]+)_sub-([a-zA-Z0-9]+)', r'sub-\2/ses-\1/func'),
         (r'_ref-([a-zA-Z0-9]+)_run_id_[0-9][0-9]', r''),
     ]
 
@@ -128,20 +133,16 @@ def run_workflow(session=None, csv_file=None):
           ('run_id', 'run_id'),
           ('refsubject_id', 'refsubject_id'),
           ])])
-
-
-    applyxfm = Node(fsl.preprocess.ApplyXFM(),
-                        name='applywarp')
-    
+       
+    nwarp = Node(afni.NwarpApply(out_file='%s_Nwarp.nii.gz'),name='nwarp')       
     warp2nmt.connect(inputfiles, 'image',
-                        applyxfm, 'in_file')
+                        nwarp, 'in_file')
     warp2nmt.connect(inputfiles, 'imagewarp',
-                        applyxfm, 'in_matrix_file')
+                        nwarp, 'warp')
     warp2nmt.connect(inputfiles, 'ref_image',
-                        applyxfm, 'reference')
-    warp2nmt.connect(applyxfm, 'out_file',
+                        nwarp, 'master')
+    warp2nmt.connect(nwarp, 'out_file',
                         outputfiles, 'reg_func')
-
 
     warp2nmt.stop_on_first_crash = False  # True
     warp2nmt.keep_inputs = True
@@ -156,7 +157,10 @@ if __name__ == '__main__':
             description='Warp preprocessed functionals to NMT space')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, runs, and reference subject.')
-
+    parser.add_argument('--undist',
+                        dest='undist', default=True,
+                        help='Boolean indicating whether to use undistorted epis (default is True)')
+    
     args = parser.parse_args()
 
     run_workflow(**vars(args))

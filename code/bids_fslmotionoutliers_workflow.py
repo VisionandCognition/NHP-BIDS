@@ -19,7 +19,7 @@ from nipype.interfaces.utility import Function
 from nipype.pipeline.engine import Workflow, Node
 
 
-def combine_outlier_files(fslmat,rafile):
+def combine_outlier_files(fslmat,rafile,undist):
     import numpy as np
     import os
     
@@ -48,12 +48,20 @@ def combine_outlier_files(fslmat,rafile):
     fn = rafile.split('/')[-1].split('_')
     #fn = fslmat.split('/')[-1].split('_')
 
-    mergedoutliers_file = fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_mergedoutliers.txt'
+    if fn[5] == 'PLUS':
+        mergedoutliers_file = (
+            fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_' +
+            fn[4] + '_' + fn[5] + '_mergedoutliers.txt')
+        else:
+            mergedoutliers_file = (
+                fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_' + 
+                fn[4] + '_mergedoutliers.txt')
+    
     np.savetxt(mergedoutliers_file, mergedoutliers_list,fmt="%i")
     mergedoutliers_file = os.path.abspath(mergedoutliers_file)
     return mergedoutliers_file
 
-def run_workflow(session=None, csv_file=None):
+def run_workflow(session=None, csv_file=None, undist=True):
     from nipype import config
     #config.enable_debug_mode()
 
@@ -94,23 +102,29 @@ def run_workflow(session=None, csv_file=None):
     else:
       print("No csv-file specified. Don't know what data to process.")
 
-
+    # use undistorted epi's if these are requested (need to be generated with undistort workflow)
+    if undist:
+        func_flag = 'preproc_PLUS'
+        else:
+            func_flag = 'preproc'
+    
+    
     # SelectFiles
     templates = {
         'motion_outlier_files':
         'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc_mc_maths_outliers.txt',
+        'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths_outliers.txt',
 
         'masks':
         'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/mask.sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc_mc_maths.nii.gz',
+        'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths.nii.gz',
 
         'motion_corrected':
         'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
         'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_preproc_mc.nii.gz',
+        'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc.nii.gz',
         }  
 
     inputfiles = Node(
@@ -133,7 +147,7 @@ def run_workflow(session=None, csv_file=None):
         ('run_id_', 'run-'),
         ('/merged_outliers/', '/'),
         ('/fslmotionoutlier_file/', '/'),
-        ('bold_res-1x1x1_preproc_mc_outliers', 'fslmotionoutliers'),
+        ('bold_res-1x1x1_preproc_mc_outliers', func_flag + '_fslmotionoutliers'),
     ]
 
     # Put result into a BIDS-like format
@@ -194,6 +208,9 @@ if __name__ == '__main__':
             description='Perform additional motion outlier detection.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
-
+    parser.add_argument('--undist',
+                        dest='undist', default=True,
+                        help='Boolean indicating whether to use undistorted epis (default is True)')
+    
     args = parser.parse_args()
     run_workflow(**vars(args))

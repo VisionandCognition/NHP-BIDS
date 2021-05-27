@@ -21,6 +21,7 @@ import pandas as pd
 
 import nipype.interfaces.fsl as fsl          # fsl
 import nipype.interfaces.utility as util     # utility
+from subcode.afni_allin_slices import AFNIAllinSlices
 
 try: ## replace this with the new utilities
   from nipype.workflows.fmri.fsl.preprocess import create_susan_smooth
@@ -29,9 +30,7 @@ except:
 from nipype import LooseVersion
 
 import subcode.bids_transform_manualmask as transform_manualmask
-import subcode.bids_motioncorrection_workflow as motioncorrection_workflow
-import subcode.bids_undistort_workflow as undistort_workflow
-
+# import subcode.bids_motioncorrection_workflow as motioncorrection_workflow
 import nipype.interfaces.utility as niu
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -41,8 +40,43 @@ data_dir = ds_root
 def getmeanscale(medianvals):
     return ['-mul %.10f' % (10000. / val) for val in medianvals]
 
+def create_workflow_allin_slices(name='motion_correction', iterfield=['in_file']):
+    workflow = pe.Workflow(name=name)
+    inputs = pe.Node(util.IdentityInterface(fields=[
+        'subject_id',
+        'session_id',
 
-def create_workflow():
+        'ref_func', 
+        'ref_func_weights',
+
+        'funcs',
+        'funcs_masks',
+
+        'mc_method',
+    ]), name='in')
+    inputs.iterables = [
+        ('mc_method', ['afni:3dAllinSlices'])
+    ]
+
+    mc = pe.MapNode(
+        AFNIAllinSlices(),
+        iterfield=iterfield,  
+        name='mc')
+    workflow.connect(
+        [(inputs, mc,
+          [('funcs', 'in_file'),
+           ('ref_func_weights', 'in_weight_file'),
+           ('ref_func', 'ref_file'),
+           ])])
+    return workflow
+
+    # Outputs:
+    #  * out_file
+    #  * out_init_mc
+    #  * out_warp_params
+    #  * out_transform_matrix
+
+def create_workflow(undist):
     featpreproc = pe.Workflow(name="featpreproc")
 
     featpreproc.base_dir = os.path.join(ds_root, 'workingdirs')
@@ -68,80 +102,33 @@ def create_workflow():
         'highpass'
     ]), name="inputspec")
 
+    if undist:
+        ud_flag = '_undist_PLUS'
+    else:
+        ud_flag = ''
+    
     # SelectFiles
     templates = {
-        # FIELDMAP ========
-        # fieldmaps are currently not used by this workflow
-        # instead, everything is nonlinearly alligned to a reference
-        # you should probably 'just' undistort this reference func
-
-        # 'ref_manual_fmapmask':
-        # 'manual-masks/sub-{subject_id}/fmap/'
-        # 'sub-{subject_id}_ref_fmap_mask_res-1x1x1.nii.gz',
-
-        # 'ref_fmap_magnitude':
-        # 'manual-masks/sub-{subject_id}/fmap/'
-        # 'sub-{subject_id}_ref_fmap_magnitude1_res-1x1x1.nii.gz',
-
-        # 'ref_fmap_phasediff':
-        # 'manual-masks/sub-{subject_id}/fmap/'
-        # 'sub-{subject_id}_ref_fmap_phasediff_res-1x1x1.nii.gz',
-
-        # 'fmap_phasediff':
-        # 'derivatives/resampled-isotropic-1mm/'
-        # 'sub-{subject_id}/ses-{session_id}/fmap/'
-        # 'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc.nii.gz',
-
-        # 'fmap_magnitude':
-        # 'derivatives/resampled-isotropic-1mm/'
-        # 'sub-{subject_id}/ses-{session_id}/fmap/'
-        # 'sub-{subject_id}_ses-{session_id}_magnitude1_'
-        # 'res-1x1x1_preproc.nii.gz',
-
-        # 'fmap_mask':
-        # 'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
-        # 'sub-{subject_id}_ses-{session_id}_'
-        # 'magnitude1_res-1x1x1_preproc.nii.gz',
-
-
-        # FUNCTIONALS ========
-        # >> These func references are undistorted with FUGUE <<
-        # see the undistort.sh script in:
-        # manual-masks/sub-eddy/ses-20170607b/func/
+        # EPI ========
         'ref_func':
-        'manual-masks/sub-{refsubject_id}/func/'
-        'sub-{subject_id}_ref_func_res-1x1x1.nii.gz',
+        'reference-vols/sub-{refsubject_id}/func/'
+        'sub-{subject_id}_ref_func_res-1x1x1' + ud_flag + '.nii.gz',
 
         'ref_funcmask':
-        'manual-masks/sub-{refsubject_id}/func/'
+        'reference-vols/sub-{refsubject_id}/func/'
         'sub-{subject_id}_ref_func_mask_res-1x1x1.nii.gz',
 
         # T1 ========
-        # 1 mm iso ---
-        # 'ref_t1':
-        # 'manual-masks/sub-{subject_id}/anat/'
-        # 'sub-{subject_id}_ref_anat_res-1x1x1.nii.gz',
-
-        # 'ref_t1mask':
-        # 'manual-masks/sub-{subject_id}/anat/'
-        # 'sub-{subject_id}_ref_anat_mask_res-1x1x1.nii.gz',
-
         # 0.5 mm iso ---
         'ref_t1':
-        'manual-masks/sub-{refsubject_id}/anat/'
+        'reference-vols/sub-{refsubject_id}/anat/'
         'sub-{subject_id}_ref_anat_res-0.5x0.5x0.5.nii.gz',
 
         'ref_t1mask':
-        'manual-masks/sub-{refsubject_id}/anat/'
+        'reference-vols/sub-{refsubject_id}/anat/'
         'sub-{subject_id}_ref_anat_mask_res-0.5x0.5x0.5.nii.gz',
-
-        # WEIGHTS ========
-        # 'manualweights':
-        # 'manual-masks/sub-eddy/ses-20170511/func/'
-        # 'sub-eddy_ses-20170511_task-curvetracing_run-01_frame-50_bold'
-        # '_res-1x1x1_manualweights.nii.gz',
     }
-
+    
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir), name="input_files")
@@ -249,22 +236,12 @@ def create_workflow():
     featpreproc.connect(inputfiles, 'ref_func',
                         transmanmask_mc, 'in.ref_func')
 
-    # fieldmaps not being used
-    if False:
-        trans_fmapmask = transmanmask_mc.clone('trans_fmapmask')
-        featpreproc.connect(inputfiles, 'ref_manual_fmapmask',
-                            trans_fmapmask, 'in.manualmask')
-        featpreproc.connect(inputfiles, 'fmap_magnitude',
-                            trans_fmapmask, 'in.funcs')
-        featpreproc.connect(inputfiles, 'ref_func',
-                            trans_fmapmask, 'in.manualmask_func_ref')
 
     #  |\/| _ _|_. _  _    _ _  _ _ _  __|_. _  _
     #  |  |(_) | |(_)| |  (_(_)| | (/_(_ | |(_)| |
     #
     # Perform motion correction, using some pipeline
     # --------------------------------------------------------
-    # mc = motioncorrection_workflow.create_workflow_afni()
 
     # Register an image from the functionals to the reference image
     median_func = pe.MapNode(
@@ -272,7 +249,10 @@ def create_workflow():
         name='median_func',
         iterfield=('in_file'),
     )
-    pre_mc = motioncorrection_workflow.create_workflow_allin_slices(
+#     pre_mc = motioncorrection_workflow.create_workflow_allin_slices(
+#         name='premotioncorrection')
+
+    pre_mc = create_workflow_allin_slices(
         name='premotioncorrection')
 
     featpreproc.connect(
@@ -313,9 +293,14 @@ def create_workflow():
           ]),
         ])
 
-    mc = motioncorrection_workflow.create_workflow_allin_slices(
+#     mc = motioncorrection_workflow.create_workflow_allin_slices(
+#         name='motioncorrection',
+#         iterfield=('in_file', 'ref_file', 'in_weight_file'))
+
+    mc = create_workflow_allin_slices(
         name='motioncorrection',
         iterfield=('in_file', 'ref_file', 'in_weight_file'))
+    
     # - - - - - - Connections - - - - - - -
     featpreproc.connect(
         [(inputnode, mc,
@@ -359,67 +344,22 @@ def create_workflow():
 
     # Performing motion correction to a reference that is undistorted,
     # So b0_unwarp is currently not needed or used.
-    if False:
-        b0_unwarp = undistort_workflow.create_workflow()
+    
+    # we have moved this to a separate workflow and use the blip-up/down
+    # method now (reverse phase-encoding directions). This has also been
+    # done for the new reference images.
+    
+    featpreproc.connect(
+        [(inputfiles, outputfiles,
+            [('ref_func', 'reference/func'),
+            ('ref_funcmask', 'reference/func_mask'),
+            ]),
+        (inputfiles, outputnode,
+            [('ref_func', 'ref_func'),
+            ('ref_funcmask', 'ref_funcmask'),
+            ]),
+        ])
 
-        featpreproc.connect(
-            [(inputfiles, b0_unwarp,
-              [  # ('subject_id', 'in.subject_id'),
-               # ('session_id', 'in.session_id'),
-               ('fmap_phasediff', 'in.fmap_phasediff'),
-               ('fmap_magnitude', 'in.fmap_magnitude'),
-               ]),
-             (mc, b0_unwarp,
-              [('mc.out_file', 'in.funcs'),
-               ]),
-             (transmanmask_mc, b0_unwarp,
-              [('funcreg.out_file', 'in.funcmasks'),
-               ]),
-             (trans_fmapmask, b0_unwarp,
-              [('funcreg.out_file', 'in.fmap_mask')]),
-             (b0_unwarp, outputfiles,
-              [('out.funcs', 'func_unwarp.funcs'),
-               ('out.funcmasks', 'func_unwarp.funcmasks'),
-               ]),
-             (b0_unwarp, outputnode,
-              [('out.funcs', 'func_unwarp.funcs'),
-               ('out.funcmasks', 'mask'),
-               ]),
-             ])
-
-    # undistort the reference images
-    if False:
-        b0_unwarp_ref = b0_unwarp.clone('b0_unwarp_ref')
-        featpreproc.connect(
-            [(inputfiles, b0_unwarp_ref,
-              [  # ('subject_id', 'in.subject_id'),
-               # ('session_id', 'in.session_id'),
-               ('ref_fmap_phasediff', 'in.fmap_phasediff'),
-               ('ref_fmap_magnitude', 'in.fmap_magnitude'),
-               ('ref_manual_fmapmask', 'in.fmap_mask'),
-               ('ref_func', 'in.funcs'),
-               ('ref_funcmask', 'in.funcmasks'),
-               ]),
-             (b0_unwarp_ref, outputfiles,
-              [('out.funcs', 'func_unwarp_ref.func'),
-               ('out.funcmasks', 'func_unwarp_ref.funcmask'),
-               ]),
-             (b0_unwarp_ref, outputnode,
-              [('out.funcs', 'ref_func'),
-               ('out.funcmasks', 'ref_mask'),
-               ]),
-             ])
-    else:
-        featpreproc.connect(
-            [(inputfiles, outputfiles,
-              [('ref_func', 'reference/func'),
-               ('ref_funcmask', 'reference/func_mask'),
-               ]),
-             (inputfiles, outputnode,
-              [('ref_func', 'ref_func'),
-               ('ref_funcmask', 'ref_funcmask'),
-               ]),
-             ])
 
     #  |\/| _ _|_. _  _    _   _|_|. _  _ _
     #  |  |(_) | |(_)| |  (_)|_|| ||(/_| _\
@@ -460,12 +400,8 @@ def create_workflow():
     outliers = pe.MapNode(
         ra.ArtifactDetect(
             mask_type='file',
-            # trying to "disable" `norm_threshold`:
             use_norm=True,
             norm_threshold=10.0,  # combines translations in mm and rotations
-            # use_norm=Undefined,
-            # translation_threshold=1.0,  # translation in mm
-            # rotation_threshold=0.02,  # rotation in radians
             zintensity_threshold=3.0,  # z-score
             parameter_source='AFNI',
             save_plot=True),
@@ -512,10 +448,8 @@ def create_workflow():
     getthresh = pe.MapNode(interface=fsl.ImageStats(op_string='-p 2 -p 98'),
                            iterfield=['in_file'],
                            name='getthreshold')
-    if False:
-        featpreproc.connect(b0_unwarp, 'out.funcs', getthresh, 'in_file')
-    else:
-        featpreproc.connect(mc, 'mc.out_file', getthresh, 'in_file')
+
+    featpreproc.connect(mc, 'mc.out_file', getthresh, 'in_file')
 
     """
     Threshold the first run of functional data at 10% of the 98th percentile
@@ -525,11 +459,9 @@ def create_workflow():
                                                     suffix='_thresh'),
                            iterfield=['in_file', 'op_string'],
                            name='threshold')
-    if False:
-        featpreproc.connect(b0_unwarp, 'out.funcs', threshold, 'in_file')
-    else:
-        featpreproc.connect(mc, 'mc.out_file', threshold, 'in_file')
 
+    featpreproc.connect(mc, 'mc.out_file', threshold, 'in_file')
+ 
     """
     Define a function to get 10% of the intensity
     """
@@ -546,11 +478,8 @@ def create_workflow():
     medianval = pe.MapNode(interface=fsl.ImageStats(op_string='-k %s -p 50'),
                            iterfield=['in_file', 'mask_file'],
                            name='medianval')
-    if False:
-        featpreproc.connect(b0_unwarp, 'out.funcs', medianval, 'in_file')
-    else:
-        featpreproc.connect(mc, 'mc.out_file', medianval, 'in_file')
 
+    featpreproc.connect(mc, 'mc.out_file', medianval, 'in_file')
     featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
 
     # (~ _  _ _|_. _ |  (~ _ _  _  _ _|_|_ . _  _
@@ -599,11 +528,8 @@ def create_workflow():
             return [1]
 
     # maskfunc2 is the functional data before SUSAN
-    if False:
-        featpreproc.connect(b0_unwarp, ('out.funcs', tolist),
-                            concatnode, 'in1')
-    else:
-        featpreproc.connect(mc, ('mc.out_file', tolist), concatnode, 'in1')
+    featpreproc.connect(mc, ('mc.out_file', tolist), concatnode, 'in1')
+    
     # maskfunc3 is the functional data after SUSAN
     featpreproc.connect(maskfunc3, ('out_file', tolist), concatnode, 'in2')
 
@@ -708,13 +634,13 @@ def create_workflow():
 # ===================================================================
 
 
-def run_workflow(csv_file, fwhm, HighPass):
+def run_workflow(csv_file, fwhm, HighPass, undist):
     # Using the name "level1flow" should allow the workingdirs file to be used
     # by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
     workflow.base_dir = os.path.abspath('./workingdirs')
 
-    featpreproc = create_workflow()
+    featpreproc = create_workflow(undist)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id',
@@ -758,12 +684,21 @@ def run_workflow(csv_file, fwhm, HighPass):
     else:
       print("No csv-file specified. Don't know what data to process.")
 
+    # use undistorted epi's if these are requested (need to be generated with undistort workflow)
+    if undist:
+        func_fld = 'undistort'
+        func_flag = 'preproc_undistort'
+    else:
+        func_fld = 'resampled-isotropic-1mm'
+        func_flag = 'preproc'
+    
     templates = {
         'funcs':
-        'derivatives/resampled-isotropic-1mm/'
+        'derivatives/' + func_fld + '/'
         'sub-{subject_id}/ses-{session_id}/func/'
-        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_preproc.nii.gz',
+        'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_' + func_flag + '.nii.gz',
     }
+    
     inputfiles = pe.Node(
         nio.SelectFiles(templates,
                         base_directory=data_dir), name="input_files")
@@ -788,6 +723,16 @@ def run_workflow(csv_file, fwhm, HighPass):
     featpreproc.inputs.inputspec.fwhm = fwhm     # spatial smoothing (default=2)
     featpreproc.inputs.inputspec.highpass = HighPass  # FWHM in seconds (default=50)
     
+    from nipype import config, logging
+    config.update_config(
+        {'logging':
+         {'workflow_level': 'INFO',
+          'interface_level': 'INFO',
+          }})
+    logging.update_logging(config)
+    #config.enable_debug_mode() << uncomment for massive output of info
+
+    # redundant with enable_debug_mode() ...
     workflow.workflow_level = 'INFO'    # INFO/DEBUG
     # workflow.stop_on_first_crash = True
     workflow.keep_inputs = True
@@ -801,6 +746,9 @@ if __name__ == '__main__':
     parser.add_argument('--csv',
                         dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
+    parser.add_argument('--undist',
+                        dest='undist', default=True,
+                        help='Boolean indicating whether to use undistorted epis (default is True)')
     parser.add_argument('--fwhm',
                         dest='fwhm', default=2.0,
                         help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
