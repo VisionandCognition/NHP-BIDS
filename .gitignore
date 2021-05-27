@@ -7,13 +7,13 @@ scratch/
 job-logs/
 logs/
 manual-masks/sub*
+reference-vols/sub*
 
 # symlinks
 derivatives
 sourcedata
 sub-danny
 sub-eddy
-
 
 # Binary files
 #*.nii.gz
