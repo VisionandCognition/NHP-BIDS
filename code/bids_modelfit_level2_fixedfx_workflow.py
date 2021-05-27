@@ -236,13 +236,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_ty
     else:
       print("No csv-file specified. Don't know what data to process.")
 
-   
     
     # Registration space determines which files to use
     if RegSpace == 'nmt':
         # use the warped files
-        maskfld = 'warps'
-        maskfn = 'func2nmt_res-1x1x1.nii.gz'
+        maskfld = 'transforms'
+        maskfn = 'func2nmt_mask_res-1x1x1.nii.gz'
     elif RegSpace == 'native':
         # use the functional files
         maskfld = 'func'
@@ -258,10 +257,9 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_ty
         raise RuntimeError(
             'ERROR - Unknown motion_outliers_type "%s"' % motion_outliers_type)
 
-
     templates = {
         'ref_funcmask':  # was: manualmask
-        'manual-masks/sub-{refsubject_id}/' + maskfld +
+        'reference-vols/sub-{refsubject_id}/' + maskfld +
         '/sub-{subject_id}_' + maskfn,
         'copes':
         'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
