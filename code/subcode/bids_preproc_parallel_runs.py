@@ -41,7 +41,7 @@ def run_splitpreproc(csv_file, subses, no_warp):
 
     # create csv files ===================================================
     for idx, subj in enumerate(sub):
-        with open(csv_path + '/run' + run[idx] + '.csv',
+        with open(csv_path + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.csv',
                     'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(
@@ -51,10 +51,10 @@ def run_splitpreproc(csv_file, subses, no_warp):
 
     # create job files ===================================================
     for idx, subj in enumerate(sub):
-        job_path_ses = job_path + '/' + sub[idx] + str(ses[idx])
+        job_path_ses = job_path + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx])
         os.makedirs(job_path_ses,exist_ok = True)
         
-        f = open(job_path_ses + '/job_run' + run[idx] + '.sh' ,'w', newline='') 
+        f = open(job_path_ses + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.sh' ,'w', newline='') 
         
         f.write('#!/bin/bash\n')
         f.write('#SBATCH -N 1 --ntasks-per-node=16\n')
@@ -67,25 +67,25 @@ def run_splitpreproc(csv_file, subses, no_warp):
         f.write('echo from $SLURM_SUBMIT_DIR\n')
         f.write('echo the allocated nodes are: $SLURM_JOB_NODELIST\n\n')
         
-        f.write('module load 2019\n')
+        #f.write('module load 2019\n')
         #f.write('module load eb\n')
-        f.write('module load FreeSurfer\n')
+        #f.write('module load FreeSurfer\n')
         #f.write('module load fsl/5.08\n')
         #f.write('module load afni\n\n')
 
-        #f.write('module load 2019\n')
-        #f.write('module load FSL\n')
-        #f.write('module load FreeSurfer\n\n')
+        f.write('module load 2019\n')
+        #f.write('module load FSL\n') # causes python conflicts, use local version
+        f.write('module load FreeSurfer\n\n')
         
         f.write('source ~/.bash_profile\n')
         f.write('source ~/.bashrc\n')
         f.write('umask u+rwx,g+rwx\n')
         f.write('umask u+rwx,g+rwx\n\n')
         f.write('export FSLOUTPUTTYPE=NIFTI_GZ\n\n') 
-        f.write('echo ' + sub[idx] + '-' + str(ses[idx]) + ' run' + run[idx] + '\n')
+        f.write('echo sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '\n')
         f.write('cd ~/NHP-BIDS\n\n')
-        csv_run = csv_path + '/run' + run[idx] + '.csv'
-        logpp_run = logpp_path + '/run' + run[idx] + '.txt'
+        csv_run = csv_path + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.csv'
+        logpp_run = logpp_path + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.txt'
         f.write('./code/bids_preprocessing_workflow.py ' + 
                 '--csv ' + csv_run + ' |& \\\n' + '     tee ' + logpp_run + '\n')
         
@@ -100,10 +100,10 @@ def run_splitpreproc(csv_file, subses, no_warp):
         
         f.close()
         
-        mkexec_str = 'chmod +x ' + job_path_ses + '/job_run' + run[idx] + '.sh'
+        mkexec_str = 'chmod +x ' + job_path_ses + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.sh'
         os.system(mkexec_str)
         
-        submit_str = 'sbatch ' + job_path_ses + '/job_run' + run[idx] + '.sh'
+        submit_str = 'sbatch ' + job_path_ses + '/sub-' + sub[idx] + '_ses-' + str(ses[idx]) + '_run-' + str(run[idx]) + '.sh'
         os.system(submit_str)
         # print(submit_str) # here for debugging
 
