@@ -501,9 +501,9 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
 
     # use undistorted epi's if these are requested (need to be generated with undistort workflow)
     if undist:
-        func_flag = 'preproc_undistort'
+        func_flag = '_undistort'
     else:
-        func_flag = 'preproc'    
+        func_flag = ''    
 
     # Registration space determines which files to use
     if RegSpace == 'nmt':
@@ -521,9 +521,9 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
 
     # Input argument determines which motion outlier file to use
     if motion_outliers_type == 'single':
-        fn_mof = 'bold_res-1x1x1_' + func_flag + '_mc_maths_outliers.txt'
+        fn_mof = 'bold_res-1x1x1_preproc' + func_flag + '_mc_maths_outliers.txt'
     elif motion_outliers_type == 'merged':
-        fn_mof =  func_flag + '_mergedoutliers.txt'
+        fn_mof =  'bold' + func_flag + '_mergedoutliers.txt'
     else:
         raise RuntimeError('ERROR - Unknown motion outlier option "%s"' % motion_outliers_type)
 
@@ -532,23 +532,23 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         fbase + '/highpassed_files/sub-{subject_id}/'
         'ses-{session_id}/func/' 
         'sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc*.nii.gz',
+        'run-{run_id}_bold_res-1x1x1_preproc' + func_flag + '_mc*.nii.gz',
 
         'highpass':
         fbase + '/highpassed_files/sub-{subject_id}/'
         'ses-{session_id}/func/' 
         'sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc*.nii.gz',
+        'run-{run_id}_bold_res-1x1x1_preproc' + func_flag + '_mc*.nii.gz',
 
         'motion_parameters':
         'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
         'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_bold_res-1x1x1_' + func_flag + '.param.1D',
+        'run-{run_id}_bold_res-1x1x1_preproc' + func_flag + '.param.1D',
 
         'motion_outlier_files':
         'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/*sub-{subject_id}_ses-{session_id}_*_'
-        'run-{run_id}_' + fn_mof,
+        'run-{run_id}_*' + fn_mof,
 
         'event_log':
         'sub-{subject_id}/ses-{session_id}/func/'
