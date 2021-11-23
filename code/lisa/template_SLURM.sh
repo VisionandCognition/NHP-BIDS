@@ -12,7 +12,7 @@ echo the allocated nodes are: $SLURM_JOB_NODELIST
 
 # this works as of 20210528
 module load 2020
-module load FreeSurfer
+module load FreeSurfer/7.1.1-centos6_x86_64
 # module load FSL # causes python conflicts, use local version 
 # recent afni binaries need to be manually installed in home folder for now
 
