@@ -2,19 +2,14 @@
 .*.swp
 
 # Directories
-workingdirs/
-scratch/
 job-logs/
-logs/
-manual-masks/*
+projects/
 reference-vols/*
+code/csv
+!code/csv/SubSesRun.csv
 
 # symlinks
-derivatives
-sourcedata
-sub-danny
-sub-eddy
-manual-masks
+projects
 reference-vols
 
 # Binary files
