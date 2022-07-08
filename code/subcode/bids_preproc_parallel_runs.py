@@ -5,12 +5,15 @@ import argparse
 import pandas as pd
 import csv
 
-def run_splitpreproc(csv_file, subses, no_warp):
+def run_splitpreproc(project, csv_file, subses, no_warp):
     
     # define log and job folders =========================================
     job_path = './code/lisa/preproc'
-    logpp_path = './logs/preproc/' + subses
-    logwarp_path = './logs/warp2nmt/' + subses
+    # logpp_path = './logs/preproc/' + subses
+    # logwarp_path = './logs/warp2nmt/' + subses
+    logpp_path = './projects/' + project + '/logs/preproc/' + subses
+    logwarp_path = './projects/' + project + '/logs/warp2nmt/' + subses
+
 
     # read csv files =====================================================
     if csv_file is not None:
@@ -67,15 +70,8 @@ def run_splitpreproc(csv_file, subses, no_warp):
         f.write('echo from $SLURM_SUBMIT_DIR\n')
         f.write('echo the allocated nodes are: $SLURM_JOB_NODELIST\n\n')
         
-        #f.write('module load 2019\n')
-        #f.write('module load eb\n')
-        #f.write('module load FreeSurfer\n')
-        #f.write('module load fsl/5.08\n')
-        #f.write('module load afni\n\n')
-
-        f.write('module load 2019\n')
-        #f.write('module load FSL\n') # causes python conflicts, use local version
-        f.write('module load FreeSurfer\n\n')
+        f.write('module load 2020\n')
+        f.write('module load FreeSurfer/7.1.1-centos6_x86_64\n\n')
         
         f.write('source ~/.bash_profile\n')
         f.write('source ~/.bashrc\n')
@@ -95,6 +91,7 @@ def run_splitpreproc(csv_file, subses, no_warp):
             f.write('wait\n\n')
             logwarp_run = logwarp_path + '/run' + run[idx] + '.txt'
             f.write('./code/bids_warp2nmt_workflow.py ' + 
+                    '--proj' + project +
                     '--csv ' + csv_run + ' |& \\\n' + '     tee ' + logwarp_run + '\n\n')
             f.write('echo Reached the end of the job-file')
         
@@ -112,6 +109,8 @@ def run_splitpreproc(csv_file, subses, no_warp):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Split pre-processing in multiple cluster-jobs')
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv',
                         dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, runs, and refsubject.')

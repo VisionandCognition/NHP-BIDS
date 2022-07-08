@@ -88,16 +88,20 @@ def combine_outlier_files(fslmat,rafile,undist=True):
     mergedoutliers_file = os.path.abspath(mergedoutliers_file)
     return mergedoutliers_file
 
-def run_workflow(session=None, csv_file=None, undist=True):
+def run_workflow(project, session=None, csv_file=None, undist=True):
     from nipype import config
     #config.enable_debug_mode()
 
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # data_dir = ds_root
+    # output_dir = 'derivatives/featpreproc/motion_outliers'
+    # working_dir = 'workingdirs'
 
-    data_dir = ds_root
-    output_dir = 'derivatives/featpreproc/motion_outliers'
-    working_dir = 'workingdirs'
+    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # NHP-BIDS fld
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/derivatives/featpreproc/motion_outliers'
+    working_dir = 'projects/' + project + '/workingdirs'
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[
@@ -139,17 +143,17 @@ def run_workflow(session=None, csv_file=None, undist=True):
     # SelectFiles
     templates = {
         'motion_outlier_files':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths_outliers.txt',
 
         'masks':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/mask.sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths.nii.gz',
 
         'motion_corrected':
-        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
         'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc.nii.gz',
         }  
@@ -235,6 +239,8 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
             description='Perform additional motion outlier detection.')
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--undist',

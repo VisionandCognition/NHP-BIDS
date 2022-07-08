@@ -408,7 +408,7 @@ generate any output. To actually run the analysis on the data the
 ``nipype.pipeline.engine.Pipeline.Run`` function needs to be called.
 """
 
-def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpace, motion_outliers_type, undist):
+def run_workflow(project, csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpace, motion_outliers_type, undist):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -417,7 +417,8 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     else:
         out_label = res_fld.replace('-', '_')  # replace - with _
     workflow = pe.Workflow(name='run_level1flow_' + out_label)
-    workflow.base_dir = os.path.abspath('./workingdirs')
+    #workflow.base_dir = os.path.abspath('./workingdirs')
+    workflow.base_dir = os.path.abspath('./projects/' + project +'/workingdirs')
 
     from nipype import config, logging
     config.update_config(
@@ -508,12 +509,12 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
     # Registration space determines which files to use
     if RegSpace == 'nmt':
         # use the warped files
-        fbase = 'derivatives/featpreproc/warp2nmt'
+        fbase = 'projects/' + project + '/derivatives/featpreproc/warp2nmt'
         maskfld = 'transforms'
         maskfn = 'func2nmt_mask_res-1x1x1.nii.gz'
     elif RegSpace == 'native':
         # use the functional files
-        fbase = 'derivatives/featpreproc'
+        fbase = 'projects/' + project + '/derivatives/featpreproc'
         maskfld = 'func'
         maskfn = 'ref_func_mask_res-1x1x1.nii.gz'
     else:
@@ -541,17 +542,17 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         'run-{run_id}_bold_res-1x1x1_preproc' + func_flag + '_mc*.nii.gz',
 
         'motion_parameters':
-        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
         'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_preproc' + func_flag + '.param.1D',
 
         'motion_outlier_files':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/*sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_*' + fn_mof,
 
         'event_log':
-        'sub-{subject_id}/ses-{session_id}/func/'
+        'projects/' + project + '/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}*run-{run_id}*_events.tsv',        
         
         'ref_func':
@@ -637,7 +638,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
 
     # rename level1 output files to identify by sub-ses-run
     basedir=(
-        './derivatives/modelfit/' +  contrasts_name + '/' 
+        './projects/' + project + '/derivatives/modelfit/' +  contrasts_name + '/' 
         + RegSpace + '/level1/mo-' + motion_outliers_type) 
     outflds=['copes','dof_files','roi_file','varcopes']
     for fld in outflds:
@@ -649,7 +650,7 @@ def run_workflow(csv_file, res_fld, contrasts_name, hrf, fwhm, HighPass, RegSpac
         	shutil.move(srcname,destname)  
         shutil.rmtree(resfld)  
     # copy contrast file for convenience
-    basedir='./derivatives/modelfit/' +  contrasts_name
+    basedir='./projects/' + project + '/derivatives/modelfit/' +  contrasts_name
     contrfile='./code/contrasts/' + contrasts_name + '.py'
     shutil.copyfile(contrfile, basedir + '/' + contrasts_name + '.py')
 
@@ -659,6 +660,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
             description='Analyze model fit.')
+    parser.add_argument('--proj',dest='project',required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--contrasts', dest='contrasts_name', required=True,

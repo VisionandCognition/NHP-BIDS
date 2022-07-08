@@ -24,8 +24,9 @@ export FSLOUTPUTTYPE=NIFTI_GZ
 
 SUB=MONKEY
 DATE=YYYYMMDD
+PROJECT=CurveTracing
 
-echo ${SUB}-${DATE}
+echo ${SUB}-${DATE} ${PROJECT}
 
 cd ~/NHP-BIDS
 
@@ -41,16 +42,19 @@ wait
 
 # minimal processing
 ./code/bids_minimal_processing.py \
-    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
+    --proj ${PROJECT} \
+    --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
     tee ./logs/minproc/sub-${SUB,}/log-minproc-${SUB,}-${DATE}.txt
 wait
 
 # resample iso
 ./code/bids_resample_isotropic_workflow.py \
-    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
+    --proj ${PROJECT} \
+    --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
     tee ./logs/resample/sub-${SUB}/log-resample_iso-${SUB}-${DATE}.txt
 ./code/bids_resample_hires_isotropic_workflow.py \
-    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
+    --proj CurveTracing \
+    --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
     tee ./logs/resample/sub-${SUB,}/log-resample_iso-hires-${SUB,}-${DATE}.txt
 wait
 
@@ -63,16 +67,19 @@ wait
 # METHOD 1 =====
 # preprocessing
 ./code/bids_preprocessing_workflow.py \
-    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
+    --proj ${PROJECT} \
+    --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
     tee ./logs/preproc/sub-${SUB,}/log-preproc-${SUB,}-${DATE}.txt
 
 # warp to NMT
-./code/bids_warp2nmt_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+./code/bids_warp2nmt_workflow.py --csv ./code/csv/multi/${SUB}_${DATE}.csv \
+    --proj ${PROJECT} \ |& \
     tee ./logs/warp2nmt/log-warp2nmt-${SUB}-${DATE}.txt
 
-# METHOD 2
+# METHOD 2 ====
 ./code/subcode/bids_preproc_parallel_runs \
-    --csv ./csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv \
+    --proj ${PROJECT} \
+    --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv \
     --subses ${SUB}${DATE} \
  #   --no-warp 
 

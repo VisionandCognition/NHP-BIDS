@@ -57,10 +57,14 @@ def create_workflow_allin_slices(name='motion_correction', iterfield=['in_file']
 def run_workflow(undist):
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # data_dir = ds_root
+    # output_dir = 'motion-correction'
+    # working_dir = 'workingdirs/motion-correction'
 
-    data_dir = ds_root
-    output_dir = 'motion-correction'
-    working_dir = 'workingdirs/motion-correction'
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/motion-correction'
+    working_dir = 'projects/' + project + '/workingdirs/motion-correction'
+
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[

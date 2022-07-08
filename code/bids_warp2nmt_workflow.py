@@ -16,16 +16,20 @@ from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
 
 
-def run_workflow(session=None, csv_file=None, undist=True):
+def run_workflow(project, session=None, csv_file=None, undist=True):
     from nipype import config
     #config.enable_debug_mode()
 
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # data_dir = ds_root
+    # output_dir = 'derivatives/featpreproc/warp2nmt/highpassed_files'
+    # working_dir = 'workingdirs'
 
-    data_dir = ds_root
-    output_dir = 'derivatives/featpreproc/warp2nmt/highpassed_files'
-    working_dir = 'workingdirs'
+    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # NHP-BIDS fld
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/derivatives/featpreproc/warp2nmt/highpassed_files'
+    working_dir = 'projects/' + project + '/workingdirs'
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[
@@ -77,7 +81,7 @@ def run_workflow(session=None, csv_file=None, undist=True):
     # SelectFiles
     templates = {
         'image': 
-        'derivatives/featpreproc/highpassed_files/'
+        'projects/' + project + '/derivatives/featpreproc/highpassed_files/'
         'sub-{subject_id}/ses-{session_id}/func/'
         'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_smooth_mask_gms_tempfilt_maths.nii.gz',
 
@@ -155,10 +159,11 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
             description='Warp preprocessed functionals to NMT space')
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, runs, and reference subject.')
-    parser.add_argument('--undist',
-                        dest='undist', default=True,
+    parser.add_argument('--undist', dest='undist', default=True,
                         help='Boolean indicating whether to use undistorted epis (default is True)')
     
     args = parser.parse_args()

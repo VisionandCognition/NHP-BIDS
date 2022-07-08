@@ -24,16 +24,20 @@ from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
 
 
-def run_workflows(session=None, csv_file=None):
+def run_workflows(project, session=None, csv_file=None):
     from nipype import config
     #config.enable_debug_mode()
 
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # data_dir = ds_root
+    # output_dir = 'derivatives/undistort'
+    # working_dir = 'workingdirs'
 
-    data_dir = ds_root
-    output_dir = 'derivatives/undistort'
-    working_dir = 'workingdirs'
+    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # NHP-BIDS fld
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/derivatives/undistort'
+    working_dir = 'projects/' + project + '/workingdirs'
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[
@@ -238,11 +242,10 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
             description='Perform undistortion correction using epi scans with opposing phase-encoding directions. Run bids_minimal_processing and bids_resample_isotropic first.')
-    parser.add_argument('--csv',
-                        dest='csv_file',
-                        default=None,
-                        help='CSV file with at least subjects and sessions columns.'
-                        )
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
+    parser.add_argument('--csv', dest='csv_file', default=None,
+                        help='CSV file with at least subjects and sessions columns.')
 
     args = parser.parse_args()
 
