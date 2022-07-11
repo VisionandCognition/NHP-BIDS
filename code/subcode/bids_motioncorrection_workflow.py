@@ -54,7 +54,7 @@ def create_workflow_allin_slices(name='motion_correction', iterfield=['in_file']
     #  * out_transform_matrix
 
 
-def run_workflow(undist):
+def run_workflow(project, undist):
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     # data_dir = ds_root

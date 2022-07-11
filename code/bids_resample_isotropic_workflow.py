@@ -24,7 +24,7 @@ from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node, MapNode
 
 
-def run_workflow(session=None, csv_file=None):
+def run_workflow(project, session=None, csv_file=None):
     from nipype import config
     #config.enable_debug_mode()
 
@@ -37,7 +37,6 @@ def run_workflow(session=None, csv_file=None):
 
     # ------------------ Specify variables
     # ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
     # data_dir = ds_root
     # output_dir = 'derivatives/resampled-isotropic-1mm'
     # working_dir = 'workingdirs'

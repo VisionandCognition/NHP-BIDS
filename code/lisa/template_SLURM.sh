@@ -44,18 +44,18 @@ wait
 ./code/bids_minimal_processing.py \
     --proj ${PROJECT} \
     --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
-    tee ./logs/minproc/sub-${SUB,}/log-minproc-${SUB,}-${DATE}.txt
+    tee ./projects/$PROJECT/logs/minproc/sub-${SUB,}/log-minproc-${SUB,}-${DATE}.txt
 wait
 
 # resample iso
 ./code/bids_resample_isotropic_workflow.py \
     --proj ${PROJECT} \
     --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
-    tee ./logs/resample/sub-${SUB}/log-resample_iso-${SUB}-${DATE}.txt
+    tee ./projects/$PROJECT/logs/resample/sub-${SUB}/log-resample_iso-${SUB}-${DATE}.txt
 ./code/bids_resample_hires_isotropic_workflow.py \
     --proj CurveTracing \
     --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
-    tee ./logs/resample/sub-${SUB,}/log-resample_iso-hires-${SUB,}-${DATE}.txt
+    tee ./projects/$PROJECT/logs/resample/sub-${SUB,}/log-resample_iso-hires-${SUB,}-${DATE}.txt
 wait
 
 
@@ -69,12 +69,12 @@ wait
 ./code/bids_preprocessing_workflow.py \
     --proj ${PROJECT} \
     --csv ./code/csv/multi/sub-${SUB,}/${SUB,}_${DATE}.csv  |& \
-    tee ./logs/preproc/sub-${SUB,}/log-preproc-${SUB,}-${DATE}.txt
+    tee ./projects/$PROJECT/logs/preproc/sub-${SUB,}/log-preproc-${SUB,}-${DATE}.txt
 
 # warp to NMT
 ./code/bids_warp2nmt_workflow.py --csv ./code/csv/multi/${SUB}_${DATE}.csv \
     --proj ${PROJECT} \ |& \
-    tee ./logs/warp2nmt/log-warp2nmt-${SUB}-${DATE}.txt
+    tee ./projects/$PROJECT/logs/warp2nmt/log-warp2nmt-${SUB}-${DATE}.txt
 
 # METHOD 2 ====
 ./code/subcode/bids_preproc_parallel_runs \
