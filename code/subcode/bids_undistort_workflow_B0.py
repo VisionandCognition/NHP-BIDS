@@ -152,9 +152,14 @@ def run_workflow():
     # ------------------ Specify variables
     ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-    data_dir = ds_root
-    output_dir = 'func_unwarp'
-    working_dir = 'workingdirs/func_unwarp'
+    # data_dir = ds_root
+    # output_dir = 'func_unwarp'
+    # working_dir = 'workingdirs/func_unwarp'
+
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/func_unwarp'
+    working_dir = 'projects/' + project + '/workingdirs/func_unwarp'
+
 
     subject_list = ['eddy']
     session_list = ['20170511']
@@ -172,7 +177,7 @@ def run_workflow():
     # SelectFiles
     templates = {
         'funcs':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
+        'projects/' + project + '/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/func/'
             'sub-{subject_id}_ses-{session_id}_'
             'task-*_bold_res-1x1x1_preproc.nii.gz',
 
@@ -180,17 +185,17 @@ def run_workflow():
         #    'task-curvetracing_run-01_bold_res-1x1x1_preproc-roi.nii.gz',
 
         'fmap_phasediff':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
+        'projects/' + project + '/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
             'sub-{subject_id}_ses-{session_id}_phasediff_res-1x1x1_preproc'
             '.nii.gz',
 
         'fmap_magnitude':
-        'resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
+        'projects/' + project + '/resampled-isotropic-1mm/sub-{subject_id}/ses-{session_id}/fmap/'
             'sub-{subject_id}_ses-{session_id}_magnitude1_res-1x1x1_preproc'
             '.nii.gz',
 
         'fmap_mask':
-        'transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
+        'projects/' + project + '/transformed-manual-fmap-mask/sub-{subject_id}/ses-{session_id}/fmap/'
             'sub-{subject_id}_ses-{session_id}_'
             'magnitude1_res-1x1x1_preproc.nii.gz',
     }

@@ -15,6 +15,13 @@
 # subfolder where the scan files are located
 SF=MRI
 
+# projects: 
+# CurveTracing / PRF / FigureGround / NaturalMovie / 
+# HRF / Stimulation / RestingState / Tractography
+# >> set to 'default' to have everything together like it used to be
+# >> split up the archive manually
+ProjFld=default
+
 # ==========================================================================
 # STRUCTURAL
 # ==========================================================================
@@ -51,6 +58,7 @@ declare -a DWI=(\
 
 # NB corresponding array-positions should correspond!
 declare -a func_runnr=( 01 02 03 )
+
 # tasks: 
 # curvetracing / curvetracinginccentral / ctcheckerboard 
 # prf / rest / figgnd / figgndloc / checkerHRF / naturalmovie
@@ -58,22 +66,26 @@ declare -a task=( \
     xxx 
     xxx 
     )
+
 # MRI-data functional runs
 declare -a funcs=( \
     xxx
     xxx
     )
+
 # Corresponding topup-scans
 # when these exist there should be the same number of entries as the functional runs
 declare -a topup=( \
     xxx
     xxx
     )
+
 # behavioral log folders
 declare -a behs=( \
     xxx
     xxx
     )
+
 # eye tracking files
 declare -a eyes=( \
     xxx
@@ -99,11 +111,13 @@ fi
 # local path ----
 BIDS_DEST=$SCRIPT_PATH
 # raw to BIDS ----
-BIDS_DEST="${BIDS_DEST/Data_raw/NHP-BIDS}"
+#BIDS_DEST="${BIDS_DEST/Data_raw/NHP-BIDS}"
+BIDS_DEST="${BIDS_DEST/Data_raw/NHP-BIDS/projects/$ProjFld}"
 # subjects ----
 BIDS_DEST="${BIDS_DEST/EDDY/sub-eddy}"
 BIDS_DEST="${BIDS_DEST/DANNY/sub-danny}"
 BIDS_DEST="${BIDS_DEST/SPIKE/sub-spike}"
+BIDS_DEST="${BIDS_DEST/OZZY/sub-ozzy}"
 # sessions ----
 BIDS_DEST="${BIDS_DEST/2016/ses-2016}"
 BIDS_DEST="${BIDS_DEST/2017/ses-2017}"
@@ -113,9 +127,12 @@ BIDS_DEST="${BIDS_DEST/2019/ses-2019}"
 BIDS_DEST="${BIDS_DEST/2020/ses-2020}"
 BIDS_DEST="${BIDS_DEST/2021/ses-2021}"
 BIDS_DEST="${BIDS_DEST/2022/ses-2022}"
+BIDS_DEST="${BIDS_DEST/2023/ses-2023}"
+
 
 # sourcedata ----
-BIDS_UNPROC_DEST="${BIDS_DEST/NHP-BIDS/NHP-BIDS/sourcedata}"
+#BIDS_UNPROC_DEST="${BIDS_DEST/NHP-BIDS/NHP-BIDS/sourcedata}"
+BIDS_UNPROC_DEST="${BIDS_DEST/$ProjFld/$ProjFld/sourcedata}"
 
 # some feedback to terminal ----
 echo '=============================================='

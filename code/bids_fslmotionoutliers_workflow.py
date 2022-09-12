@@ -19,7 +19,7 @@ from nipype.interfaces.utility import Function
 from nipype.pipeline.engine import Workflow, Node
 
 
-def combine_outlier_files(fslmat,rafile,undist):
+def combine_outlier_files(fslmat,rafile,undist=True):
     import numpy as np
     import os
     
@@ -28,49 +28,80 @@ def combine_outlier_files(fslmat,rafile,undist):
         fsl_outliers_present = True
     except:
         fsl_outliers_present = False
+        fsl_mat = np.array([])
     ra_list = np.loadtxt(rafile) 
     
+
     if fsl_mat.size == 0: # only merge outlier files if additional outliers are detected
+        print('fsl_mat size is 0')
         mergedoutliers_list = ra_list
     elif ra_list.size == 0:
+        print('ra_list_size is 0')
         if fsl_mat.ndim > 1:
             mergedoutliers_list = np.nonzero(fsl_mat.sum(axis=1))[0]
+            print('fsl_mat dim is > 1')
         else:
             mergedoutliers_list = np.nonzero(fsl_mat)[0]
+            print('fsl_mat dim is 1 or less (prob 1)')
+
+        print('mergedoutliers_list')
+        print(mergedoutliers_list)
     else:
+        print('ra_list_size is not 0')
         if fsl_mat.ndim > 1:
+            print('fsl_mat dim is > 1')
             fsl_ind = np.nonzero(fsl_mat.sum(axis=1))[0]
         else:
+            print('fsl_mat dim is 1 or less (prob 1)')
             fsl_ind = np.nonzero(fsl_mat)[0]
-        mergedoutliers_list = np.unique(np.append(fsl_ind[:,None], 
-            ra_list[:,None], axis=0)).astype(int)  
-    
-    fn = rafile.split('/')[-1].split('_')
-    #fn = fslmat.split('/')[-1].split('_')
 
-    if fn[5] == 'PLUS':
+        print('tyrying to merge the two outliers lists')    
+        print('fsl_ind')
+        print(fsl_ind)
+        print('ra_list')
+        print(ra_list)
+        
+        mergedoutliers_list = np.unique(np.append(fsl_ind, 
+            ra_list)).astype(int) 
+
+        print('mergedoutliers_list')
+        print(mergedoutliers_list)
+   
+
+    fn = rafile.split('/')[-1].split('_')
+
+    print('fn')
+    print(fn)
+
+    if fn[7] == 'undistort':
         mergedoutliers_file = (
             fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_' +
-            fn[4] + '_' + fn[5] + '_mergedoutliers.txt')
-        else:
-            mergedoutliers_file = (
-                fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_' + 
-                fn[4] + '_mergedoutliers.txt')
+            fn[4] + '_' + fn[7] + '_mergedoutliers.txt')
+    else:
+        mergedoutliers_file = (
+            fn[0] + '_' + fn[1] + '_' + fn[2] + '_' + fn[3] + '_' + 
+            fn[4] + '_mergedoutliers.txt')
     
+    print(mergedoutliers_file)    
+
     np.savetxt(mergedoutliers_file, mergedoutliers_list,fmt="%i")
     mergedoutliers_file = os.path.abspath(mergedoutliers_file)
     return mergedoutliers_file
 
-def run_workflow(session=None, csv_file=None, undist=True):
+def run_workflow(project, session=None, csv_file=None, undist=True):
     from nipype import config
     #config.enable_debug_mode()
 
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # data_dir = ds_root
+    # output_dir = 'derivatives/featpreproc/motion_outliers'
+    # working_dir = 'workingdirs'
 
-    data_dir = ds_root
-    output_dir = 'derivatives/featpreproc/motion_outliers'
-    working_dir = 'workingdirs'
+    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # NHP-BIDS fld
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project + '/derivatives/featpreproc/motion_outliers'
+    working_dir = 'projects/' + project + '/workingdirs'
 
     # ------------------ Input Files
     infosource = Node(IdentityInterface(fields=[
@@ -104,25 +135,25 @@ def run_workflow(session=None, csv_file=None, undist=True):
 
     # use undistorted epi's if these are requested (need to be generated with undistort workflow)
     if undist:
-        func_flag = 'preproc_PLUS'
-        else:
-            func_flag = 'preproc'
+        func_flag = 'preproc_undistort'
+    else:
+        func_flag = 'preproc'
     
     
     # SelectFiles
     templates = {
         'motion_outlier_files':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/art.sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths_outliers.txt',
 
         'masks':
-        'derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_outliers/sub-{subject_id}/'
         'ses-{session_id}/func/mask.sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc_maths.nii.gz',
 
         'motion_corrected':
-        'derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
+        'projects/' + project + '/derivatives/featpreproc/motion_corrected/sub-{subject_id}/'
         'ses-{session_id}/func/sub-{subject_id}_ses-{session_id}_*_'
         'run-{run_id}_bold_res-1x1x1_' + func_flag + '_mc.nii.gz',
         }  
@@ -147,7 +178,7 @@ def run_workflow(session=None, csv_file=None, undist=True):
         ('run_id_', 'run-'),
         ('/merged_outliers/', '/'),
         ('/fslmotionoutlier_file/', '/'),
-        ('bold_res-1x1x1_preproc_mc_outliers', func_flag + '_fslmotionoutliers'),
+        ('bold_res-1x1x1_' + func_flag + '_mc_outliers', func_flag + '_fslmotionoutliers'),
     ]
 
     # Put result into a BIDS-like format
@@ -184,9 +215,11 @@ def run_workflow(session=None, csv_file=None, undist=True):
     
     # convert the fsl style design matrix to AFNI style volume indeces
     ConvToAFNI = Node(name='ConvtoAFNI',
-                        interface=Function(input_names=['fslmat','rafile'],
+                        interface=Function(input_names=['fslmat','rafile','undist'],
                                            output_names=['mergedoutliers_file'],
-                                           function=combine_outlier_files))
+                                           function=combine_outlier_files,
+                                           )
+                        )
 
     fslmotionoutliers.connect(GetOutliers, 'out_file',
                         ConvToAFNI,'fslmat')
@@ -206,6 +239,8 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
             description='Perform additional motion outlier detection.')
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--undist',

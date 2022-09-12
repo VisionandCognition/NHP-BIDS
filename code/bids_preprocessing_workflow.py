@@ -34,7 +34,8 @@ import subcode.bids_transform_manualmask as transform_manualmask
 import nipype.interfaces.utility as niu
 
 ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-data_dir = ds_root
+#data_dir = ds_root
+data_dir = ds_root + '/projects/' + project
 
 
 def getmeanscale(medianvals):
@@ -76,7 +77,7 @@ def create_workflow_allin_slices(name='motion_correction', iterfield=['in_file']
     #  * out_warp_params
     #  * out_transform_matrix
 
-def create_workflow(undist):
+def create_workflow(project, undist):
     featpreproc = pe.Workflow(name="featpreproc")
 
     featpreproc.base_dir = os.path.join(ds_root, 'workingdirs')
@@ -154,7 +155,7 @@ def create_workflow(undist):
     # Datasink
     outputfiles = pe.Node(nio.DataSink(
         base_directory=ds_root,
-        container='derivatives/featpreproc',
+        container='projects/' + project + '/derivatives/featpreproc',
         parameterization=True),
         name="output_files")
 
@@ -226,8 +227,6 @@ def create_workflow(undist):
           ('refsubject_id', 'in.refsubject_id'),
           ])])
 
-    #featpreproc.connect(inputfiles, 'ref_funcmask',
-    #                    transmanmask_mc, 'in.manualmask')
     featpreproc.connect(inputfiles, 'ref_funcmask',
                         transmanmask_mc, 'in.ref_funcmask')
     featpreproc.connect(inputnode, 'funcs',
@@ -634,11 +633,13 @@ def create_workflow(undist):
 # ===================================================================
 
 
-def run_workflow(csv_file, fwhm, HighPass, undist):
+def run_workflow(project, csv_file, fwhm, HighPass, undist):
     # Using the name "level1flow" should allow the workingdirs file to be used
     # by the fmri_workflow pipeline.
     workflow = pe.Workflow(name='level1flow')
-    workflow.base_dir = os.path.abspath('./workingdirs')
+    #workflow.base_dir = os.path.abspath('./workingdirs')
+    workflow.base_dir = os.path.abspath('./projects/' + project + '/workingdirs')
+
 
     featpreproc = create_workflow(undist)
 
@@ -694,7 +695,7 @@ def run_workflow(csv_file, fwhm, HighPass, undist):
     
     templates = {
         'funcs':
-        'derivatives/' + func_fld + '/'
+        'projects' + project + '/derivatives/' + func_fld + '/'
         'sub-{subject_id}/ses-{session_id}/func/'
         'sub-{subject_id}_ses-{session_id}*run-{run_id}_bold_res-1x1x1_' + func_flag + '.nii.gz',
     }
@@ -743,17 +744,15 @@ def run_workflow(csv_file, fwhm, HighPass, undist):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='Perform pre-processing step for NHP fMRI.')
-    parser.add_argument('--csv',
-                        dest='csv_file', default=None,
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
+    parser.add_argument('--csv', dest='csv_file', default=None,
                         help='CSV file with subjects, sessions, and runs.')
-    parser.add_argument('--undist',
-                        dest='undist', default=True,
+    parser.add_argument('--undist', dest='undist', default=True,
                         help='Boolean indicating whether to use undistorted epis (default is True)')
-    parser.add_argument('--fwhm',
-                        dest='fwhm', default=2.0,
+    parser.add_argument('--fwhm', dest='fwhm', default=2.0,
                         help='Set FWHM for smoothing in mm. (default is 2.0 mm)')
-    parser.add_argument('--HighPass',
-                        dest='HighPass', default=50,
+    parser.add_argument('--HighPass', dest='HighPass', default=50,
                         help='Set high pass filter in seconds. (default = 50 s)')
 
     args = parser.parse_args()

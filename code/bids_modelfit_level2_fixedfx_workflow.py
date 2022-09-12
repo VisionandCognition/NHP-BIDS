@@ -163,7 +163,7 @@ def create_workflow(out_label, contrasts_name, RegSpace):
 #
 # ===================================================================
 
-def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_type):
+def run_workflow(project, csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_type):
     # Define outputfolder
     if res_fld == 'use_csv':
         # get a unique label, derived from csv name
@@ -172,7 +172,8 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_ty
     else:
         out_label = res_fld
     workflow = pe.Workflow(name='run_level2flow_' + out_label)
-    workflow.base_dir = os.path.abspath('./workingdirs')
+    #workflow.base_dir = os.path.abspath('./workingdirs')
+    workflow.base_dir = os.path.abspath('./projects/' + project +'/workingdirs')
 
     from nipype import config, logging
     config.update_config(
@@ -258,20 +259,20 @@ def run_workflow(csv_file, res_fld, contrasts_name, RegSpace, motion_outliers_ty
             'ERROR - Unknown motion_outliers_type "%s"' % motion_outliers_type)
 
     templates = {
-        'ref_funcmask':  # was: manualmask
+        'ref_funcmask': 
         'reference-vols/sub-{refsubject_id}/' + maskfld +
         '/sub-{subject_id}_' + maskfn,
         'copes':
-        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'projects/' + project + '/derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
         + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/copes/cope*.nii.gz',
         'dof_file':
-        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'projects/' + project + '/derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
         + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/dof_files/dof',
         'roi_file':
-        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'projects/' + project + '/derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
         + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/roi_file/*.nii.gz',
         'varcopes':
-        'derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
+        'projects/' + project + '/derivatives/modelfit/' + contrasts_name +'/' + RegSpace + '/level1/'
         + mofmod + 'sub-{subject_id}/ses-{session_id}/run-{run_id}/varcopes/varcope*.nii.gz',
     }  
 
@@ -340,6 +341,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
             description='Analyze model fit.')
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.')
     parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.')
     parser.add_argument('--contrasts', dest='contrasts_name', required=True,

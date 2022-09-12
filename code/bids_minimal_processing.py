@@ -61,18 +61,17 @@ def create_images_workflow():
     return workflow
 
 
-def run_workflow(csv_file, stop_on_first_crash,
+def run_workflow(csv_file, project, stop_on_first_crash,
                  ignore_events):
     
     from nipype import config
     #config.enable_debug_mode()
 
     # ------------------ Specify variables
-    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-    data_dir = ds_root
-    output_dir = ''
-    working_dir = 'workingdirs/minimal_processing'
+    ds_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # NHP-BIDS fld
+    data_dir = ds_root + '/projects/' + project
+    output_dir = 'projects/' + project
+    working_dir = 'projects/' + project + '/workingdirs/minimal_processing'
 
     # ------------------ Input Files
     # Read csv and use pandas to set-up image and ev-processing
@@ -230,20 +229,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Perform minimal_processing for NHP fMRI.'
         )
-    parser.add_argument('--csv',
-                        dest='csv_file',
-                        required=True,
+    parser.add_argument('--proj', dest='project', required=True,
+                        help='project label for subfolder.'
+                        )
+    parser.add_argument('--csv', dest='csv_file', required=True,
                         help='CSV file with subjects, sessions, and runs.'
                         )
-    parser.add_argument('--stop_on_first_crash',
-                        dest='stop_on_first_crash',
-                        action='store_true',
-                        help='Whether to stop on first crash.'
+    parser.add_argument('--stop_on_first_crash', dest='stop_on_first_crash',
+                        action='store_true', help='Whether to stop on first crash.'
                         )
-    parser.add_argument('--ignore_events',
-                        dest='ignore_events',
-                        action='store_true',
-                        help='Whether to ignore all csv event files. '
+    parser.add_argument('--ignore_events', dest='ignore_events',
+                        action='store_true', help='Whether to ignore all csv event files. '
                         'By default csv event files are processed for specified runs '
                         '(while imaging files are processed for all runs)'
                         )

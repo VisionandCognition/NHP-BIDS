@@ -1,5 +1,5 @@
 alabaster==0.7.10
-Babel==2.5.3
+Babel==2.9.1
 certifi==2018.1.18
 chardet==3.0.4
 click==6.7
@@ -12,19 +12,19 @@ future==0.16.0
 idna==2.6
 imagesize==0.7.1
 ipdb==0.11
-ipython==6.1.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 isodate==0.5.4
 jedi==0.10.2
 Jinja2>=2.10.1  # was Jinja2==2.10
-lxml==4.6.3
+lxml==4.9.1
 MarkupSafe==1.0
 matplotlib==2.0.2
 mock==2.0.0
 networkx==1.11
 nibabel==2.1.0
 nipype==1.0.1.dev0
-numpy==1.13.1
+numpy==1.22.0
 packaging==16.8
 pandas==0.20.3
 pbr==3.1.1
@@ -54,6 +54,6 @@ sphinxcontrib-websupport==1.0.1
 traitlets==4.3.2
 traits==4.6.0
 typing==3.6.2
-urllib3==1.24.2  # was urllib3==1.23
+urllib3==1.26.5  # was urllib3==1.23
 wcwidth==0.1.7
 yapf==0.20.1

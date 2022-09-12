@@ -1,0 +1,64 @@
+#!/bin/bash
+#SBATCH -N 1 --ntasks-per-node=16
+#SBATCH -t 02:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=p.c.klink@gmail.com
+
+echo job id $SLURM_JOBID
+echo job name $SLURM_JOB_NAME
+echo submitted by $SLURM_JOB_ACCOUNT
+echo from $SLURM_SUBMIT_DIR
+echo the allocated nodes are: $SLURM_JOB_NODELIST
+
+#module load pre2019
+
+#module load eb
+#module load freesurfer
+#module load fsl/5.08
+#module load afni
+
+module load FreeSurfer
+module load FSL
+# recent afni binaries need to be manually installed in home folder for now
+# CK has requested system wide install for LISA
+
+source ~/.bash_profile 
+source ~/.bashrc
+umask u+rwx,g+rwx
+
+export FSLOUTPUTTYPE=NIFTI_GZ
+
+SUB=Danny
+DATE=20200714
+
+echo ${SUB}-${DATE}
+
+cd ~/NHP-BIDS
+
+# minimal processing
+./code/bids_minimal_processing.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/minproc/log-minproc-${SUB}-${DATE}.txt
+wait 
+
+# resample iso
+./code/bids_resample_isotropic_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/resample/sub-${SUB}/log-resample_iso-${SUB}-${DATE}.txt
+./code/bids_resample_hires_isotropic_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+    tee ./logs/resample/sub-${SUB}/log-resample_iso-hires-${SUB}-${DATE}.txt
+wait 
+
+# preprocessing 
+# ./code/bids_preprocessing_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+#     tee ./logs/preproc/log-preproc-${SUB}-${DATE}.txt
+# wait
+
+# warp to NMT
+#./code/bids_warp2nmt_workflow.py --csv ./csv/multi/${SUB}_${DATE}.csv  |& \
+#    tee ./logs/warp2nmt/log-warp2nmt-${SUB}-${DATE}.txt
+
+./code/subcode/bids_preproc_parallel_runs.py \
+    --csv ./csv/multi/${SUB}_${DATE}.csv \
+    --subses ${SUB}${DATE} 
+
+# modelfit
+echo 'Reached the end of the job-file'
