@@ -4,4 +4,4 @@ This pipeline uses NiPype to create the data that tries to adhere to [BIDS](http
 Instructions on how to install and use the pipeline can be found on the **[Wiki](https://github.com/VisionandCognition/NHP-BIDS/wiki)**.   <br/>     
 For questions and comments, contact Chris Klink (c.klink@nin.knaw.nl)    
 <br/>    
-    <a href="https://nin.nl/"><img align="center" alt="NIN" src="https://nin.nl/wp-content/themes/herseninstituut/dist/images/nin-logo-en.png" width="300" class="center"></a>
+    <a href="https://nin.nl/"><img align="center" alt="NIN" src="https://nin.nl/wp-content/themes/stuurlui/assets/img/nin-logo-en.svg" width="300" class="center"></a>
