@@ -44,7 +44,7 @@ python-dateutil==2.6.1
 pytz==2017.2
 rdflib==4.2.2
 requests>=2.20.0  # was requests==2.18.4
-scipy==0.19.1
+scipy==1.10.0
 simplegeneric==0.8.1
 simplejson==3.11.1
 six==1.10.0
