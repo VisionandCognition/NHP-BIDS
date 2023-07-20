@@ -37,7 +37,7 @@ py==1.10.0
 pydicom==0.9.9
 pydot==1.2.4
 pydotplus==2.0.2
-Pygments==2.7.4
+Pygments==2.15.0
 pyparsing==2.2.0
 pytest==3.2.2
 python-dateutil==2.6.1
