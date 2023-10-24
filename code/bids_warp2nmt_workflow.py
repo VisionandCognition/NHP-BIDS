@@ -90,7 +90,7 @@ def run_workflow(project, session=None, csv_file=None, undist=True):
         'sub-{subject_id}_func2nmt_WARP.nii.gz',
 
         'ref_image': 
-        'reference-vols/sub-{refsubject_id}/transforms/'
+        'reference-vols/sub-{refsubject_id}/func/'
         'sub-{subject_id}_func2nmt_res-1x1x1.nii.gz',
     }
 
