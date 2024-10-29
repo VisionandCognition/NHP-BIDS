@@ -1,23 +1,12 @@
 #!/usr/bin/env python3
 
 """ 
-This is the first script to run after copying the source files from
-DATA_raw to NHP-BIDS. It performs some minimal processing:
+This is the first script to run after copying the source files to NHP-BIDS.
+It performs some minimal processing:
 - Image files are corrected for sphinx orientation
 - FSL orientation is corrected
 - Eventlog csv files are converted to tsv where possible
 - Files are moved to the correct folders
-
-After this, you should run:
-- bids_resample_isotropic_workflow.py
-  >> resamples *ALL* images files to 1 mm isotropic
-- bids_reample_hires_isotropic_workflow.py
-  >> resamples the high resolution anatomicals to 0.5 mm isotropis
-  >> only use this when these files are actually present
-- bids_preprocessing_workflow.py
-  >> performs preprocessing steps like normalisation and motion correction
-- bids_modelfit_workflow.py
-  >> Fits a GLM and outputs statistics
 
 Questions & comments: c.klink@nin.knaw.nl
 """
@@ -44,25 +33,18 @@ def create_images_workflow():
     inputs = Node(IdentityInterface(fields=['images']), name="in")
     outputs = Node(IdentityInterface(fields=['images']), name="out")
 
-    sphinx = MapNode(fs.MRIConvert(sphinx=True),
-        iterfield=['in_file'], name='sphinx')
+    sphinx = MapNode(fs.MRIConvert(sphinx=True), iterfield=['in_file'], name='sphinx')
+    workflow.connect(inputs, 'images', sphinx, 'in_file')
 
-    workflow.connect(inputs, 'images',
-                     sphinx, 'in_file')
+    ro = MapNode(fsl.Reorient2Std(), iterfield=['in_file'], name='ro')
 
-    ro = MapNode(fsl.Reorient2Std(),
-        iterfield=['in_file'],name='ro')
-
-    workflow.connect(sphinx, 'out_file',
-                     ro, 'in_file')
-    workflow.connect(ro, 'out_file',
-                     outputs, 'images')
+    workflow.connect(sphinx, 'out_file', ro, 'in_file')
+    workflow.connect(ro, 'out_file', outputs, 'images')
 
     return workflow
 
 
-def run_workflow(csv_file, project, stop_on_first_crash,
-                 ignore_events):
+def run_workflow(csv_file, project, stop_on_first_crash, ignore_events):
     
     from nipype import config
     #config.enable_debug_mode()
@@ -124,7 +106,7 @@ def run_workflow(csv_file, project, stop_on_first_crash,
         imgfiles = Node(
             nio.SelectFiles({
                 'images':
-                'sourcedata/sub-{subject_id}/ses-{session_id}/{datatype}/'
+                'data_collection/sub-{subject_id}/ses-{session_id}/{datatype}/'
                 'sub-{subject_id}_ses-{session_id}_*.nii.gz' 
                 }, base_directory=data_dir), name="img_files")
 
@@ -143,10 +125,10 @@ def run_workflow(csv_file, project, stop_on_first_crash,
         evfiles = Node(
             nio.SelectFiles({
                 'csv_eventlogs':
-                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'data_collection/sub-{subject_id}/ses-{session_id}/func/'
                 'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/Log_*_eventlog.csv',
                 'stim_dir':
-                'sourcedata/sub-{subject_id}/ses-{session_id}/func/'
+                'data_collection/sub-{subject_id}/ses-{session_id}/func/'
                 'sub-{subject_id}_ses-{session_id}_*_run-{run_id}_events/',
             }, base_directory=data_dir), name="evfiles")
 

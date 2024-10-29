@@ -70,11 +70,11 @@ class ConvertCSVEventLog(CommandLine):
 if __name__ == '__main__':
     test = ConvertCSVEventLog(
         in_file='/NHP_MRI/NHP-BIDS/'
-        'sourcedata/sub-eddy/ses-20180117/func/'
+        'data_collection/sub-eddy/ses-20180117/func/'
         'sub-eddy_ses-20180117_task-ctcheckerboard_run-12_events/'
         'Log_Spinoza_3T_Eddy_StimSettings_CTShapedCheckerboard_20180117T1241_eventlog.csv',
         stim_dir='/NHP_MRI/NHP-BIDS/'
-        'sourcedata/sub-eddy/ses-20180117/func/'
+        'data_collection/sub-eddy/ses-20180117/func/'
         'sub-eddy_ses-20180117_task-ctcheckerboard_run-12_events',
     )
     print(test.cmdline)
